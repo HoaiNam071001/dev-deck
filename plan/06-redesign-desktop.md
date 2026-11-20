@@ -13,7 +13,7 @@ Làm trước, chạy được ngay trong trình duyệt, chưa cần vỏ deskt
 - [ ] Nạp Inter và JetBrains Mono cục bộ (đóng gói font, không gọi Google Fonts)
 - [ ] Khung app: `TitleBar` · `Sidebar` (nav + phím tắt) · `StatusBar`; nội dung cố định, từng vùng tự cuộn
 - [ ] Component dùng chung: `Kpi`/`KpiStrip`, `Chip` trạng thái, `SegmentedControl`, `ShareBar`, `Kbd`, `Toast`, `ContextMenu`
-- [ ] Trang Tổng quan: 4 chỉ số, token 24h, "Cần chú ý", dự án dùng nhiều, hoạt động gần đây
+- [ ] Trang Tổng quan: không tự quét, không hiện số liệu Claude; lưu kết quả quét lần trước để hiện ngay khi mở app; 5 ô tình trạng repo, repo ghim kèm thao tác nhanh, việc cần xử lý (có nút hành động), hoạt động gần đây, thư mục làm việc
 - [ ] Trang Claude: nút phân đoạn khoảng thời gian, 5 chỉ số, biểu đồ 4 series + tooltip, bảng có cột tổng kèm thanh tỉ lệ; danh sách dự án ở menu trái để lọc
 - [ ] Trang Git dạng 3 cột:
   - [ ] Thư mục quét + độ sâu + "Quét lại" chuyển vào menu trái, bấm thư mục để lọc

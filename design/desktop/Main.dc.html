@@ -15,9 +15,12 @@ body{margin:0;background:#151719}
 a{color:#30CF43;text-decoration:none}a:hover{color:#5EE070}
 .nav:hover{background:#222428;color:#EDEEF0}
 .btn:hover{background:#2E3135}
+.go:hover{background:#5EE070}
 .wc:hover{background:#2A2D31}.wcx:hover{background:#C42B1C;color:#fff}
 .lrow:hover{background:#222428}
+.card:hover{border-color:#3B3F45}
 .cmd:hover{background:#25282C}
+.ghost:hover{color:#EDEEF0}
 </style>
 </helmet>
 <div style="position: relative; width: 1280px; height: 800px; overflow: hidden; display: flex; flex-direction: column; background: #151719; color: #EDEEF0; font-family: Inter, system-ui, sans-serif; font-size: 13px; line-height: 1.45">
@@ -38,7 +41,7 @@ a{color:#30CF43;text-decoration:none}a:hover{color:#5EE070}
       </button>
     </div>
     <div style="display: flex; align-items: center; gap: 8px; padding: 0 12px; width: 176px; justify-content: flex-end; color: #8E9AA6; font-size: 12px">
-      <span style="width: 7px; height: 7px; border-radius: 50%; background: #30CF43"></span>Đồng bộ
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #8E9AA6"></span>Chưa quét lại
     </div>
     <sc-if value="{{win}}" hint-placeholder-val="{{true}}">
       <div style="display: flex; height: 38px">
@@ -73,119 +76,151 @@ a{color:#30CF43;text-decoration:none}a:hover{color:#5EE070}
       </div>
       <div style="margin-top: auto; display: flex; flex-direction: column; gap: 1px">
         <button class="nav" style="display: flex; align-items: center; gap: 10px; height: 30px; padding: 0 8px; border: 0; border-radius: 5px; background: transparent; color: #C5CCD3; font: inherit; cursor: pointer; text-align: left">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3.1 14H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 3.1V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 20.9 10H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"></path></svg>
           Cài đặt<span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8E9AA6">{{mod}},</span>
         </button>
       </div>
     </aside>
 
     <main style="flex: 1; min-width: 0; overflow-y: auto; box-sizing: border-box; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px">
-      <header style="display: flex; align-items: center; justify-content: space-between">
-        <div style="display: flex; align-items: baseline; gap: 10px">
-          <h1 style="margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -.01em">Tổng quan</h1>
-          <span style="color: #8E9AA6; font-size: 12px">Thứ Sáu, 20/11</span>
+      <header style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <h1 style="margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -.01em">Chào buổi chiều</h1>
+          <span style="color: #8E9AA6; font-size: 12px">Thứ Sáu, 20/11 · số liệu từ lần quét lúc <span style="font-family: 'JetBrains Mono', monospace; color: #C5CCD3">{{scanTime}}</span>, chưa quét lại khi mở app</span>
         </div>
-        <button class="btn" style="height: 28px; padding: 0 10px; border: 1px solid #33363B; border-radius: 6px; background: #222428; color: #EDEEF0; font: inherit; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"></path></svg>Làm mới <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8E9AA6">{{mod}}R</span>
-        </button>
+        <div style="display: flex; gap: 6px">
+          <button class="btn" style="height: 30px; padding: 0 10px; border: 1px solid #33363B; border-radius: 6px; background: #222428; color: #EDEEF0; font: inherit; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Clone repo
+          </button>
+          <button class="go" onClick="{{rescan}}" style="height: 30px; padding: 0 12px; border: 0; border-radius: 6px; background: #30CF43; color: #0C1A0E; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"></path></svg>{{scanLabel}} <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; opacity: .7">{{mod}}R</span>
+          </button>
+        </div>
       </header>
 
-      <section aria-label="Chỉ số chính" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: #2B2E33; border: 1px solid #2B2E33; border-radius: 8px; overflow: hidden; flex: none">
-        <div style="background: #1C1E21; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px">
-          <span style="color: #8E9AA6; font-size: 12px">Token hôm nay</span>
-          <span style="font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 500">1.84M</span>
-          <span style="font-size: 11px; color: #8E9AA6"><span style="color: #30CF43">▲ 12%</span> so với hôm qua · 412 tin</span>
-        </div>
-        <div style="background: #1C1E21; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px">
-          <span style="color: #8E9AA6; font-size: 12px">7 ngày qua</span>
-          <span style="font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 500">11.2M</span>
-          <span style="font-size: 11px; color: #8E9AA6">cache đọc chiếm <span style="color: #EDEEF0">78.4%</span></span>
-        </div>
-        <a href="Git.dc.html" style="background: #1C1E21; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; color: #EDEEF0">
-          <span style="color: #8E9AA6; font-size: 12px">Repo có thay đổi</span>
-          <span style="font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 500">5 <span style="font-size: 13px; color: #8E9AA6">/ 23</span></span>
-          <span style="font-size: 11px; color: #8E9AA6">31 tệp chưa commit</span>
+      <section aria-label="Tình trạng repo" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: #2B2E33; border: 1px solid #2B2E33; border-radius: 8px; overflow: hidden; flex: none">
+        <a href="Git.dc.html" style="background: #1C1E21; padding: 11px 14px; display: flex; flex-direction: column; gap: 2px; color: #EDEEF0">
+          <span style="color: #8E9AA6; font-size: 12px">Repo</span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 21px; font-weight: 500">23</span>
+          <span style="font-size: 11px; color: #8E9AA6">trong 2 thư mục</span>
         </a>
-        <a href="Git.dc.html" style="background: #1C1E21; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; color: #EDEEF0">
-          <span style="color: #8E9AA6; font-size: 12px">Lệch remote</span>
-          <span style="font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 500">3</span>
-          <span style="font-size: 11px; color: #8E9AA6"><span style="color: #5AA9F5">↑ 7</span> cần push · <span style="color: #F2A65A">↓ 4</span> cần pull</span>
+        <a href="Git.dc.html" style="background: #1C1E21; padding: 11px 14px; display: flex; flex-direction: column; gap: 2px; color: #EDEEF0">
+          <span style="color: #8E9AA6; font-size: 12px">Chưa commit</span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 21px; font-weight: 500; color: #F2A65A">5</span>
+          <span style="font-size: 11px; color: #8E9AA6">31 tệp thay đổi</span>
+        </a>
+        <a href="Git.dc.html" style="background: #1C1E21; padding: 11px 14px; display: flex; flex-direction: column; gap: 2px; color: #EDEEF0">
+          <span style="color: #8E9AA6; font-size: 12px">Cần push</span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 21px; font-weight: 500; color: #5AA9F5">2</span>
+          <span style="font-size: 11px; color: #8E9AA6">7 commit chưa đẩy</span>
+        </a>
+        <a href="Git.dc.html" style="background: #1C1E21; padding: 11px 14px; display: flex; flex-direction: column; gap: 2px; color: #EDEEF0">
+          <span style="color: #8E9AA6; font-size: 12px">Cần pull</span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 21px; font-weight: 500; color: #F2A65A">2</span>
+          <span style="font-size: 11px; color: #8E9AA6">6 commit mới trên remote</span>
+        </a>
+        <a href="Git.dc.html" style="background: #1C1E21; padding: 11px 14px; display: flex; flex-direction: column; gap: 2px; color: #EDEEF0">
+          <span style="color: #8E9AA6; font-size: 12px">Xung đột</span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 21px; font-weight: 500; color: #F26B6B">1</span>
+          <span style="font-size: 11px; color: #8E9AA6">payment-gateway</span>
         </a>
       </section>
 
-      <div style="display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 14px; flex: none">
-        <section style="background: #1C1E21; border: 1px solid #2B2E33; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0">
-          <div style="display: flex; justify-content: space-between; align-items: center">
-            <h2 style="margin: 0; font-size: 13px; font-weight: 600">Token 24 giờ qua</h2>
-            <div style="display: flex; gap: 12px; font-size: 11px; color: #8E9AA6">
-              <span style="display: flex; align-items: center; gap: 5px"><span style="width: 8px; height: 8px; border-radius: 2px; background: #5AA9F5"></span>Input</span>
-              <span style="display: flex; align-items: center; gap: 5px"><span style="width: 8px; height: 8px; border-radius: 2px; background: #F2A65A"></span>Output</span>
-              <span style="display: flex; align-items: center; gap: 5px"><span style="width: 8px; height: 8px; border-radius: 2px; background: #3A4F63"></span>Cache</span>
-            </div>
-          </div>
-          <div style="height: 168px; display: flex; align-items: flex-end; gap: 4px; border-bottom: 1px solid #33363B">
-            <sc-for list="{{bars}}" as="b" hint-placeholder-count="24">
-              <div title="{{b.tip}}" style="flex: 1; display: flex; flex-direction: column; justify-content: flex-end; gap: 1px; height: 100%">
-                <div style="height: {{b.out}}px; background: #F2A65A; border-radius: 2px 2px 0 0"></div>
-                <div style="height: {{b.inp}}px; background: #5AA9F5"></div>
-                <div style="height: {{b.cache}}px; background: #3A4F63"></div>
+      <section aria-label="Repo đã ghim" style="display: flex; flex-direction: column; gap: 8px; flex: none">
+        <div style="display: flex; justify-content: space-between; align-items: center">
+          <h2 style="margin: 0; font-size: 13px; font-weight: 600">Repo đã ghim</h2>
+          <a href="Git.dc.html" style="font-size: 12px">Quản lý ghim →</a>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+          <sc-for list="{{pinned}}" as="p" hint-placeholder-count="3">
+            <div class="card" style="background: #1C1E21; border: 1px solid #2B2E33; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0">
+              <div style="display: flex; align-items: center; gap: 8px">
+                <span style="width: 7px; height: 7px; border-radius: 50%; background: {{p.dot}}; flex: none"></span>
+                <a href="Git.dc.html" style="font-weight: 600; color: #EDEEF0">{{p.name}}</a>
+                <span style="margin-left: auto; font-size: 11px; color: {{p.stateFg}}">{{p.state}}</span>
               </div>
-            </sc-for>
+              <div style="display: flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #C5CCD3; min-width: 0">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="5" r="2"></circle><circle cx="6" cy="19" r="2"></circle><circle cx="18" cy="7" r="2"></circle><path d="M6 7v10M18 9c0 5-7 4-11 8"></path></svg>
+                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{p.branch}}</span>
+                <span><span style="color: #5AA9F5">{{p.ahead}}</span> <span style="color: #F2A65A">{{p.behind}}</span></span>
+              </div>
+              <span style="font-size: 12px; color: #8E9AA6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{p.subject}} · {{p.when}}</span>
+              <div style="display: flex; gap: 4px; padding-top: 4px; border-top: 1px solid #26292D">
+                <button class="btn" style="height: 24px; padding: 0 8px; border: 1px solid #33363B; border-radius: 5px; background: transparent; color: #C5CCD3; font: inherit; font-size: 11px; cursor: pointer">VS Code</button>
+                <button class="btn" style="height: 24px; padding: 0 8px; border: 1px solid #33363B; border-radius: 5px; background: transparent; color: #C5CCD3; font: inherit; font-size: 11px; cursor: pointer">Terminal</button>
+                <button class="btn" style="height: 24px; padding: 0 8px; border: 1px solid #33363B; border-radius: 5px; background: transparent; color: #C5CCD3; font: inherit; font-size: 11px; cursor: pointer">{{p.action}}</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 260px; gap: 14px; flex: none">
+        <section style="background: #1C1E21; border: 1px solid #2B2E33; border-radius: 8px; display: flex; flex-direction: column; min-width: 0; overflow: hidden">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 11px 14px 7px">
+            <h2 style="margin: 0; font-size: 13px; font-weight: 600">Việc cần xử lý</h2>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8E9AA6">5</span>
           </div>
-          <div style="display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8E9AA6">
-            <span>15:00</span><span>21:00</span><span>03:00</span><span>09:00</span><span>14:00</span>
-          </div>
+          <sc-for list="{{todo}}" as="r" hint-placeholder-count="5">
+            <div class="lrow" style="display: flex; align-items: center; gap: 10px; padding: 7px 14px; border-top: 1px solid #26292D">
+              <span style="width: 7px; height: 7px; border-radius: 50%; background: {{r.dot}}; flex: none"></span>
+              <span style="display: flex; flex-direction: column; min-width: 0; flex: 1">
+                <a href="Git.dc.html" style="font-weight: 500; font-size: 12px; color: #EDEEF0">{{r.name}}</a>
+                <span style="font-size: 11px; color: {{r.color}}">{{r.what}}</span>
+              </span>
+              <button class="btn" style="height: 24px; padding: 0 8px; border: 1px solid #33363B; border-radius: 5px; background: #222428; color: #EDEEF0; font: inherit; font-size: 11px; cursor: pointer; white-space: nowrap">{{r.action}}</button>
+            </div>
+          </sc-for>
         </section>
 
         <section style="background: #1C1E21; border: 1px solid #2B2E33; border-radius: 8px; display: flex; flex-direction: column; min-width: 0; overflow: hidden">
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 14px 8px">
-            <h2 style="margin: 0; font-size: 13px; font-weight: 600">Cần chú ý</h2>
-            <a href="Git.dc.html" style="font-size: 12px">Mở Git →</a>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 11px 14px 7px">
+            <h2 style="margin: 0; font-size: 13px; font-weight: 600">Hoạt động gần đây</h2>
+            <button class="ghost" style="border: 0; background: transparent; color: #8E9AA6; font: inherit; font-size: 11px; cursor: pointer">Xem nhật ký</button>
           </div>
-          <sc-for list="{{attention}}" as="r" hint-placeholder-count="5">
-            <a href="Git.dc.html" class="lrow" style="display: flex; align-items: center; gap: 10px; padding: 7px 14px; border-top: 1px solid #26292D; color: #EDEEF0">
-              <span style="width: 7px; height: 7px; border-radius: 50%; background: {{r.dot}}; flex: none"></span>
-              <span style="display: flex; flex-direction: column; min-width: 0; flex: 1">
-                <span style="font-weight: 500; font-size: 12px">{{r.name}}</span>
-                <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8E9AA6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.branch}}</span>
-              </span>
-              <span style="font-size: 11px; color: {{r.color}}; white-space: nowrap">{{r.what}}</span>
-            </a>
-          </sc-for>
-        </section>
-      </div>
-
-      <div style="display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 14px; flex: none">
-        <section style="background: #1C1E21; border: 1px solid #2B2E33; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 9px; min-width: 0">
-          <div style="display: flex; justify-content: space-between; align-items: center">
-            <h2 style="margin: 0; font-size: 13px; font-weight: 600">Dự án dùng nhiều nhất · hôm nay</h2>
-            <a href="Claude.dc.html" style="font-size: 12px">Chi tiết →</a>
-          </div>
-          <sc-for list="{{projects}}" as="p" hint-placeholder-count="5">
-            <div style="display: grid; grid-template-columns: 140px 1fr 56px; gap: 12px; align-items: center; font-size: 12px">
-              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{p.name}}</span>
-              <span style="height: 6px; background: #26292D; border-radius: 3px; overflow: hidden"><span style="display: block; height: 6px; width: {{p.pct}}%; background: #5AA9F5; border-radius: 3px"></span></span>
-              <span style="font-family: 'JetBrains Mono', monospace; text-align: right">{{p.val}}</span>
-            </div>
-          </sc-for>
-        </section>
-        <section style="background: #1C1E21; border: 1px solid #2B2E33; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0">
-          <h2 style="margin: 0; font-size: 13px; font-weight: 600">Hoạt động gần đây</h2>
-          <sc-for list="{{activity}}" as="a" hint-placeholder-count="4">
-            <div style="display: grid; grid-template-columns: 44px 1fr; gap: 8px; font-size: 12px">
+          <sc-for list="{{activity}}" as="a" hint-placeholder-count="6">
+            <div style="display: grid; grid-template-columns: 40px 64px 1fr; gap: 8px; align-items: center; padding: 6px 14px; border-top: 1px solid #26292D; font-size: 12px">
               <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8E9AA6">{{a.t}}</span>
-              <span style="min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><span style="color: {{a.c}}">{{a.verb}}</span> {{a.text}}</span>
+              <span style="height: 18px; padding: 0 6px; border-radius: 4px; background: {{a.bg}}; color: {{a.c}}; font-size: 11px; display: inline-flex; align-items: center; justify-self: start">{{a.verb}}</span>
+              <span style="min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{a.repo}} <span style="color: #8E9AA6">{{a.text}}</span></span>
             </div>
           </sc-for>
+        </section>
+
+        <section style="background: #1C1E21; border: 1px solid #2B2E33; border-radius: 8px; padding: 11px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0">
+          <div style="display: flex; justify-content: space-between; align-items: center">
+            <h2 style="margin: 0; font-size: 13px; font-weight: 600">Thư mục làm việc</h2>
+            <button class="ghost" aria-label="Thêm thư mục" style="width: 22px; height: 22px; border: 0; background: transparent; color: #8E9AA6; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+          </div>
+          <sc-for list="{{roots}}" as="f" hint-placeholder-count="2">
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <span style="display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 12px"><span>{{f.path}}</span><span style="color: #8E9AA6">{{f.count}} repo</span></span>
+              <span style="display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: #26292D">
+                <span style="width: {{f.dirtyPct}}%; background: #F2A65A"></span>
+                <span style="width: {{f.outPct}}%; background: #5AA9F5"></span>
+                <span style="width: {{f.cleanPct}}%; background: #30CF43"></span>
+              </span>
+            </div>
+          </sc-for>
+          <div style="display: flex; gap: 10px; font-size: 10px; color: #8E9AA6">
+            <span style="display: flex; align-items: center; gap: 4px"><span style="width: 7px; height: 7px; border-radius: 2px; background: #F2A65A"></span>thay đổi</span>
+            <span style="display: flex; align-items: center; gap: 4px"><span style="width: 7px; height: 7px; border-radius: 2px; background: #5AA9F5"></span>lệch</span>
+            <span style="display: flex; align-items: center; gap: 4px"><span style="width: 7px; height: 7px; border-radius: 2px; background: #30CF43"></span>sạch</span>
+          </div>
+          <div style="margin-top: auto; padding-top: 8px; border-top: 1px solid #26292D; display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: #8E9AA6">
+            <span style="display: flex; justify-content: space-between">Bảng lệnh <span style="font-family: 'JetBrains Mono', monospace; color: #C5CCD3">{{mod}}K</span></span>
+            <span style="display: flex; justify-content: space-between">Quét lại <span style="font-family: 'JetBrains Mono', monospace; color: #C5CCD3">{{mod}}R</span></span>
+            <span style="display: flex; justify-content: space-between">Mở repo trong VS Code <span style="font-family: 'JetBrains Mono', monospace; color: #C5CCD3">{{mod}}O</span></span>
+          </div>
         </section>
       </div>
     </main>
   </div>
 
   <footer style="height: 24px; flex: none; display: flex; align-items: center; gap: 16px; padding: 0 12px; background: #111214; border-top: 1px solid #2B2E33; color: #8E9AA6; font-size: 11px">
-    <span style="display: flex; align-items: center; gap: 6px"><span style="width: 6px; height: 6px; border-radius: 50%; background: #30CF43"></span>Theo dõi 2 thư mục · 23 repo</span>
-    <span>Claude hôm nay: <span style="font-family: 'JetBrains Mono', monospace; color: #C5CCD3">1.84M</span></span>
-    <span style="margin-left: auto">Tự làm mới 30s</span>
+    <span style="display: flex; align-items: center; gap: 6px"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{scanDot}}"></span>{{scanStatus}}</span>
+    <span>2 thư mục · 23 repo</span>
+    <span style="margin-left: auto">Tự làm mới: tắt ở Tổng quan</span>
     <span style="font-family: 'JetBrains Mono', monospace">v2.0.0</span>
   </footer>
 
@@ -219,43 +254,55 @@ a{color:#30CF43;text-decoration:none}a:hover{color:#5EE070}
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"platform":{"editor":"enum","options":["windows","mac"],"default":"windows"},"$preview":{"width":1280,"height":800}}'>
 class Component extends DCLogic {
-  constructor(props) { super(props); this.state = { palette: false }; }
+  constructor(props) { super(props); this.state = { palette: false, scan: 'idle' }; }
+  componentWillUnmount() { clearTimeout(this.t); }
   renderVals() {
-    var self = this;
+    var self = this, st = this.state;
     var mac = this.props.platform === 'mac';
     var mod = mac ? '⌘' : 'Ctrl+';
-    var seed = [3,2,1,1,0,0,0,1,2,5,9,12,14,11,8,10,13,15,12,9,7,10,12,8];
+    var scanning = st.scan === 'running', done = st.scan === 'done';
     return {
-      mac: mac, win: !mac, mod: mod, palette: this.state.palette,
+      mac: mac, win: !mac, mod: mod, palette: st.palette,
       openPalette: function () { self.setState({ palette: true }); },
       closePalette: function () { self.setState({ palette: false }); },
-      bars: seed.map(function (v, i) { return { cache: Math.round(v * 6.2), inp: Math.round(v * 1.5), out: Math.round(v * 1.1), tip: 'Giờ ' + i + ' · ' + (v * 21) + 'K token' }; }),
-      attention: [
-        { name: 'payment-gateway', branch: 'feat/refund-flow', what: '⚠ 2 xung đột', color: '#F26B6B', dot: '#F26B6B' },
-        { name: 'dev-deck', branch: 'main', what: '12 tệp · ↑3', color: '#F2A65A', dot: '#F2A65A' },
-        { name: 'landing-2026', branch: 'develop', what: '↓4 cần pull', color: '#F2A65A', dot: '#F2A65A' },
-        { name: 'infra-scripts', branch: 'chore/ci · chưa upstream', what: 'chưa push', color: '#5AA9F5', dot: '#5AA9F5' },
-        { name: 'mobile-app', branch: 'release/2.4', what: '9 tệp', color: '#F2A65A', dot: '#F2A65A' }
+      scanTime: done ? '14:35:12' : 'hôm qua 18:04',
+      scanLabel: scanning ? 'Đang quét…' : 'Quét lại',
+      scanDot: scanning ? '#F2A65A' : done ? '#30CF43' : '#8E9AA6',
+      scanStatus: scanning ? 'Đang quét 2 thư mục…' : done ? 'Đã quét lúc 14:35:12 · 1.8s' : 'Dữ liệu từ lần quét trước, bấm Quét lại để cập nhật',
+      rescan: function () {
+        if (scanning) return;
+        self.setState({ scan: 'running' }); clearTimeout(self.t);
+        self.t = setTimeout(function () { self.setState({ scan: 'done' }); }, 1800);
+      },
+      pinned: [
+        { name: 'dev-deck', dot: '#F2A65A', state: '12 tệp', stateFg: '#F2A65A', branch: 'main', ahead: '↑3', behind: '', subject: 'Add multi-root scan selection', when: '2 giờ', action: 'Push ↑3' },
+        { name: 'payment-gateway', dot: '#F26B6B', state: '⚠ xung đột', stateFg: '#F26B6B', branch: 'feat/refund-flow', ahead: '↑1', behind: '↓2', subject: 'WIP refund webhook retry', when: '40 phút', action: 'Xem xung đột' },
+        { name: 'design-tokens', dot: '#30CF43', state: 'sạch', stateFg: '#30CF43', branch: 'main', ahead: '', behind: '', subject: 'Export dark palette', when: '1 tuần', action: 'Fetch' }
       ],
-      projects: [
-        { name: 'dev-deck', pct: 100, val: '742K' },
-        { name: 'payment-gateway', pct: 64, val: '475K' },
-        { name: 'landing-2026', pct: 41, val: '304K' },
-        { name: 'mobile-app', pct: 28, val: '208K' },
-        { name: 'Khác (4)', pct: 15, val: '111K' }
+      todo: [
+        { name: 'payment-gateway', what: '2 tệp xung đột sau merge', color: '#F26B6B', dot: '#F26B6B', action: 'Mở' },
+        { name: 'landing-2026', what: 'Remote có 4 commit mới', color: '#F2A65A', dot: '#F2A65A', action: 'Pull ↓4' },
+        { name: 'dev-deck', what: '3 commit chưa push', color: '#5AA9F5', dot: '#5AA9F5', action: 'Push ↑3' },
+        { name: 'infra-scripts', what: 'Nhánh chore/ci chưa có upstream', color: '#5AA9F5', dot: '#5AA9F5', action: 'Push' },
+        { name: 'mobile-app', what: '9 tệp chưa commit, 4 ngày', color: '#F2A65A', dot: '#F2A65A', action: 'Mở' }
       ],
       activity: [
-        { t: '14:28', verb: 'Push', c: '#30CF43', text: 'design-tokens main → origin' },
-        { t: '13:52', verb: 'Commit', c: '#5AA9F5', text: 'dev-deck · Add multi-root scan' },
-        { t: '13:40', verb: 'Fetch', c: '#C5CCD3', text: 'tất cả repo (23)' },
-        { t: '11:05', verb: 'Pull', c: '#F2A65A', text: 'mobile-app release/2.4 ↓2' },
-        { t: '09:12', verb: 'Tạo nhánh', c: '#B18CF2', text: 'payment-gateway feat/refund-flow' }
+        { t: '14:28', verb: 'Push', c: '#30CF43', bg: 'rgba(48,207,67,.12)', repo: 'design-tokens', text: 'main → origin' },
+        { t: '13:52', verb: 'Commit', c: '#5AA9F5', bg: 'rgba(90,169,245,.14)', repo: 'dev-deck', text: 'Add multi-root scan' },
+        { t: '13:40', verb: 'Fetch', c: '#C5CCD3', bg: '#2B2E33', repo: 'Tất cả', text: '23 repo' },
+        { t: '11:05', verb: 'Pull', c: '#F2A65A', bg: 'rgba(242,166,90,.14)', repo: 'mobile-app', text: 'release/2.4 ↓2' },
+        { t: '09:12', verb: 'Nhánh', c: '#B18CF2', bg: 'rgba(177,140,242,.14)', repo: 'payment-gateway', text: 'tạo feat/refund-flow' },
+        { t: '09:01', verb: 'Checkout', c: '#C5CCD3', bg: '#2B2E33', repo: 'blog', text: 'main' }
+      ],
+      roots: [
+        { path: '~/Desktop', count: 12, dirtyPct: 17, outPct: 8, cleanPct: 75 },
+        { path: '~/work/clients', count: 11, dirtyPct: 27, outPct: 18, cleanPct: 55 }
       ],
       commands: [
         { label: 'Quét lại tất cả repo', key: mod + 'R', bg: '#25282C' },
         { label: 'Fetch tất cả repo', key: mod + 'Shift+F', bg: 'transparent' },
-        { label: 'Mở trang Claude', key: mod + '2', bg: 'transparent' },
-        { label: 'Thêm thư mục quét…', key: '', bg: 'transparent' }
+        { label: 'Clone repo…', key: '', bg: 'transparent' },
+        { label: 'Thêm thư mục làm việc…', key: '', bg: 'transparent' }
       ],
       repoCmds: [
         { label: 'dev-deck', path: '~/Desktop', dot: '#F2A65A' },
