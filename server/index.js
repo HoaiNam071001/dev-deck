@@ -30,6 +30,8 @@ async function api(req, res, url) {
       const body = await readBody(req)
       return json(res, 200, await gitActions.perform(git.knownRepo(String(body.path || '')), body))
     }
+    // Trang Tổng quan: chỉ đọc file nhỏ, không quét repo, không đọc log token
+    if (url.pathname === '/api/overview') return json(res, 200, { config: git.loadConfig(), scan: git.lastScan(), activity: gitActions.recentActivity(8) })
     if (url.pathname === '/api/git/browse') return json(res, 200, git.browse(url.searchParams.get('path') || ''))
     if (url.pathname === '/api/git/config') {
       if (req.method === 'PUT') {

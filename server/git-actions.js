@@ -102,4 +102,20 @@ async function perform(repoPath, body) {
   return { ok: true, output }
 }
 
-module.exports = { perform }
+/** n dòng nhật ký cuối, mới nhất trước. */
+function recentActivity(n = 20) {
+  let text
+  try { text = fs.readFileSync(AUDIT, 'utf8') } catch { return [] }
+  const out = []
+  const lines = text.split('\n')
+  for (let i = lines.length - 1; i >= 0 && out.length < n; i--) {
+    if (!lines[i]) continue
+    try {
+      const e = JSON.parse(lines[i])
+      out.push({ at: e.at, repo: path.basename(e.repo || ''), action: e.action, ok: e.ok, error: e.error, detail: e.params?.branch || e.params?.name || e.params?.message || '' })
+    } catch { /* bỏ dòng hỏng */ }
+  }
+  return out
+}
+
+module.exports = { perform, recentActivity }

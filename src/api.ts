@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { BrowseResult, GitConfig, RepoDetail, ReposResponse, UsageRow } from './types'
+import type { BrowseResult, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow } from './types'
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
@@ -15,6 +15,7 @@ export const api = {
   action: (path: string, action: string, params: Record<string, unknown> = {}) =>
     request<{ ok: true; output: string }>('/api/git/action', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...params, action, path }) }),
   config: () => request<GitConfig>('/api/git/config'),
+  overview: () => request<Overview>('/api/overview'),
   browse: (path: string) => request<BrowseResult>('/api/git/browse?path=' + encodeURIComponent(path)),
   saveConfig: (c: Pick<GitConfig, 'roots' | 'depth'>) =>
     request<GitConfig>('/api/git/config', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(c) }),

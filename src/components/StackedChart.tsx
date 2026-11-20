@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { fmt, short } from '../lib/format'
 import { KEYS, totalOf, type Bucket } from '../lib/usage'
 
-const H = 240
+const H = 220
 const PAD = { l: 48, r: 8, t: 8, b: 42 }
 
 export function StackedChart({ data, g }: { data: Bucket[]; g: number }) {
@@ -69,10 +69,11 @@ export function StackedChart({ data, g }: { data: Bucket[]; g: number }) {
         })}
       </svg>
       {hover && h && (
-        <div className="tip" style={{ left: hover.x + 12, top: hover.y + 12 }}>
+        <div className="tip" style={{ left: Math.min(hover.x + 12, window.innerWidth - 220), top: hover.y + 12 }}>
           <b>{h.date} {dayMode ? '' : h.time}</b>
-          {KEYS.map(({ k, label }) => <div key={k}>{label}: {fmt(h[k])}</div>)}
-          <div>Tin nhắn: {fmt(h.msgs)}</div>
+          {KEYS.map(({ k, label, color }) => <div key={k} className="tip-r"><span><i style={{ background: color }} />{label}</span><span className="mono">{fmt(h[k])}</span></div>)}
+          <div className="tip-r tip-t"><span>Tổng</span><span className="mono">{fmt(totalOf(h))}</span></div>
+          <div className="tip-r"><span>Tin nhắn</span><span className="mono">{fmt(h.msgs)}</span></div>
         </div>
       )}
     </div>

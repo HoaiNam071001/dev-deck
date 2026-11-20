@@ -2,10 +2,10 @@ import type { UsageRow } from '../types'
 import { dayKey, p2 } from './format'
 
 export const KEYS = [
-  { k: 'input', label: 'Input', color: 'var(--c1)' },
-  { k: 'output', label: 'Output', color: 'var(--c2)' },
-  { k: 'cacheWrite', label: 'Cache write', color: 'var(--c3)' },
-  { k: 'cacheRead', label: 'Cache read', color: 'var(--c4)' },
+  { k: 'input', label: 'Input', color: 'var(--series-input)' },
+  { k: 'output', label: 'Output', color: 'var(--series-output)' },
+  { k: 'cacheWrite', label: 'Cache ghi', color: 'var(--series-cache-write)' },
+  { k: 'cacheRead', label: 'Cache đọc', color: 'var(--series-cache-read)' },
 ] as const
 
 export type Totals = { input: number; output: number; cacheWrite: number; cacheRead: number; msgs: number }

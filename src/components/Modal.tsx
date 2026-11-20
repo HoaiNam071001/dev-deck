@@ -1,14 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 
-export function Spinner({ label }: { label?: string }) {
-  return (
-    <div className="spinner-wrap" role="status" aria-live="polite">
-      <span className="spinner" aria-hidden="true" />
-      {label && <span className="muted">{label}</span>}
-    </div>
-  )
-}
-
 type ModalProps = {
   onClose: () => void
   /** Phần đầu (tiêu đề, meta). Nút đóng luôn nằm bên phải. */

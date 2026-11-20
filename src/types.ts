@@ -68,7 +68,14 @@ export interface RepoDetail {
   commits: { hash: string; author: string; date: string; subject: string }[]
   remotes: { name: string; url: string }[]
   stashes: number
+  numstat?: NumStat
 }
 
 export interface GitConfig { roots: string[]; depth: number; recent: string[] }
 export interface BrowseResult { path: string; parent: string | null; home: string; isRepo?: boolean; dirs: { name: string; path: string; isRepo: boolean }[] }
+
+export interface NumStat { staged: Record<string, [number, number]>; unstaged: Record<string, [number, number]> }
+
+export interface ActivityItem { at: string; repo: string; action: string; ok: boolean; error?: string; detail: string }
+export interface ScanSummary { at: string; ms: number; repos: number; roots: string[]; byRoot: Record<string, number> }
+export interface Overview { config: GitConfig; scan: ScanSummary | null; activity: ActivityItem[] }

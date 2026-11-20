@@ -142,22 +142,59 @@ async function pool(items, limit, fn) {
   return out
 }
 
+const SCAN_FILE = path.join(path.dirname(CONFIG_FILE), 'scan.json')
+const normPath = (p) => p.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase()
+
+/** Tóm tắt lần quét gần nhất (trang Tổng quan đọc cái này thay vì quét lại). */
+function lastScan() {
+  try { return JSON.parse(fs.readFileSync(SCAN_FILE, 'utf8')) } catch { return null }
+}
+
+function saveScan(cfg, repos, ms) {
+  const roots = [...cfg.roots].sort((a, b) => b.length - a.length)
+  const byRoot = Object.fromEntries(cfg.roots.map((r) => [r, 0]))
+  for (const r of repos) {
+    const p = normPath(r.path)
+    const root = roots.find((x) => p.startsWith(normPath(x) + '/'))
+    if (root) byRoot[root]++
+  }
+  try {
+    fs.mkdirSync(path.dirname(SCAN_FILE), { recursive: true })
+    fs.writeFileSync(SCAN_FILE, JSON.stringify({ at: new Date().toISOString(), ms, repos: repos.length, roots: cfg.roots, byRoot }))
+  } catch { /* không để lỗi ghi làm hỏng việc quét */ }
+}
+
 async function listRepos(rescan) {
+  const t0 = Date.now()
   const { cfg, paths, at } = repoPaths(rescan)
   const repos = await pool(paths, 8, summarize)
+  saveScan(cfg, repos, Date.now() - t0)
   return { roots: cfg.roots, depth: cfg.depth, scannedAt: new Date(at).toISOString(), repos }
+}
+
+/** Số dòng thêm/xóa theo tệp: { path: [add, del] }. Tệp nhị phân → [0, 0]. */
+function parseNumstat(out) {
+  const m = {}
+  for (const line of (out || '').split('\n')) {
+    const x = line.split('\t')
+    if (x.length < 3) continue
+    m[x.slice(2).join('\t')] = [x[0] === '-' ? 0 : +x[0], x[1] === '-' ? 0 : +x[1]]
+  }
+  return m
 }
 
 async function repoDetail(p) {
   const { paths } = repoPaths(false)
   if (!paths.includes(p)) throw new Error('Repo không nằm trong danh sách đã quét')
   const refFmt = ['%(refname)', '%(refname:short)', '%(HEAD)', '%(upstream:short)', '%(upstream:track)', '%(committerdate:iso-strict)', '%(subject)', '%(objectname:short)'].join(SEP)
-  const [st, refs, log, remotes, stash] = await Promise.all([
+  const [st, refs, log, remotes, stash, nsUnstaged, nsStaged] = await Promise.all([
     git(p, ['status', '--porcelain=v2', '--branch']),
     git(p, ['for-each-ref', `--format=${refFmt}`, 'refs/heads', 'refs/remotes']),
     git(p, ['log', '-n', '20', `--format=%h${SEP}%an${SEP}%aI${SEP}%s`]),
     git(p, ['remote', '-v']),
     git(p, ['stash', 'list']),
+    git(p, ['diff', '--numstat', '--no-renames']),
+    git(p, ['diff', '--cached', '--numstat', '--no-renames']),
   ])
   if (st === null) throw new Error('Không đọc được repo')
   const s = parseStatus(st)
@@ -177,6 +214,7 @@ async function repoDetail(p) {
     commits: (log || '').split('\n').filter(Boolean).map((l) => { const [hash, author, date, subject] = l.split(SEP); return { hash, author, date, subject } }),
     remotes: [...rmap].map(([name, url]) => ({ name, url })),
     stashes: (stash || '').split('\n').filter(Boolean).length,
+    numstat: { staged: parseNumstat(nsStaged), unstaged: parseNumstat(nsUnstaged) },
   }
 }
 
@@ -211,4 +249,4 @@ function knownRepo(p) {
   return p
 }
 
-module.exports = { listRepos, repoDetail, loadConfig, saveConfig, knownRepo, browse }
+module.exports = { lastScan, listRepos, repoDetail, loadConfig, saveConfig, knownRepo, browse }
