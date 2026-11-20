@@ -8,7 +8,7 @@ Xem và bấm thử (canvas trên claude.ai, cần quyền truy cập): https://
 
 | File | Màn | Ghi chú |
 |---|---|---|
-| [desktop/Main.dc.html](desktop/Main.dc.html) | Tổng quan | Chỉ số chính, token 24h, repo cần chú ý, hoạt động gần đây, bảng lệnh Ctrl+K |
+| [desktop/Main.dc.html](desktop/Main.dc.html) | Tổng quan | Trang khởi động nhẹ, không quét git: lối tắt sang Git/Claude, repo ghim (chỉ tên + mở VS Code/Terminal), thao tác gần đây, thư mục làm việc, phím tắt |
 | [desktop/Claude.dc.html](desktop/Claude.dc.html) | Claude token | Chọn khoảng thời gian, 5 chỉ số, biểu đồ cột chồng 4 loại token, bảng theo model / dự án |
 | [desktop/Git.dc.html](desktop/Git.dc.html) | Git, chia 3 cột (chọn) | Menu trái có thư mục quét, danh sách repo, khung chi tiết cố định bên phải, menu "⋯", thông báo sau Push |
 | [desktop/Git-Modal.dc.html](desktop/Git-Modal.dc.html) | Git, chi tiết dạng modal | Phương án thay thế, để so sánh |
