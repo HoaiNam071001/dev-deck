@@ -13,6 +13,7 @@ Việc phát sinh: thêm vào [00-backlog.md](00-backlog.md) bất cứ lúc nà
 | 3 | Thao tác nhánh: tạo, checkout, xóa, đổi tên | [03-git-branch-actions.md](03-git-branch-actions.md) | chưa |
 | 4 | Thao tác repo: tạo mới, clone, xóa, fetch/pull | [04-git-repo-actions.md](04-git-repo-actions.md) | chưa |
 | 5 | Hoàn thiện: test, a11y, hiệu năng, đóng gói | [05-polish.md](05-polish.md) | chưa |
+| 6 | Giao diện mới + chuyển thành desktop app | [06-redesign-desktop.md](06-redesign-desktop.md) | chưa (đã có design ở [design/](../design/README.md)) |
 
 ## Nguyên tắc xuyên suốt
 

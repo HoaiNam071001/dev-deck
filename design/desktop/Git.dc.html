@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>DevDeck · Git</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#151719}
+a{color:#30CF43;text-decoration:none}a:hover{color:#5EE070}
+.nav:hover{background:#222428;color:#EDEEF0}
+.btn:hover{background:#2E3135}
+.wc:hover{background:#2A2D31}.wcx:hover{background:#C42B1C;color:#fff}
+.ghost:hover{color:#EDEEF0}
+.go:hover{background:#5EE070}
+.row:hover{background:#1F2124}
+.hv:hover{background:#25282C}
+.mi:hover{background:#30CF43;color:#0C1A0E}
+</style>
+</helmet>
+<div style="position: relative; width: 1280px; height: 800px; overflow: hidden; display: flex; flex-direction: column; background: #151719; color: #EDEEF0; font-family: Inter, system-ui, sans-serif; font-size: 13px; line-height: 1.45">
+
+  <div style="height: 38px; flex: none; display: flex; align-items: center; background: #111214; border-bottom: 1px solid #2B2E33">
+    <sc-if value="{{mac}}" hint-placeholder-val="{{false}}">
+      <div aria-hidden="true" style="display: flex; gap: 8px; padding: 0 14px"><span style="width: 12px; height: 12px; border-radius: 50%; background: #FF5F57"></span><span style="width: 12px; height: 12px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 12px; height: 12px; border-radius: 50%; background: #28C840"></span></div>
+    </sc-if>
+    <div style="display: flex; align-items: center; gap: 8px; padding: 0 12px; width: 176px">
+      <div style="width: 18px; height: 18px; border-radius: 5px; background: #30CF43; color: #0C1A0E; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px">D</div>
+      <span style="font-weight: 600; font-size: 12px">DevDeck</span>
+    </div>
+    <div style="flex: 1; display: flex; justify-content: center">
+      <button style="width: 420px; height: 26px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid #2B2E33; border-radius: 6px; background: #1C1E21; color: #8E9AA6; font: inherit; font-size: 12px; cursor: pointer">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+        Tìm repo, dự án hoặc chạy lệnh…
+        <span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px">{{mod}}K</span>
+      </button>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px; padding: 0 12px; width: 176px; justify-content: flex-end; color: #8E9AA6; font-size: 12px">
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #30CF43"></span>Đồng bộ
+    </div>
+    <sc-if value="{{win}}" hint-placeholder-val="{{true}}">
+      <div style="display: flex; height: 38px">
+        <button class="wc" aria-label="Thu nhỏ" style="width: 46px; height: 38px; border: 0; background: transparent; color: #C5CCD3; cursor: default; display: flex; align-items: center; justify-content: center"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0 5h10" stroke="currentColor"></path></svg></button>
+        <button class="wc" aria-label="Phóng to" style="width: 46px; height: 38px; border: 0; background: transparent; color: #C5CCD3; cursor: default; display: flex; align-items: center; justify-content: center"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><rect x=".5" y=".5" width="9" height="9" stroke="currentColor"></rect></svg></button>
+        <button class="wcx" aria-label="Đóng" style="width: 46px; height: 38px; border: 0; background: transparent; color: #C5CCD3; cursor: default; display: flex; align-items: center; justify-content: center"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0 0l10 10M10 0 0 10" stroke="currentColor"></path></svg></button>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="position: relative; flex: 1; min-height: 0; display: flex">
+    <aside style="width: 200px; flex: none; box-sizing: border-box; padding: 12px 8px; border-right: 1px solid #2B2E33; display: flex; flex-direction: column; gap: 18px; background: #111214">
+      <nav aria-label="Trang" style="display: flex; flex-direction: column; gap: 1px">
+        <a href="Main.dc.html" class="nav" style="display: flex; align-items: center; gap: 10px; height: 30px; padding: 0 8px; border-radius: 5px; color: #C5CCD3">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>
+          Tổng quan<span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8E9AA6">{{mod}}1</span>
+        </a>
+        <a href="Claude.dc.html" class="nav" style="display: flex; align-items: center; gap: 10px; height: 30px; padding: 0 8px; border-radius: 5px; color: #C5CCD3">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9"></path></svg>
+          Claude<span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8E9AA6">{{mod}}2</span>
+        </a>
+        <a href="Git.dc.html" aria-current="page" class="nav" style="display: flex; align-items: center; gap: 10px; height: 30px; padding: 0 8px; border-radius: 5px; background: #2A2D31; color: #EDEEF0; font-weight: 500">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="5" r="2"></circle><circle cx="6" cy="19" r="2"></circle><circle cx="18" cy="7" r="2"></circle><path d="M6 7v10M18 9c0 5-7 4-11 8"></path></svg>
+          Git<span style="margin-left: auto; min-width: 18px; height: 16px; padding: 0 4px; box-sizing: border-box; border-radius: 8px; background: rgba(242,166,90,.16); color: #F2A65A; font-family: 'JetBrains Mono', monospace; font-size: 10px; display: flex; align-items: center; justify-content: center">5</span>
+        </a>
+      </nav>
+
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 4px 4px 8px">
+          <span style="font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #8E9AA6">Thư mục quét</span>
+          <button class="ghost" aria-label="Thêm thư mục" title="Thêm thư mục" style="width: 22px; height: 22px; border: 0; background: transparent; color: #8E9AA6; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+        </div>
+        <sc-for list="{{roots}}" as="r" hint-placeholder-count="3">
+          <button class="nav" onClick="{{r.pick}}" style="display: flex; align-items: center; gap: 8px; height: 26px; padding: 0 8px; border: 0; border-radius: 5px; background: {{r.bg}}; color: {{r.fg}}; font: inherit; font-size: 12px; cursor: pointer; text-align: left">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px">{{r.label}}</span>
+            <span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8E9AA6">{{r.count}}</span>
+          </button>
+        </sc-for>
+        <div style="display: flex; align-items: center; gap: 6px; padding: 6px 8px 0; font-size: 11px; color: #8E9AA6">
+          Độ sâu
+          <input type="number" value="4" min="1" max="8" aria-label="Độ sâu quét" style="width: 40px; height: 22px; box-sizing: border-box; padding: 0 6px; border: 1px solid #33363B; border-radius: 4px; background: #1C1E21; color: #EDEEF0; font-family: 'JetBrains Mono', monospace; font-size: 11px">
+          <button class="go" style="margin-left: auto; height: 22px; padding: 0 8px; border: 0; border-radius: 4px; background: #30CF43; color: #0C1A0E; font: inherit; font-size: 11px; font-weight: 600; cursor: pointer">Quét lại</button>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <span style="padding: 0 8px 4px; font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #8E9AA6">Đã ghim</span>
+        <sc-for list="{{pins}}" as="p" hint-placeholder-count="3">
+          <button class="nav" onClick="{{p.pick}}" style="display: flex; align-items: center; gap: 8px; height: 26px; padding: 0 8px; border: 0; border-radius: 5px; background: transparent; color: #C5CCD3; font: inherit; font-size: 12px; cursor: pointer; text-align: left">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: {{p.dot}}"></span>{{p.name}}
+          </button>
+        </sc-for>
+      </div>
+    </aside>
+
+    <section aria-label="Danh sách repo" style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+      <div style="height: 44px; flex: none; display: flex; align-items: center; gap: 6px; padding: 0 12px; border-bottom: 1px solid #2B2E33">
+        <div role="group" aria-label="Lọc" style="display: flex; padding: 2px; gap: 1px; border: 1px solid #33363B; border-radius: 6px; background: #111214">
+          <sc-for list="{{filters}}" as="f" hint-placeholder-count="4">
+            <button aria-pressed="{{f.on}}" onClick="{{f.pick}}" style="height: 24px; padding: 0 8px; border: 0; border-radius: 4px; background: {{f.bg}}; color: {{f.fg}}; font: inherit; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px">
+              {{f.label}}<span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: {{f.countFg}}">{{f.count}}</span>
+            </button>
+          </sc-for>
+        </div>
+        <label style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border: 1px solid #33363B; border-radius: 6px; background: #111214; color: #8E9AA6">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+          <input placeholder="Lọc repo…" aria-label="Lọc repo" style="flex: 1; min-width: 0; background: transparent; border: 0; outline: none; color: #EDEEF0; font: inherit; font-size: 12px">
+        </label>
+        <button class="btn" aria-label="Sắp xếp" title="Sắp xếp: commit mới nhất" style="width: 28px; height: 28px; border: 1px solid #33363B; border-radius: 6px; background: transparent; color: #C5CCD3; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"></path></svg></button>
+      </div>
+
+      <div style="flex: 1; min-height: 0; overflow-y: auto">
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+          <div class="row" style="position: relative; display: flex; align-items: stretch; border-bottom: 1px solid #222428; background: {{r.bg}}; box-shadow: inset 2px 0 0 {{r.mark}}">
+            <button onClick="{{r.pick}}" aria-current="{{r.cur}}" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 9px 4px 9px 14px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: default">
+              <span style="display: flex; align-items: center; gap: 8px; width: 100%">
+                <span style="font-weight: 500">{{r.name}}</span>
+                <sc-if value="{{r.pinned}}" hint-placeholder-val="{{false}}"><svg width="11" height="11" viewBox="0 0 24 24" fill="#8E9AA6" aria-label="Đã ghim" role="img"><path d="M15 3l6 6-3 1-4 4 1 5-2 2-4-4-5 5-1-1 5-5-4-4 2-2 5 1 4-4z"></path></svg></sc-if>
+                <span style="margin-left: auto; display: flex; gap: 4px">
+                  <sc-for list="{{r.chips}}" as="c" hint-placeholder-count="1">
+                    <span title="{{c.title}}" style="height: 18px; padding: 0 6px; border-radius: 4px; background: {{c.bg}}; color: {{c.fg}}; font-family: 'JetBrains Mono', monospace; font-size: 10px; display: inline-flex; align-items: center; white-space: nowrap">{{c.text}}</span>
+                  </sc-for>
+                </span>
+              </span>
+              <span style="display: flex; align-items: center; gap: 8px; width: 100%; font-size: 11px; color: #8E9AA6; min-width: 0">
+                <span style="font-family: 'JetBrains Mono', monospace; color: {{r.branchFg}}; white-space: nowrap">{{r.branch}}</span>
+                <span style="font-family: 'JetBrains Mono', monospace; white-space: nowrap"><span style="color: #5AA9F5">{{r.ahead}}</span> <span style="color: #F2A65A">{{r.behind}}</span></span>
+                <span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.subject}}</span>
+                <span style="white-space: nowrap">{{r.when}}</span>
+              </span>
+            </button>
+            <button class="ghost" aria-label="Thao tác cho {{r.name}}" aria-haspopup="menu" aria-expanded="{{r.menuOpen}}" onClick="{{r.toggleMenu}}" style="width: 32px; flex: none; border: 0; background: transparent; color: #8E9AA6; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle></svg></button>
+            <sc-if value="{{r.menu}}" hint-placeholder-val="{{false}}">
+              <div role="menu" style="position: absolute; right: 8px; top: 40px; z-index: 5; width: 230px; padding: 4px; background: #25282C; border: 1px solid #3B3F45; border-radius: 8px; box-shadow: 0 12px 32px rgba(0,0,0,.5); font-size: 12px">
+                <sc-for list="{{menuItems}}" as="m" hint-placeholder-count="8">
+                  <sc-if value="{{m.sep}}" hint-placeholder-val="{{false}}"><div role="separator" style="height: 1px; background: #3B3F45; margin: 4px 6px"></div></sc-if>
+                  <sc-if value="{{m.item}}" hint-placeholder-val="{{true}}">
+                    <button role="menuitem" class="mi" onClick="{{closeMenu}}" style="width: 100%; height: 28px; display: flex; align-items: center; padding: 0 10px; border: 0; border-radius: 5px; background: transparent; color: #EDEEF0; font: inherit; cursor: default; text-align: left">{{m.label}}<span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; opacity: .7">{{m.key}}</span></button>
+                  </sc-if>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+        <sc-if value="{{empty}}" hint-placeholder-val="{{false}}">
+          <p style="margin: 0; padding: 32px; text-align: center; color: #8E9AA6">Không có repo khớp bộ lọc.</p>
+        </sc-if>
+      </div>
+    </section>
+
+    <sc-if value="{{showDetail}}" hint-placeholder-val="{{true}}">
+      <div style="position: {{ov.pos}}; top: 0; right: 0; bottom: 0; left: {{ov.left}}; width: {{ov.ww}}; flex: none; z-index: 10; display: flex; justify-content: center; align-items: {{ov.align}}; padding: {{ov.pad}}; box-sizing: border-box; border-left: 1px solid {{ov.wbd}}">
+        <sc-if value="{{isModal}}" hint-placeholder-val="{{false}}">
+          <button aria-label="Đóng chi tiết" tabindex="-1" onClick="{{close}}" style="position: absolute; inset: 0; border: 0; padding: 0; background: rgba(8,9,10,.6); cursor: default"></button>
+        </sc-if>
+        <sc-if value="{{isSplit}}" hint-placeholder-val="{{true}}">
+          <div aria-hidden="true" title="Kéo để đổi độ rộng" style="position: absolute; left: -3px; top: 0; bottom: 0; width: 6px; cursor: col-resize; z-index: 2; display: flex; align-items: center; justify-content: center"><span style="width: 2px; height: 28px; border-radius: 1px; background: #3B3F45"></span></div>
+        </sc-if>
+
+        <section role="{{ov.role}}" aria-label="Chi tiết repo {{sel.name}}" style="position: relative; width: {{ov.w}}; height: {{ov.h}}; box-sizing: border-box; background: #1A1C1F; border: 1px solid {{ov.bd}}; border-radius: {{ov.radius}}; box-shadow: {{ov.shadow}}; display: flex; flex-direction: column; overflow: hidden">
+
+          <div style="padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid #2B2E33">
+            <div style="display: flex; align-items: center; gap: 6px">
+              <div style="display: flex; flex-direction: column; min-width: 0; flex: 1">
+                <h2 style="margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em">{{sel.name}}</h2>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8E9AA6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{sel.path}}</span>
+              </div>
+              <button class="btn" title="Mở trong VS Code" aria-label="Mở trong VS Code" style="width: 28px; height: 28px; border: 1px solid #33363B; border-radius: 6px; background: transparent; color: #C5CCD3; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"></path></svg></button>
+              <button class="btn" title="Mở Terminal" aria-label="Mở Terminal" style="width: 28px; height: 28px; border: 1px solid #33363B; border-radius: 6px; background: transparent; color: #C5CCD3; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 4 4-4 4M12 17h7"></path></svg></button>
+              <button class="btn" title="{{revealLabel}}" aria-label="{{revealLabel}}" style="width: 28px; height: 28px; border: 1px solid #33363B; border-radius: 6px; background: transparent; color: #C5CCD3; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></button>
+              <sc-if value="{{isModal}}" hint-placeholder-val="{{false}}">
+                <button class="btn" aria-label="Đóng" onClick="{{close}}" style="width: 28px; height: 28px; margin-left: 4px; border: 1px solid #33363B; border-radius: 6px; background: transparent; color: #C5CCD3; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+              </sc-if>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px">
+              <button class="btn" style="display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px; border: 1px solid rgba(48,207,67,.35); border-radius: 5px; background: rgba(48,207,67,.10); color: #30CF43; font: inherit; cursor: pointer">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="5" r="2"></circle><circle cx="6" cy="19" r="2"></circle><circle cx="18" cy="7" r="2"></circle><path d="M6 7v10M18 9c0 5-7 4-11 8"></path></svg>{{sel.branch}} ▾
+              </button>
+              <span style="color: #8E9AA6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">→ {{sel.upstream}}</span>
+            </div>
+
+            <div style="display: flex; gap: 6px">
+              <button class="btn" style="flex: 1; height: 30px; border: 1px solid #33363B; border-radius: 6px; background: #222428; color: #EDEEF0; font: inherit; font-size: 12px; font-weight: 500; cursor: pointer">Fetch</button>
+              <button class="btn" style="flex: 1; height: 30px; border: 1px solid #33363B; border-radius: 6px; background: #222428; color: #EDEEF0; font: inherit; font-size: 12px; font-weight: 500; cursor: pointer">Pull <span style="font-family: 'JetBrains Mono', monospace; color: #F2A65A">{{sel.behind}}</span></button>
+              <button class="go" onClick="{{push}}" style="flex: 1; height: 30px; border: 0; border-radius: 6px; background: #30CF43; color: #0C1A0E; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer">Push <span style="font-family: 'JetBrains Mono', monospace">{{sel.ahead}}</span></button>
+            </div>
+          </div>
+
+          <div role="tablist" style="display: flex; gap: 2px; padding: 0 10px; border-bottom: 1px solid #2B2E33; flex: none">
+            <sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+              <button role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="height: 36px; padding: 0 8px; border: 0; border-bottom: 2px solid {{t.line}}; background: transparent; color: {{t.fg}}; font: inherit; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap">{{t.label}} <span style="font-family: 'JetBrains Mono', monospace; color: #8E9AA6">{{t.count}}</span></button>
+            </sc-for>
+          </div>
+
+          <div style="flex: 1; min-height: 0; overflow-y: auto">
+            <sc-if value="{{tabChanges}}" hint-placeholder-val="{{true}}">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
+                <div style="display: flex; flex-direction: column; padding-bottom: 6px">
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px 2px">
+                    <span style="font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #8E9AA6">Đã stage · 2</span>
+                    <button class="ghost" style="border: 0; background: transparent; color: #8E9AA6; font: inherit; font-size: 11px; cursor: pointer; height: 24px">Bỏ stage tất cả</button>
+                  </div>
+                  <sc-for list="{{staged}}" as="f" hint-placeholder-count="2">
+                    <div class="hv" style="display: flex; align-items: center; gap: 8px; padding: 4px 16px; font-family: 'JetBrains Mono', monospace; font-size: 12px">
+                      <input type="checkbox" checked aria-label="Bỏ stage {{f.file}}" style="margin: 0; accent-color: #30CF43">
+                      <span style="width: 16px; height: 16px; border-radius: 3px; background: {{f.bg}}; color: {{f.fg}}; font-weight: 600; font-size: 10px; display: flex; align-items: center; justify-content: center; flex: none">{{f.k}}</span>
+                      <span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><span style="color: #8E9AA6">{{f.dir}}</span>{{f.file}}</span>
+                      <span style="font-size: 10px"><span style="color: #30CF43">{{f.add}}</span> <span style="color: #F26B6B">{{f.del}}</span></span>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display: flex; flex-direction: column; padding-bottom: 6px">
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px 2px">
+                    <span style="font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #8E9AA6">Chưa stage · 5</span>
+                    <button class="ghost" style="border: 0; background: transparent; color: #30CF43; font: inherit; font-size: 11px; cursor: pointer; height: 24px">Stage tất cả</button>
+                  </div>
+                  <sc-for list="{{unstaged}}" as="f" hint-placeholder-count="5">
+                    <div class="hv" style="display: flex; align-items: center; gap: 8px; padding: 4px 16px; font-family: 'JetBrains Mono', monospace; font-size: 12px">
+                      <input type="checkbox" aria-label="Stage {{f.file}}" style="margin: 0; accent-color: #30CF43">
+                      <span style="width: 16px; height: 16px; border-radius: 3px; background: {{f.bg}}; color: {{f.fg}}; font-weight: 600; font-size: 10px; display: flex; align-items: center; justify-content: center; flex: none">{{f.k}}</span>
+                      <span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><span style="color: #8E9AA6">{{f.dir}}</span>{{f.file}}</span>
+                      <span style="font-size: 10px"><span style="color: #30CF43">{{f.add}}</span> <span style="color: #F26B6B">{{f.del}}</span></span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{tabBranches}}" hint-placeholder-val="{{false}}">
+              <div style="display: flex; flex-direction: column">
+                <div style="display: flex; gap: 6px; padding: 10px 16px">
+                  <input aria-label="Tên nhánh mới" placeholder="Tên nhánh mới từ HEAD" style="flex: 1; min-width: 0; height: 28px; box-sizing: border-box; padding: 0 8px; border: 1px solid #33363B; border-radius: 6px; background: #111214; color: #EDEEF0; font-family: 'JetBrains Mono', monospace; font-size: 12px">
+                  <button class="btn" style="height: 28px; padding: 0 10px; border: 1px solid #33363B; border-radius: 6px; background: #222428; color: #EDEEF0; font: inherit; font-size: 12px; cursor: pointer">Tạo nhánh</button>
+                </div>
+                <sc-for list="{{branches}}" as="b" hint-placeholder-count="5">
+                  <div class="hv" style="display: flex; align-items: center; gap: 8px; padding: 7px 16px; border-top: 1px solid #26292D">
+                    <span style="width: 6px; height: 6px; border-radius: 50%; background: {{b.dot}}; flex: none"></span>
+                    <span style="display: flex; flex-direction: column; flex: 1; min-width: 0">
+                      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{b.fg}}">{{b.name}}</span>
+                      <span style="font-size: 11px; color: #8E9AA6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{b.meta}}</span>
+                    </span>
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px"><span style="color: #5AA9F5">{{b.ahead}}</span> <span style="color: #F2A65A">{{b.behind}}</span></span>
+                    <button class="btn" style="height: 24px; padding: 0 8px; border: 1px solid #33363B; border-radius: 5px; background: transparent; color: #C5CCD3; font: inherit; font-size: 11px; cursor: pointer">{{b.action}}</button>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{tabCommits}}" hint-placeholder-val="{{false}}">
+              <div style="display: flex; flex-direction: column; padding: 6px 0">
+                <sc-for list="{{commits}}" as="c" hint-placeholder-count="5">
+                  <div class="hv" style="display: grid; grid-template-columns: 62px 1fr auto; gap: 10px; padding: 6px 16px; align-items: center; font-size: 12px">
+                    <span style="font-family: 'JetBrains Mono', monospace; color: #30CF43">{{c.hash}}</span>
+                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{c.subject}}</span>
+                    <span style="font-size: 11px; color: #8E9AA6; white-space: nowrap">{{c.meta}}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{tabRemotes}}" hint-placeholder-val="{{false}}">
+              <div style="display: grid; grid-template-columns: 62px 1fr; gap: 10px; padding: 12px 16px; font-family: 'JetBrains Mono', monospace; font-size: 12px">
+                <span>origin</span><span style="color: #8E9AA6; word-break: break-all">git@github.com:acme/{{sel.name}}.git</span>
+              </div>
+            </sc-if>
+          </div>
+
+          <sc-if value="{{tabChanges}}" hint-placeholder-val="{{true}}">
+            <form style="flex: none; border-top: 1px solid #2B2E33; padding: 10px 16px 12px; background: #17191B; display: flex; flex-direction: column; gap: 8px">
+              <label style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)" for="msg">Nội dung commit</label>
+              <textarea id="msg" rows="2" placeholder="Nội dung commit ({{mod}}Enter để commit)" style="display: block; width: 100%; box-sizing: border-box; border: 1px solid #33363B; border-radius: 6px; padding: 7px 9px; background: #111214; color: #EDEEF0; font-family: 'JetBrains Mono', monospace; font-size: 12px; resize: none; outline: none"></textarea>
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8E9AA6"><input type="checkbox" style="margin: 0; accent-color: #30CF43"> Amend commit cuối</label>
+                <button type="button" class="go" style="height: 28px; padding: 0 12px; border: 0; border-radius: 6px; background: #30CF43; color: #0C1A0E; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer">Commit 2 tệp</button>
+              </div>
+            </form>
+          </sc-if>
+        </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{toast}}" hint-placeholder-val="{{false}}">
+      <div role="status" style="position: absolute; right: 16px; bottom: 16px; z-index: 30; width: 320px; display: flex; gap: 10px; padding: 12px 14px; background: #25282C; border: 1px solid #3B3F45; border-radius: 8px; box-shadow: 0 12px 32px rgba(0,0,0,.5)">
+        <span style="width: 20px; height: 20px; border-radius: 50%; background: rgba(48,207,67,.16); color: #30CF43; display: flex; align-items: center; justify-content: center; flex: none"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="m5 12 5 5 9-10"></path></svg></span>
+        <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+          <span style="font-weight: 500">Đã push {{sel.name}}</span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8E9AA6">{{sel.branch}} → {{sel.upstream}}</span>
+        </span>
+        <button class="ghost" onClick="{{hideToast}}" style="margin-left: auto; align-self: flex-start; border: 0; background: transparent; color: #8E9AA6; font: inherit; font-size: 11px; cursor: pointer">Đóng</button>
+      </div>
+    </sc-if>
+  </div>
+
+  <footer style="height: 24px; flex: none; display: flex; align-items: center; gap: 16px; padding: 0 12px; background: #111214; border-top: 1px solid #2B2E33; color: #8E9AA6; font-size: 11px">
+    <span style="display: flex; align-items: center; gap: 6px"><span style="width: 6px; height: 6px; border-radius: 50%; background: #30CF43"></span>Quét lúc <span style="font-family: 'JetBrains Mono', monospace; color: #C5CCD3">14:31:40</span> · 1.8s</span>
+    <span>{{shownCount}} / 8 repo</span>
+    <span style="margin-left: auto"><span style="font-family: 'JetBrains Mono', monospace">↑↓</span> chọn repo · <span style="font-family: 'JetBrains Mono', monospace">{{mod}}Enter</span> commit</span>
+    <span>Tự làm mới 30s</span>
+    <span style="font-family: 'JetBrains Mono', monospace">v2.0.0</span>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"detail":{"editor":"enum","options":["split","modal"],"default":"split"},"platform":{"editor":"enum","options":["windows","mac"],"default":"windows"},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { sel: 'dev-deck', filter: 'all', root: '', tab: 'changes', open: true, menu: null, toast: false }; }
+  componentWillUnmount() { clearTimeout(this.t); }
+  renderVals() {
+    var self = this, st = this.state;
+    var mac = this.props.platform === 'mac';
+    var mod = mac ? '⌘' : 'Ctrl+';
+    var modal = this.props.detail === 'modal';
+    var repos = [
+      { name: 'dev-deck', root: '~/Desktop', path: '~/Desktop/dev-deck', branch: 'main', up: 'origin/main', ahead: 3, behind: 0, staged: 2, modified: 5, untracked: 5, conflicts: 0, subject: 'Add multi-root scan selection', when: '2 giờ', pinned: true },
+      { name: 'payment-gateway', root: '~/work/clients', path: '~/work/clients/payment-gateway', branch: 'feat/refund-flow', up: 'origin/feat/refund-flow', ahead: 1, behind: 2, staged: 0, modified: 3, untracked: 0, conflicts: 2, subject: 'WIP refund webhook retry', when: '40 phút', pinned: true },
+      { name: 'landing-2026', root: '~/work/clients', path: '~/work/clients/landing-2026', branch: 'develop', up: 'origin/develop', ahead: 0, behind: 4, staged: 0, modified: 0, untracked: 0, conflicts: 0, subject: 'Hero copy update', when: 'hôm qua' },
+      { name: 'mobile-app', root: '~/work/clients', path: '~/work/clients/mobile-app', branch: 'release/2.4', up: 'origin/release/2.4', ahead: 0, behind: 0, staged: 4, modified: 5, untracked: 0, conflicts: 0, subject: 'Bump version 2.4.1', when: '3 giờ' },
+      { name: 'infra-scripts', root: '~/Desktop', path: '~/Desktop/infra-scripts', branch: 'chore/ci', up: null, ahead: 0, behind: 0, staged: 0, modified: 1, untracked: 2, conflicts: 0, subject: 'Cache node_modules in CI', when: '5 ngày' },
+      { name: 'design-tokens', root: '~/Desktop', path: '~/Desktop/design-tokens', branch: 'main', up: 'origin/main', ahead: 0, behind: 0, staged: 0, modified: 0, untracked: 0, conflicts: 0, subject: 'Export dark palette', when: '1 tuần', pinned: true },
+      { name: 'blog', root: '~/Desktop', path: '~/Desktop/blog', branch: 'main', up: 'origin/main', ahead: 0, behind: 0, staged: 0, modified: 0, untracked: 0, conflicts: 0, subject: 'Post: local dashboards', when: '2 tuần' },
+      { name: 'api-mock', root: '~/work/clients', path: '~/work/clients/api-mock', branch: null, head: 'a3f9c21', up: null, ahead: 0, behind: 0, staged: 0, modified: 0, untracked: 0, conflicts: 0, subject: 'Pin fixtures', when: '3 tuần' }
+    ];
+    var dirty = function (r) { return r.staged + r.modified + r.untracked + r.conflicts > 0; };
+    var out = function (r) { return r.ahead + r.behind > 0; };
+    var inRoot = function (r) { return !st.root || r.root === st.root; };
+    var defs = [['all', 'Tất cả', function () { return true; }], ['dirty', 'Thay đổi', dirty], ['sync', 'Lệch', out], ['clean', 'Sạch', function (r) { return !dirty(r); }]];
+    var filters = defs.map(function (d) {
+      var on = st.filter === d[0];
+      return { label: d[1], count: String(repos.filter(inRoot).filter(d[2]).length), on: on ? 'true' : 'false', bg: on ? '#3B3F45' : 'transparent', fg: on ? '#EDEEF0' : '#8E9AA6', countFg: on ? '#C5CCD3' : '#8E9AA6', pick: function () { self.setState({ filter: d[0] }); } };
+    });
+    var roots = [['', 'Tất cả', 8], ['~/Desktop', '~/Desktop', 4], ['~/work/clients', '~/work/clients', 4]].map(function (r) {
+      var on = st.root === r[0];
+      return { label: r[1], count: String(r[2]), bg: on ? '#2A2D31' : 'transparent', fg: on ? '#EDEEF0' : '#C5CCD3', pick: function () { self.setState({ root: r[0] }); } };
+    });
+    var test = defs.filter(function (d) { return d[0] === st.filter; })[0][2];
+    function chips(r) {
+      if (!dirty(r)) return [{ text: 'sạch', title: 'Không có thay đổi', bg: 'rgba(48,207,67,.12)', fg: '#30CF43' }];
+      var c = [];
+      if (r.conflicts) c.push({ text: '⚠ ' + r.conflicts, title: 'Xung đột', bg: 'rgba(242,107,107,.14)', fg: '#F26B6B' });
+      if (r.staged) c.push({ text: '● ' + r.staged, title: 'Đã stage', bg: 'rgba(48,207,67,.12)', fg: '#30CF43' });
+      if (r.modified) c.push({ text: '~ ' + r.modified, title: 'Đã sửa', bg: 'rgba(242,166,90,.14)', fg: '#F2A65A' });
+      if (r.untracked) c.push({ text: '? ' + r.untracked, title: 'Chưa theo dõi', bg: '#2B2E33', fg: '#A3ADB8' });
+      return c;
+    }
+    var shown = repos.filter(inRoot).filter(test);
+    var rows = shown.map(function (r) {
+      var on = r.name === st.sel && (!modal || st.open);
+      return {
+        name: r.name, pinned: !!r.pinned, cur: on ? 'true' : 'false',
+        branch: r.branch || ('detached @ ' + r.head), branchFg: r.branch ? '#C5CCD3' : '#F2A65A',
+        chips: chips(r), ahead: r.ahead ? '↑' + r.ahead : '', behind: r.behind ? '↓' + r.behind : '',
+        subject: r.subject, when: r.when,
+        bg: on ? '#25282C' : 'transparent', mark: on ? '#30CF43' : 'transparent',
+        menu: st.menu === r.name, menuOpen: st.menu === r.name ? 'true' : 'false',
+        pick: function () { self.setState({ sel: r.name, open: true, menu: null }); },
+        toggleMenu: function () { self.setState({ menu: st.menu === r.name ? null : r.name, sel: r.name }); }
+      };
+    });
+    var s = repos.filter(function (r) { return r.name === st.sel; })[0];
+    var n = s.staged + s.modified + s.untracked + s.conflicts;
+    var tabs = [['changes', 'Thay đổi', String(n)], ['branches', 'Nhánh', '5'], ['commits', 'Lịch sử', '20'], ['remotes', 'Remote', '1']].map(function (t) {
+      var on = st.tab === t[0];
+      return { label: t[1], count: t[2], on: on ? 'true' : 'false', fg: on ? '#EDEEF0' : '#8E9AA6', line: on ? '#30CF43' : 'transparent', pick: function () { self.setState({ tab: t[0] }); } };
+    });
+    var reveal = mac ? 'Hiện trong Finder' : 'Hiện trong Explorer';
+    var ov = modal
+      ? { pos: 'absolute', left: '0', ww: 'auto', align: 'center', pad: '40px', wbd: 'transparent', role: 'dialog', w: '860px', h: '620px', bd: '#3B3F45', radius: '12px', shadow: '0 24px 64px rgba(0,0,0,.6)' }
+      : { pos: 'relative', left: 'auto', ww: '460px', align: 'stretch', pad: '0', wbd: '#2B2E33', role: 'region', w: '100%', h: '100%', bd: 'transparent', radius: '0', shadow: 'none' };
+    var M = { fg: '#F2A65A', bg: 'rgba(242,166,90,.14)' }, A = { fg: '#30CF43', bg: 'rgba(48,207,67,.14)' }, U = { fg: '#A3ADB8', bg: '#2B2E33' };
+    return {
+      mac: mac, win: !mac, mod: mod, revealLabel: reveal,
+      isModal: modal, isSplit: !modal, showDetail: !modal || st.open, ov: ov,
+      close: function () { self.setState({ open: false }); },
+      closeMenu: function () { self.setState({ menu: null }); },
+      push: function () { self.setState({ toast: true }); clearTimeout(self.t); self.t = setTimeout(function () { self.setState({ toast: false }); }, 4000); },
+      toast: st.toast, hideToast: function () { self.setState({ toast: false }); },
+      filters: filters, roots: roots, rows: rows, empty: rows.length === 0, shownCount: String(rows.length), tabs: tabs,
+      menuItems: [
+        { item: true, label: 'Mở trong VS Code', key: mod + 'O' },
+        { item: true, label: 'Mở Terminal tại đây', key: mod + 'T' },
+        { item: true, label: reveal, key: '' },
+        { item: true, label: 'Sao chép đường dẫn', key: mod + 'Shift+C' },
+        { sep: true },
+        { item: true, label: 'Fetch', key: '' },
+        { item: true, label: 'Pull', key: '' },
+        { item: true, label: 'Push', key: mod + 'P' },
+        { sep: true },
+        { item: true, label: s.pinned ? 'Bỏ ghim' : 'Ghim lên đầu', key: '' }
+      ],
+      pins: repos.filter(function (r) { return r.pinned; }).map(function (r) { return { name: r.name, dot: r.conflicts ? '#F26B6B' : dirty(r) ? '#F2A65A' : '#30CF43', pick: function () { self.setState({ sel: r.name, open: true }); } }; }),
+      sel: { name: s.name, path: s.path, branch: s.branch || s.head, upstream: s.up || 'chưa có upstream', ahead: s.ahead ? '↑' + s.ahead : '', behind: s.behind ? '↓' + s.behind : '' },
+      tabChanges: st.tab === 'changes', tabBranches: st.tab === 'branches', tabCommits: st.tab === 'commits', tabRemotes: st.tab === 'remotes',
+      staged: [
+        { k: 'M', fg: M.fg, bg: M.bg, dir: 'src/pages/', file: 'GitPage.tsx', add: '+42', del: '−18' },
+        { k: 'A', fg: A.fg, bg: A.bg, dir: 'src/components/', file: 'FolderPicker.tsx', add: '+45', del: '' }
+      ],
+      unstaged: [
+        { k: 'M', fg: M.fg, bg: M.bg, dir: 'src/', file: 'styles.css', add: '+120', del: '−64' },
+        { k: 'M', fg: M.fg, bg: M.bg, dir: 'server/', file: 'git.js', add: '+8', del: '−3' },
+        { k: 'M', fg: M.fg, bg: M.bg, dir: '', file: 'README.md', add: '+2', del: '−1' },
+        { k: '?', fg: U.fg, bg: U.bg, dir: 'plan/', file: '06-redesign.md', add: '', del: '' },
+        { k: '?', fg: U.fg, bg: U.bg, dir: 'src/lib/', file: 'theme.ts', add: '', del: '' }
+      ],
+      branches: [
+        { name: s.branch || s.head, fg: '#EDEEF0', dot: '#30CF43', meta: 'đang mở · 2 giờ trước', ahead: s.ahead ? '↑' + s.ahead : '', behind: s.behind ? '↓' + s.behind : '', action: 'Push' },
+        { name: 'feat/folder-picker', fg: '#C5CCD3', dot: 'transparent', meta: 'origin/feat/folder-picker · hôm qua', ahead: '', behind: '↓1', action: 'Pull' },
+        { name: 'fix/scan-depth', fg: '#C5CCD3', dot: 'transparent', meta: 'chưa có upstream · 3 ngày trước', ahead: '', behind: '', action: 'Chuyển' },
+        { name: 'origin/main', fg: '#8E9AA6', dot: 'transparent', meta: 'remote · 2 giờ trước', ahead: '', behind: '', action: 'Chuyển' },
+        { name: 'origin/old-ui', fg: '#8E9AA6', dot: 'transparent', meta: 'remote · 1 tháng trước', ahead: '', behind: '', action: 'Chuyển' }
+      ],
+      commits: [
+        { hash: '08b7a4e', subject: 'Add multi-root scan selection with recent folders', meta: '2 giờ' },
+        { hash: '1d87bc8', subject: 'Initial commit: DevDeck dashboard', meta: 'hôm qua' },
+        { hash: 'c41e0f2', subject: 'Stacked chart: day separators', meta: '2 ngày' },
+        { hash: '9a2d7b1', subject: 'Git read-only API', meta: '3 ngày' },
+        { hash: '5f0c3aa', subject: 'Usage parser for JSONL logs', meta: '4 ngày' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

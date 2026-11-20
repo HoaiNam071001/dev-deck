@@ -1,0 +1,53 @@
+/* DevDeck: bộ màu và kích thước cho giao diện desktop tối.
+   Nguồn: bản design ở design/desktop/. Dùng thay cho :root trong src/styles.css (giai đoạn 6). */
+:root {
+  /* Nền và bề mặt (tối → sáng dần) */
+  --bg-chrome: #111214;   /* thanh tiêu đề, menu trái, thanh trạng thái, ô nhập */
+  --bg: #151719;          /* nền cửa sổ */
+  --surface: #1C1E21;     /* thẻ, khối */
+  --surface-2: #1A1C1F;   /* khung chi tiết */
+  --raised: #222428;      /* nút phụ, hover hàng */
+  --selected: #25282C;    /* hàng đang chọn, menu nổi, tooltip */
+  --active: #2A2D31;      /* mục menu đang mở */
+
+  /* Viền */
+  --line: #26292D;        /* kẻ giữa các hàng */
+  --border: #2B2E33;      /* viền khối */
+  --border-strong: #33363B; /* viền ô nhập, nút */
+  --border-pop: #3B3F45;  /* viền menu nổi, nút phân đoạn đang chọn */
+
+  /* Chữ */
+  --fg: #EDEEF0;
+  --fg-soft: #C5CCD3;
+  --fg-mute: #8E9AA6;     /* ≥ 4.5:1 trên --surface */
+
+  /* Điểm nhấn và trạng thái */
+  --accent: #30CF43;      /* nút chính, mục chọn, "sạch", "đã stage" */
+  --accent-hover: #5EE070;
+  --on-accent: #0C1A0E;
+  --ahead: #5AA9F5;       /* ↑ cần push */
+  --behind: #F2A65A;      /* ↓ cần pull, "đã sửa" */
+  --danger: #F26B6B;      /* xung đột, lỗi, dòng bị xóa */
+  --untracked: #A3ADB8;
+
+  /* Biểu đồ token */
+  --series-input: #5AA9F5;
+  --series-output: #F2A65A;
+  --series-cache-write: #B18CF2;
+  --series-cache-read: #3A4F63;
+
+  /* Chữ */
+  --font-ui: Inter, system-ui, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  --text-xs: 10px; --text-sm: 11px; --text: 12px; --text-md: 13px; --text-lg: 16px; --text-xl: 18px;
+
+  /* Kích thước khung desktop */
+  --titlebar-h: 38px;
+  --statusbar-h: 24px;
+  --sidebar-w: 200px;
+  --detail-w: 460px;      /* khung chi tiết Git, kéo đổi được */
+  --radius-sm: 4px; --radius: 6px; --radius-lg: 8px; --radius-xl: 12px;
+  --space: 4px;           /* lưới 4px */
+
+  color-scheme: dark;
+}
