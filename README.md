@@ -15,6 +15,18 @@ npm run build   # build giao diện vào dist/
 npm start       # http://localhost:4317
 ```
 
+### App desktop (Electron)
+
+```bash
+npm run desktop   # build giao diện + mở cửa sổ app
+npm run dist      # đóng gói release/DevDeck-<ver>-setup.exe và -portable.exe
+npm run release   # tăng số phiên bản (x|y|z|X.Y.Z), đẩy main + tag vX.Y.Z
+```
+
+Tag `v*.*.*` kích hoạt workflow *Release Windows* (`.github/workflows/release-windows.yml`): build trên GitHub, đính bộ cài vào Release.
+App hỏi Release mới nhất sau 5 giây khi mở, tải xong thì hỏi khởi động lại để cài. Chỉ `git push` thì app không biết, phải có tag mới.
+Dữ liệu (`config.json`, `audit.log`) nằm ở `%APPDATA%/devdeck/data`. Bản build chưa ký số nên Windows SmartScreen sẽ cảnh báo.
+
 Phát triển (hot reload, giao diện ở http://localhost:5173):
 
 ```bash

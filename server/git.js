@@ -6,7 +6,7 @@ const path = require('path')
 const os = require('os')
 
 const MAX_RECENT = 10
-const CONFIG_FILE = path.join(__dirname, '..', 'data', 'config.json')
+const CONFIG_FILE = path.join(process.env.DEVDECK_DATA || path.join(__dirname, '..', 'data'), 'config.json')
 const SKIP = new Set(['node_modules', '.git', 'dist', 'build', '.next', 'target', 'vendor', 'AppData', '.cache', '__pycache__', '.venv', 'venv'])
 const SEP = '\x1f'
 

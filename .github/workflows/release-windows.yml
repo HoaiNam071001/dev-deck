@@ -1,0 +1,29 @@
+# Phát hành bản Windows khi đẩy tag vX.Y.Z: bộ cài (setup.exe) + bản không cài đặt (portable) đính vào GitHub Release.
+# App báo bản mới theo Release này (electron-updater đọc latest.yml).
+name: Release Windows
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Đặt số phiên bản theo tag
+        shell: bash
+        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
+      - run: npm run build
+      - name: Đóng gói và đăng lên Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win --publish always

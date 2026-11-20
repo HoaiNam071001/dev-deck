@@ -58,10 +58,21 @@ function serveStatic(res, pathname) {
   fs.createReadStream(file).pipe(res)
 }
 
-http.createServer((req, res) => {
-  // Chặn DNS rebinding: chỉ nhận Host là localhost
-  if (!/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(req.headers.host || '')) { res.writeHead(403); return res.end() }
-  const url = new URL(req.url, 'http://localhost')
-  if (url.pathname.startsWith('/api/')) return api(req, res, url)
-  serveStatic(res, decodeURIComponent(url.pathname))
-}).listen(PORT, '127.0.0.1', () => console.log(`DevDeck: http://localhost:${PORT}`))
+/** Khởi động server; port 0 = cổng ngẫu nhiên. Trả về { server, port }. */
+function start(port = PORT) {
+  const server = http.createServer((req, res) => {
+    // Chặn DNS rebinding: chỉ nhận Host là localhost
+    if (!/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(req.headers.host || '')) { res.writeHead(403); return res.end() }
+    const url = new URL(req.url, 'http://localhost')
+    if (url.pathname.startsWith('/api/')) return api(req, res, url)
+    serveStatic(res, decodeURIComponent(url.pathname))
+  })
+  return new Promise((resolve, reject) => {
+    server.once('error', reject)
+    server.listen(port, '127.0.0.1', () => resolve({ server, port: server.address().port }))
+  })
+}
+
+module.exports = { start }
+
+if (require.main === module) start().then(({ port }) => console.log(`DevDeck: http://localhost:${port}`))

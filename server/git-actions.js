@@ -3,7 +3,7 @@ const { execFile } = require('child_process')
 const fs = require('fs')
 const path = require('path')
 
-const AUDIT = path.join(__dirname, '..', 'data', 'audit.log')
+const AUDIT = path.join(process.env.DEVDECK_DATA || path.join(__dirname, '..', 'data'), 'audit.log')
 
 function run(cwd, args, timeout = 60000) {
   return new Promise((resolve, reject) => {
