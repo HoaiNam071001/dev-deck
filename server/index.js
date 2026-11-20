@@ -3,6 +3,7 @@ const fs = require('fs')
 const path = require('path')
 const { collect } = require('./usage')
 const git = require('./git')
+const gitActions = require('./git-actions')
 
 const PORT = Number(process.env.PORT) || 4317
 const DIST = path.join(__dirname, '..', 'dist')
@@ -23,6 +24,13 @@ async function api(req, res, url) {
     if (url.pathname === '/api/usage') return json(res, 200, collect())
     if (url.pathname === '/api/git/repos') return json(res, 200, await git.listRepos(url.searchParams.get('rescan') === '1'))
     if (url.pathname === '/api/git/repo') return json(res, 200, await git.repoDetail(url.searchParams.get('path') || ''))
+    if (url.pathname === '/api/git/action') {
+      if (req.method !== 'POST') return json(res, 405, { error: 'Chỉ nhận POST' })
+      if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
+      const body = await readBody(req)
+      return json(res, 200, await gitActions.perform(git.knownRepo(String(body.path || '')), body))
+    }
+    if (url.pathname === '/api/git/browse') return json(res, 200, git.browse(url.searchParams.get('path') || ''))
     if (url.pathname === '/api/git/config') {
       if (req.method === 'PUT') {
         if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })

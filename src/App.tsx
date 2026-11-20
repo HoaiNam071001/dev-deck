@@ -1,32 +1,27 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { Link, useRoute, type Route } from './lib/router'
 import { GitPage } from './pages/GitPage'
+import { HomePage } from './pages/HomePage'
 import { TokenPage } from './pages/TokenPage'
 
-const TABS = [
-  { id: 'tokens', label: 'Token' },
-  { id: 'git', label: 'Git' },
-] as const
-type Tab = (typeof TABS)[number]['id']
-
-const fromHash = (): Tab => (location.hash.replace('#/', '') === 'git' ? 'git' : 'tokens')
+const TABS: { to: Route; label: string; title: string }[] = [
+  { to: '/', label: 'Trang chủ', title: 'DevDeck' },
+  { to: '/claude', label: 'Claude', title: 'Claude' },
+  { to: '/git', label: 'Git', title: 'Git' },
+]
 
 export function App() {
-  const [tab, setTab] = useState<Tab>(fromHash)
-  useEffect(() => {
-    const on = () => setTab(fromHash())
-    window.addEventListener('hashchange', on)
-    return () => window.removeEventListener('hashchange', on)
-  }, [])
-  useEffect(() => { document.title = (tab === 'git' ? 'Git' : 'Token') + ' · DevDeck' }, [tab])
+  const route = useRoute()
+  useEffect(() => { document.title = (route === '/' ? '' : TABS.find((t) => t.to === route)!.title + ' · ') + 'DevDeck' }, [route])
 
   return (
     <div className="wrap">
       <nav className="tabs" aria-label="Trang">
         {TABS.map((t) => (
-          <a key={t.id} href={`#/${t.id}`} className={tab === t.id ? 'active' : ''} aria-current={tab === t.id ? 'page' : undefined}>{t.label}</a>
+          <Link key={t.to} to={t.to} className={route === t.to ? 'active' : ''} aria-current={route === t.to ? 'page' : undefined}>{t.label}</Link>
         ))}
       </nav>
-      {tab === 'git' ? <GitPage /> : <TokenPage />}
+      {route === '/git' ? <GitPage /> : route === '/claude' ? <TokenPage /> : <HomePage />}
     </div>
   )
 }

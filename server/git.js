@@ -5,20 +5,25 @@ const fs = require('fs')
 const path = require('path')
 const os = require('os')
 
+const MAX_RECENT = 10
 const CONFIG_FILE = path.join(__dirname, '..', 'data', 'config.json')
 const SKIP = new Set(['node_modules', '.git', 'dist', 'build', '.next', 'target', 'vendor', 'AppData', '.cache', '__pycache__', '.venv', 'venv'])
 const SEP = '\x1f'
 
 function defaults() {
   const env = process.env.GIT_ROOTS
-  return { roots: env ? env.split(path.delimiter).filter(Boolean) : [path.join(os.homedir(), 'Desktop')], depth: 4 }
+  return { roots: env ? env.split(path.delimiter).filter(Boolean) : [path.join(os.homedir(), 'Desktop')], depth: 4, recent: [] }
 }
 
 function loadConfig() {
   try {
     const c = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'))
     const d = defaults()
-    return { roots: Array.isArray(c.roots) && c.roots.length ? c.roots : d.roots, depth: Number(c.depth) || d.depth }
+    return {
+      roots: Array.isArray(c.roots) && c.roots.length ? c.roots : d.roots,
+      depth: Number(c.depth) || d.depth,
+      recent: Array.isArray(c.recent) ? c.recent.filter((x) => typeof x === 'string').slice(0, MAX_RECENT) : [],
+    }
   } catch { return defaults() }
 }
 
@@ -33,10 +38,12 @@ function saveConfig(input) {
     if (!st.isDirectory()) throw new Error('Không phải thư mục: ' + r)
   }
   const depth = Math.min(8, Math.max(1, Number(input.depth) || 4))
+  // Lịch sử thư mục đã quét: mới nhất lên đầu, bỏ trùng, tối đa MAX_RECENT
+  const recent = [...roots, ...loadConfig().recent.filter((r) => !roots.includes(r))].slice(0, MAX_RECENT)
   fs.mkdirSync(path.dirname(CONFIG_FILE), { recursive: true })
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify({ roots, depth }, null, 2))
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify({ roots, depth, recent }, null, 2))
   repoCache = null
-  return { roots, depth }
+  return { roots, depth, recent }
 }
 
 function git(cwd, args, timeout = 20000) {
@@ -173,4 +180,35 @@ async function repoDetail(p) {
   }
 }
 
-module.exports = { listRepos, repoDetail, loadConfig, saveConfig }
+/** Liệt kê thư mục con để chọn thư mục quét. dir rỗng: ổ đĩa (Windows) hoặc thư mục home. */
+function browse(dir) {
+  const home = os.homedir()
+  if (!dir) {
+    if (process.platform === 'win32') {
+      const drives = []
+      for (let c = 65; c <= 90; c++) { const d = String.fromCharCode(c) + ':' + path.sep; if (fs.existsSync(d)) drives.push({ name: d, path: d, isRepo: false }) }
+      return { path: '', parent: null, home, dirs: drives }
+    }
+    dir = home
+  }
+  dir = path.resolve(dir)
+  let st
+  try { st = fs.statSync(dir) } catch { throw new Error('Không tìm thấy thư mục: ' + dir) }
+  if (!st.isDirectory()) throw new Error('Không phải thư mục: ' + dir)
+  let entries
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }) } catch { throw new Error('Không có quyền đọc thư mục: ' + dir) }
+  const dirs = entries
+    .filter((e) => e.isDirectory() && !e.name.startsWith('$'))
+    .map((e) => { const p = path.join(dir, e.name); return { name: e.name, path: p, isRepo: fs.existsSync(path.join(p, '.git')) } })
+    .sort((a, b) => a.name.localeCompare(b.name))
+  const up = path.dirname(dir)
+  return { path: dir, parent: up !== dir ? up : process.platform === 'win32' ? '' : null, home, isRepo: fs.existsSync(path.join(dir, '.git')), dirs }
+}
+
+function knownRepo(p) {
+  const { paths } = repoPaths(false)
+  if (!paths.includes(p)) throw new Error('Repo không nằm trong danh sách đã quét')
+  return p
+}
+
+module.exports = { listRepos, repoDetail, loadConfig, saveConfig, knownRepo, browse }

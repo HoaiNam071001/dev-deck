@@ -70,4 +70,5 @@ export interface RepoDetail {
   stashes: number
 }
 
-export interface GitConfig { roots: string[]; depth: number }
+export interface GitConfig { roots: string[]; depth: number; recent: string[] }
+export interface BrowseResult { path: string; parent: string | null; home: string; isRepo?: boolean; dirs: { name: string; path: string; isRepo: boolean }[] }

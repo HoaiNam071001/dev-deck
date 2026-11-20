@@ -1,8 +1,10 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { api, useLoad } from '../api'
+import { FolderPicker } from '../components/FolderPicker'
 import { RepoList, type ViewMode } from '../components/RepoViews'
 import { changeCount, isDirty, isOut } from '../lib/repo'
-import type { GitConfig, RepoSummary } from '../types'
+import { usePersisted } from '../lib/persist'
+import type { RepoSummary } from '../types'
 
 type Filter = 'all' | 'dirty' | 'sync' | 'clean'
 type Sort = 'name' | 'recent' | 'changes'
@@ -17,49 +19,54 @@ const loadMode = (): ViewMode => {
   return 'flat'
 }
 
-function Settings({ cfg, onSaved, onClose }: { cfg: GitConfig; onSaved: () => void; onClose: () => void }) {
-  const [roots, setRoots] = useState(cfg.roots.join('\n'))
-  const [depth, setDepth] = useState(cfg.depth)
-  const [err, setErr] = useState('')
-  const [saving, setSaving] = useState(false)
-
-  const save = async () => {
-    setSaving(true); setErr('')
-    try {
-      await api.saveConfig({ roots: roots.split('\n').map((s) => s.trim()).filter(Boolean), depth })
-      onSaved()
-    } catch (e) { setErr((e as Error).message) } finally { setSaving(false) }
-  }
-
-  return (
-    <div className="card settings">
-      <h2>Thư mục quét repo</h2>
-      <label>Mỗi dòng một thư mục gốc
-        <textarea value={roots} onChange={(e) => setRoots(e.target.value)} rows={4} spellCheck={false} />
-      </label>
-      <label>Độ sâu tối đa
-        <input type="number" min={1} max={8} value={depth} onChange={(e) => setDepth(Number(e.target.value))} />
-      </label>
-      {err && <div className="error-text">{err}</div>}
-      <div className="controls">
-        <button className="primary" onClick={save} disabled={saving}>{saving ? 'Đang lưu…' : 'Lưu và quét lại'}</button>
-        <button onClick={onClose}>Đóng</button>
-      </div>
-    </div>
-  )
-}
-
 export function GitPage() {
-  const [auto, setAuto] = useState(true)
+  const [auto, setAuto] = usePersisted('git.auto', true, (v) => typeof v === 'boolean')
   const force = useRef(false)
-  const repos = useLoad(() => { const f = force.current; force.current = false; return api.repos(f) }, [], auto ? 30000 : 0)
+  // Mới vào chưa quét: scanned=0 thì không gọi API. Bấm "Quét" mới bắt đầu (và bật tự làm mới).
+  const [scanned, setScanned] = useState(0)
+  const repos = useLoad(() => { if (!scanned) return Promise.resolve(null); const f = force.current; force.current = false; return api.repos(f) }, [scanned], auto && scanned ? 30000 : 0)
   const cfg = useLoad(api.config, [])
-  const rescan = () => { force.current = true; repos.reload() }
-  const [q, setQ] = useState('')
-  const [filter, setFilter] = useState<Filter>('all')
-  const [sort, setSort] = useState<Sort>('name')
+  const recent = cfg.data?.recent ?? [] // server bản cũ có thể chưa trả trường này
+  const [roots, setRoots] = useState<string[]>([])
+  const [depth, setDepth] = useState(4)
+  const [picking, setPicking] = useState(false)
+  const [scanErr, setScanErr] = useState('')
+  const [starting, setStarting] = useState(false)
+  // Điền sẵn lựa chọn lần trước từ server (chỉ một lần, không quét)
+  const seeded = useRef(false)
+  useEffect(() => {
+    if (cfg.data && !seeded.current) { seeded.current = true; setRoots(cfg.data.roots); setDepth(cfg.data.depth) }
+  }, [cfg.data])
+  const [recentOpen, setRecentOpen] = useState(false)
+  const recentRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!recentOpen) return
+    const h = (e: MouseEvent) => { if (!recentRef.current?.contains(e.target as Node)) setRecentOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [recentOpen])
+  const toggleRoot =(p: string) => setRoots((l) => (l.includes(p) ? l.filter((x) => x !== p) : [...l, p]))
+
+  const scan = async () => {
+    setStarting(true); setScanErr('')
+    try {
+      const c = await api.saveConfig({ roots, depth }) // server kiểm tra thư mục và cập nhật danh sách gần đây
+      setRoots(c.roots); setDepth(c.depth); cfg.reload()
+      force.current = true
+      if (scanned) repos.reload(); else setScanned(1)
+    } catch (e) { setScanErr((e as Error).message) } finally { setStarting(false) }
+  }
+  const [q, setQ] = usePersisted('git.q', '', (v) => typeof v === 'string')
+  const [filter, setFilter] = usePersisted<Filter>('git.filter', 'all', (v) => ['all', 'dirty', 'sync', 'clean'].includes(v as string))
+  const [sort, setSort] = usePersisted<Sort>('git.sort', 'name', (v) => ['name', 'recent', 'changes'].includes(v as string))
+  // Thứ tự ghim: phần tử đầu = trên cùng. Ghim lại một repo đã ghim sẽ đưa nó lên đầu.
+  const [pinOrder, setPinOrder] = usePersisted<string[]>('git.pinned', [], (v) => Array.isArray(v) && v.every((x) => typeof x === 'string'))
+  const pin = useMemo(() => ({
+    order: pinOrder,
+    pin: (p: string) => setPinOrder((l) => [p, ...l.filter((x) => x !== p)]),
+    unpin: (p: string) => setPinOrder((l) => l.filter((x) => x !== p)),
+  }), [pinOrder, setPinOrder])
   const [open, setOpen] = useState<string | null>(null)
-  const [showSettings, setShowSettings] = useState(false)
   const [mode, setModeState] = useState<ViewMode>(loadMode)
   const setMode = (m: ViewMode) => { setModeState(m); try { localStorage.setItem('git.viewMode', m) } catch { /* bỏ qua */ } }
 
@@ -74,8 +81,11 @@ export function GitPage() {
       return true
     })
     const key = (r: RepoSummary) => (r.lastCommit ? new Date(r.lastCommit.date).getTime() : 0)
-    return f.sort((a, b) => sort === 'recent' ? key(b) - key(a) : sort === 'changes' ? changeCount(b) - changeCount(a) : a.name.localeCompare(b.name))
-  }, [list, q, filter, sort])
+    f.sort((a, b) => sort === 'recent' ? key(b) - key(a) : sort === 'changes' ? changeCount(b) - changeCount(a) : a.name.localeCompare(b.name))
+    const rank = (r: RepoSummary) => { const i = pinOrder.indexOf(r.path); return i < 0 ? Infinity : i }
+    // Repo ghim lên trước theo thứ tự ghim; phần còn lại giữ thứ tự đã sắp xếp (sort ổn định)
+    return f.sort((a, b) => { const ra = rank(a), rb = rank(b); return ra === rb ? 0 : ra < rb ? -1 : 1 })
+  }, [list, q, filter, sort, pinOrder])
 
   const dirty = list.filter(isDirty).length
   const out = list.filter(isOut).length
@@ -86,14 +96,45 @@ export function GitPage() {
         <h1>Quản lý Git</h1>
         <div className="controls">
           <label className="check"><input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} /> Tự làm mới 30s</label>
-          <button onClick={() => setShowSettings((v) => !v)}>Thư mục quét</button>
-          <button onClick={rescan} disabled={repos.loading}>{repos.loading ? 'Đang quét…' : 'Quét lại'}</button>
         </div>
       </div>
 
-      {showSettings && cfg.data && (
-        <Settings cfg={cfg.data} onClose={() => setShowSettings(false)} onSaved={() => { setShowSettings(false); rescan(); cfg.reload() }} />
-      )}
+      <div className="card scan-panel">
+        <div className="scan-roots">
+          <span className="kpi-l">Thư mục quét</span>
+          {roots.map((r) => (
+            <span key={r} className="root-chip" title={r}>
+              <span className="truncate">{r}</span>
+              <button aria-label={'Bỏ ' + r} onClick={() => setRoots((l) => l.filter((x) => x !== r))}>✕</button>
+            </span>
+          ))}
+          {!roots.length && <span className="muted">Chưa chọn thư mục nào</span>}
+        </div>
+        <div className="controls">
+          <button onClick={() => setPicking(true)}>📁 Chọn thư mục…</button>
+          <div className="recent-pop" ref={recentRef}>
+            <button type="button" disabled={!recent.length} aria-expanded={recentOpen} onClick={() => setRecentOpen((o) => !o)}>
+              Gần đây ({recent.filter((r) => roots.includes(r)).length}/{recent.length} đã chọn) ▾
+            </button>
+            {recentOpen && (
+              <div className="recent-menu">
+                {recent.map((r) => (
+                  <label key={r} title={r}>
+                    <input type="checkbox" checked={roots.includes(r)} onChange={() => toggleRoot(r)} />
+                    <span className="truncate">{r}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+          <label className="check">Độ sâu <input type="number" min={1} max={8} value={depth} onChange={(e) => setDepth(Number(e.target.value))} /></label>
+          <button className="primary" onClick={scan} disabled={starting || repos.loading || !roots.length}>
+            {starting || repos.loading ? 'Đang quét…' : scanned ? 'Quét lại' : 'Quét'}
+          </button>
+        </div>
+        {scanErr && <div className="error-text">{scanErr}</div>}
+      </div>
+      {picking && <FolderPicker start={roots[roots.length - 1] ?? cfg.data?.roots[0] ?? ''} selected={roots} onClose={() => setPicking(false)} onToggle={toggleRoot} />}
       {repos.error && <div className="card error">Lỗi: {repos.error}</div>}
 
       <div className="kpis">
@@ -120,8 +161,8 @@ export function GitPage() {
           </div>
         </div>
 
-        <RepoList mode={mode} repos={shown} roots={repos.data?.roots ?? []} open={open} setOpen={setOpen}
-          empty={repos.loading ? 'Đang quét…' : list.length ? 'Không có repo khớp bộ lọc' : 'Không tìm thấy repo nào. Kiểm tra “Thư mục quét”.'} />
+        <RepoList mode={mode} pin={pin} repos={shown} roots={repos.data?.roots ?? []} open={open} setOpen={setOpen} onChanged={repos.reload}
+          empty={!scanned ? 'Chọn thư mục rồi bấm “Quét” để bắt đầu.' : repos.loading ? 'Đang quét…' : list.length ? 'Không có repo khớp bộ lọc' : 'Không tìm thấy repo nào. Thử thư mục khác hoặc tăng độ sâu.'} />
       </div>
     </>
   )
