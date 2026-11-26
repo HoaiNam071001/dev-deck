@@ -12,6 +12,7 @@ Xem và bấm thử (canvas trên claude.ai, cần quyền truy cập): https://
 | [desktop/Claude.dc.html](desktop/Claude.dc.html) | Claude token | Chọn khoảng thời gian, 5 chỉ số, biểu đồ cột chồng 4 loại token, bảng theo model / dự án |
 | [desktop/Git.dc.html](desktop/Git.dc.html) | Git, chia 3 cột (chọn) | Menu trái có thư mục quét, danh sách repo, khung chi tiết cố định bên phải, menu "⋯", thông báo sau Push |
 | [desktop/Git-Modal.dc.html](desktop/Git-Modal.dc.html) | Git, chi tiết dạng modal | Phương án thay thế, để so sánh |
+| [desktop/Jobs.html](desktop/Jobs.html) | Job (tiến trình đang chạy) | File độc lập, mở thẳng bằng trình duyệt. Thẻ job gọn với thanh tiến độ, chi tiết chia tab Tiến trình / Test, modal danh sách file |
 
 Các file `.dc.html` là mã nguồn của canvas, cần runtime của canvas để hiển thị; mở trực tiếp bằng trình duyệt sẽ không chạy. Dùng chúng làm tham chiếu bố cục, khoảng cách và nội dung khi viết lại component React.
 

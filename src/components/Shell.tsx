@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, navigate, useRoute, type Route } from '../lib/router'
+import { usePersisted } from '../lib/persist'
 import { bridge, MOD } from '../lib/platform'
 import { getState, openPalette, setState, useStore } from '../lib/store'
 import { CommandPalette } from './CommandPalette'
@@ -31,6 +32,7 @@ const NAV: { to: Route; label: string; icon: string; n: string }[] = [
   { to: '/', label: 'Tổng quan', icon: 'home', n: '1' },
   { to: '/ai', label: 'AI', icon: 'ai', n: '2' },
   { to: '/git', label: 'Git', icon: 'git', n: '3' },
+  { to: '/jobs', label: 'Job', icon: 'terminal', n: '4' },
 ]
 
 function TitleBar() {
@@ -56,23 +58,60 @@ function TitleBar() {
   )
 }
 
+const RAIL_W = 48
+const SIDE_MIN = 160, SIDE_MAX = 420, SIDE_DEFAULT = 200
+const clampW = (w: number) => Math.min(SIDE_MAX, Math.max(SIDE_MIN, Math.round(w)))
+
 function Sidebar({ slotRef }: { slotRef: (el: HTMLElement | null) => void }) {
   const route = useRoute()
   const attention = useStore((s) => s.attention)
+  const cur = NAV.find((n) => n.to === route) ?? NAV[0]
+  // Độ rộng panel trái: kéo thanh tách để đổi, nhớ cho lần mở sau; bấm đúp để về mặc định
+  const [saved, setSaved] = usePersisted<number>('devdeck.sidebar.w', SIDE_DEFAULT, (v) => typeof v === 'number' && v >= SIDE_MIN && v <= SIDE_MAX)
+  const [drag, setDrag] = useState<number | null>(null)
+  const w = drag ?? saved
+  const startDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    const left = (e.currentTarget.parentElement as HTMLElement).getBoundingClientRect().left + RAIL_W
+    const el = e.currentTarget
+    el.setPointerCapture(e.pointerId)
+    document.body.style.userSelect = 'none'
+    document.body.style.cursor = 'col-resize'
+    let last = w
+    const move = (ev: PointerEvent) => { last = clampW(ev.clientX - left); setDrag(last) }
+    const up = () => {
+      el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up)
+      document.body.style.userSelect = ''; document.body.style.cursor = ''
+      setSaved(last); setDrag(null)
+    }
+    el.addEventListener('pointermove', move); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up)
+  }
+  const keyResize = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') { e.preventDefault(); setSaved(clampW(saved - 16)) }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); setSaved(clampW(saved + 16)) }
+    else if (e.key === 'Home') { e.preventDefault(); setSaved(SIDE_DEFAULT) }
+  }
   return (
-    <aside className="sidebar">
-      <nav aria-label="Trang" className="nav-list">
+    <div className="side">
+      {/* Dải icon: chuyển giữa các tab, giống thanh hoạt động của VS Code */}
+      <nav aria-label="Trang" className="rail">
         {NAV.map((n) => (
-          <Link key={n.to} to={n.to} className={'nav' + (route === n.to ? ' on' : '')} aria-current={route === n.to ? 'page' : undefined}>
-            <Icon name={n.icon} size={15} />{n.label}
-            {n.to === '/git' && attention > 0
-              ? <span className="nav-badge" title="Repo có thay đổi hoặc lệch remote">{attention}</span>
-              : <span className="nav-key">{MOD}{n.n}</span>}
+          <Link key={n.to} to={n.to} className={'rail-btn' + (route === n.to ? ' on' : '')} aria-current={route === n.to ? 'page' : undefined}
+            aria-label={n.label} title={`${n.label} (${MOD}${n.n})`}>
+            <Icon name={n.icon} size={19} />
+            {n.to === '/git' && attention > 0 && <span className="rail-badge" title="Repo có thay đổi hoặc lệch remote">{attention}</span>}
           </Link>
         ))}
       </nav>
-      <div className="side-slot" ref={slotRef} />
-    </aside>
+      {/* Panel trái: danh sách riêng của tab đang mở (thư mục, repo ghim…) */}
+      <aside className="sidebar" aria-label={'Danh sách của ' + cur.label} style={{ width: w }}>
+        <div className="side-title">{cur.label}</div>
+        <div className="side-slot" ref={slotRef} />
+      </aside>
+      <div className={'side-resize' + (drag !== null ? ' dragging' : '')} role="separator" aria-orientation="vertical" aria-label="Đổi độ rộng panel trái"
+        aria-valuemin={SIDE_MIN} aria-valuemax={SIDE_MAX} aria-valuenow={w} tabIndex={0} title="Kéo để đổi độ rộng · bấm đúp để về mặc định"
+        onPointerDown={startDrag} onDoubleClick={() => setSaved(SIDE_DEFAULT)} onKeyDown={keyResize} />
+    </div>
   )
 }
 
@@ -90,6 +129,7 @@ export function Shell({ children }: { children: ReactNode }) {
       if (k === '1') go('/')
       else if (k === '2') go('/ai')
       else if (k === '3') go('/git')
+      else if (k === '4') go('/jobs')
       else if (k === 'k') { e.preventDefault(); setState({ palette: !getState().palette }) }
       else if (k === 'r') { e.preventDefault(); setState({ pending: 'rescan' }); navigate('/git') }
     }
@@ -98,7 +138,7 @@ export function Shell({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    document.title = { '/': 'Tổng quan', '/ai': 'AI', '/git': 'Git' }[route] + ' · DevDeck'
+    document.title = { '/': 'Tổng quan', '/ai': 'AI', '/git': 'Git', '/jobs': 'Job' }[route] + ' · DevDeck'
   }, [route])
 
   return (

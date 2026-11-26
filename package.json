@@ -45,6 +45,9 @@
     "directories": {
       "output": "release"
     },
+    "asarUnpack": [
+      "server/jobs/*.ps1"
+    ],
     "files": [
       "dist/**",
       "server/**",

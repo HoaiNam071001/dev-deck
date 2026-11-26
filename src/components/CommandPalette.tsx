@@ -28,6 +28,7 @@ function Palette() {
       cmd('home', 'Mở Tổng quan', MOD + '1', () => navigate('/')),
       cmd('ai', 'Mở AI', MOD + '2', () => navigate('/ai')),
       cmd('git', 'Mở Git', MOD + '3', () => navigate('/git')),
+      cmd('jobs', 'Mở Job (tiến trình đang chạy)', MOD + '4', () => navigate('/jobs')),
       cmd('rescan', 'Quét lại repo', MOD + 'R', () => { setState({ pending: 'rescan' }); navigate('/git') }),
       cmd('fetchAll', 'Fetch tất cả repo', undefined, () => { setState({ pending: 'fetchAll' }); navigate('/git') }),
     ]

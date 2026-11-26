@@ -89,15 +89,20 @@ const actions = {
   },
 }
 
+/** Ghi một dòng nhật ký thao tác (data/audit.log). */
+function audit(entry) {
+  try {
+    fs.mkdirSync(path.dirname(AUDIT), { recursive: true })
+    fs.appendFileSync(AUDIT, JSON.stringify({ at: new Date().toISOString(), ...entry }) + '\n')
+  } catch { /* không để lỗi ghi log làm hỏng hành động */ }
+}
+
 async function perform(repoPath, body) {
   const fn = actions[body.action]
   if (!fn || !Object.prototype.hasOwnProperty.call(actions, body.action)) throw new Error('Hành động không hỗ trợ: ' + body.action)
   let output, error
   try { output = await fn(repoPath, body) } catch (e) { error = e }
-  try {
-    fs.mkdirSync(path.dirname(AUDIT), { recursive: true })
-    fs.appendFileSync(AUDIT, JSON.stringify({ at: new Date().toISOString(), repo: repoPath, action: body.action, params: { ...body, action: undefined, path: undefined }, ok: !error, error: error?.message }) + '\n')
-  } catch { /* không để lỗi ghi log làm hỏng hành động */ }
+  audit({ repo: repoPath, action: body.action, params: { ...body, action: undefined, path: undefined }, ok: !error, error: error?.message })
   if (error) throw error
   return { ok: true, output }
 }
@@ -118,4 +123,4 @@ function recentActivity(n = 20) {
   return out
 }
 
-module.exports = { perform, recentActivity }
+module.exports = { audit, perform, recentActivity }

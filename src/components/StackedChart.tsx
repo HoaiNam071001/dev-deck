@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { fmt, shortAxis } from '../lib/format'
+import { axisParts, fmt } from '../lib/format'
 import { KEYS, PROVIDERS, totalOf, type Bucket } from '../lib/usage'
 
 const H = 220
@@ -39,7 +39,10 @@ export function StackedChart({ data, g, by = 'type' }: { data: Bucket[]; g: numb
           return (
             <g key={i}>
               <line x1={PAD.l} x2={W - PAD.r} y1={y(v)} y2={y(v)} className="grid-line" />
-              <text x={PAD.l - 6} y={y(v) + 4} textAnchor="end" className="axis">{shortAxis(Math.round(v))}</text>
+              <text x={PAD.l - 6} y={y(v) + 4} textAnchor="end" className="axis">{(() => {
+                const [num, unit] = axisParts(Math.round(v))
+                return <>{num}{unit && <tspan className={'unit-svg unit-svg-' + unit}>{unit}</tspan>}</>
+              })()}</text>
             </g>
           )
         })}

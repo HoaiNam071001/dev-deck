@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ClaudeAccount, ClaudeProfile, BrowseResult, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource } from './types'
+import type { ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource } from './types'
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
@@ -19,6 +19,17 @@ export const api = {
   repo: (path: string) => request<RepoDetail>('/api/git/repo?path=' + encodeURIComponent(path)),
   action: (path: string, action: string, params: Record<string, unknown> = {}) =>
     request<{ ok: true; output: string }>('/api/git/action', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...params, action, path }) }),
+  jobs: () => request<JobsResponse>('/api/jobs'),
+  reporterStatus: () => request<ReporterStatus>('/api/jobs/reporter'),
+  reporterSetup: (body: { action: 'install' | 'uninstall'; folders: string[] } | { action: 'enable' | 'disable' }) =>
+    request<ReporterStatus>('/api/jobs/reporter', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),
+  installReporter: (repo: string) =>
+    request<{ ok: true; path: string; rel: string }>('/api/jobs/install-reporter', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ repo }) }),
+  jobsConfig: () => request<JobsConfig>('/api/jobs/config'),
+  saveJobsConfig: (folders: string[]) =>
+    request<JobsConfig>('/api/jobs/config', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ folders }) }),
+  stopJob: (pid: number, start: string) =>
+    request<{ ok: true }>('/api/jobs/stop', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pid, start }) }),
   config: () => request<GitConfig>('/api/git/config'),
   overview: () => request<Overview>('/api/overview'),
   browse: (path: string) => request<BrowseResult>('/api/git/browse?path=' + encodeURIComponent(path)),

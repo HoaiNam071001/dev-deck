@@ -249,4 +249,7 @@ function knownRepo(p) {
   return p
 }
 
-module.exports = { lastScan, listRepos, repoDetail, loadConfig, saveConfig, knownRepo, browse }
+/** Danh sách repo đã quét (bộ nhớ đệm), cho module khác đối chiếu. */
+function repoPathsInfo() { return { paths: repoPaths(false).paths } }
+
+module.exports = { repoPathsInfo, lastScan, listRepos, repoDetail, loadConfig, saveConfig, knownRepo, browse }

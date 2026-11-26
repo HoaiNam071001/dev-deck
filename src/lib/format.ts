@@ -6,9 +6,11 @@ const dec = (v: number, d: number) => v.toFixed(d).replace('.', ',')
 export const short = (n: number) =>
   n >= 1e9 ? dec(n / 1e9, 2) + 'B' : n >= 1e6 ? dec(n / 1e6, n >= 1e7 ? 1 : 2) + 'M' : n >= 1e3 ? dec(n / 1e3, n >= 1e5 ? 0 : 1) + 'K' : String(n)
 
-/** Bản gọn cho nhãn trục biểu đồ: 12,6tr · 266k */
-export const shortAxis = (n: number) =>
-  n >= 1e9 ? dec(n / 1e9, 1) + ' tỷ' : n >= 1e6 ? dec(n / 1e6, 1) + 'tr' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n)
+/** Nhãn trục biểu đồ tách số và đơn vị (cùng K / M / B như chỗ khác): 12,6 + M · 266 + K · 4,2 + M. */
+export const axisParts = (n: number): [string, 'K' | 'M' | 'B' | ''] => {
+  const t = (v: number) => dec(v, 1).replace(/,0$/, '')
+  return n >= 1e9 ? [t(n / 1e9), 'B'] : n >= 1e6 ? [t(n / 1e6), 'M'] : n >= 1e3 ? [Math.round(n / 1e3) + '', 'K'] : [String(n), '']
+}
 
 export const p2 = (n: number) => String(n).padStart(2, '0')
 

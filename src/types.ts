@@ -92,4 +92,44 @@ export interface NumStat { staged: Record<string, [number, number]>; unstaged: R
 
 export interface ActivityItem { at: string; repo: string; action: string; ok: boolean; error?: string; detail: string }
 export interface ScanSummary { at: string; ms: number; repos: number; roots: string[]; byRoot: Record<string, number> }
+/** cpu: % CPU giữa hai lần quét (null = chưa đo được); done: tiến trình đã kết thúc khi job vẫn chạy. */
+export interface JobPort { port: number; host: string }
+export interface JobProc { pid: number; ppid: number; depth: number; name: string; cmd: string; mem: number; cpu: number | null; ports: JobPort[]; start: string; done: boolean; endedAt: number | null }
+/** test = chạy test · dev = dev server · build = biên dịch/đóng gói · other. */
+export type JobKind = 'test' | 'dev' | 'build' | 'other'
+/** Tiến độ test do reporter trong vitest ghi ra (null nếu project chưa bật reporter). */
+export interface JobProgress {
+  runner: string; finished: boolean; updatedAt: number
+  total: number; done: number; pass: number; fail: number; skip: number; running: number
+  files: { file: string; state: 'queued' | 'running' | 'pass' | 'fail' | 'skip'; ms?: number }[]
+}
+export interface Job {
+  kind: JobKind
+  /** Cổng TCP đang lắng nghe của job và các tiến trình con (pid = tiến trình giữ cổng). */
+  ports: (JobPort & { pid: number })[]
+  progress: JobProgress | null
+  cpu: number | null
+  stats: { running: number; idle: number; done: number }
+  ppid: number
+  parent: string
+  procs: JobProc[]
+  pid: number
+  name: string
+  cmd: string
+  cwd: string
+  repo: string
+  start: string
+  mem: number
+  children: number
+}
+export interface JobsResponse { supported: boolean; at: string; folders: string[]; jobs: Job[] }
+/** Trạng thái cài reporter tiến độ dùng chung. state: none = chưa cài · ok = bản mới nhất · outdated = bản cũ · missing = thư mục không còn. */
+export interface ReporterStatus {
+  supported: boolean
+  folders: { path: string; state: 'none' | 'ok' | 'outdated' | 'missing'; tracked: boolean }[]
+  nodeOptions: string; enabled: boolean; preloadReady: boolean; preload: string; error?: string
+}
+/** custom = false: đang dùng chung thư mục quét của trang Git. */
+export interface JobsConfig { folders: string[]; custom: boolean; recent: string[] }
+
 export interface Overview { config: GitConfig; scan: ScanSummary | null; activity: ActivityItem[] }
