@@ -1,5 +1,5 @@
 $ErrorActionPreference = 'SilentlyContinue'
-Add-Type -TypeDefinition @'
+$src = @'
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -34,11 +34,22 @@ public static class Cwd {
   }
 }
 '@
+# Biên dịch C# (csc) có lúc mất ~10s, nên chỉ làm một lần ra DLL trong %TEMP% rồi các lần quét sau chỉ nạp lại.
+# Đổi mã C# ở trên thì tăng số phiên bản trong tên file.
+$dll = Join-Path $env:TEMP 'devdeck-cwd-v1.dll'
+if (-not (Test-Path $dll)) {
+  $tmp = "$dll.$PID.tmp"
+  Add-Type -TypeDefinition $src -OutputAssembly $tmp
+  try { Move-Item $tmp $dll -Force } catch { Remove-Item $tmp -Force }
+}
+if (Test-Path $dll) { Add-Type -Path $dll } else { Add-Type -TypeDefinition $src }
+# Chỉ đọc cwd của runtime/công cụ có thể là job (khớp JOB_EXE trong index.js); tiến trình khác bỏ qua cho nhanh
+$jobExe = '^(node|bun|deno|python[\d.]*|pythonw|py|dotnet|java|javaw|go|cargo|rustc|php|ruby|mvn|gradle|gradlew|npm|npx|pnpm|yarn|vitest|jest|pytest|tsc|vite|webpack|esbuild|playwright|cypress|.+\.test)(\.exe|\.cmd)?$'
 $out = foreach ($p in Get-CimInstance Win32_Process) {
   if ($p.ProcessId -le 4) { continue }
   [pscustomobject]@{
     pid = [int]$p.ProcessId; ppid = [int]$p.ParentProcessId; name = $p.Name
-    cmd = $p.CommandLine; cwd = [Cwd]::Get([int]$p.ProcessId)
+    cmd = $p.CommandLine; cwd = if ($p.Name -match $jobExe) { [Cwd]::Get([int]$p.ProcessId) } else { $null }
     cpu = [int64]($p.KernelModeTime + $p.UserModeTime)
     mem = [int64]$p.WorkingSetSize; start = if ($p.CreationDate) { $p.CreationDate.ToUniversalTime().ToString('o') } else { $null }
   }

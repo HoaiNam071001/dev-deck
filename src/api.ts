@@ -51,13 +51,18 @@ export function useLoad<T>(fn: () => Promise<T>, deps: unknown[], every = 0): Lo
   const fnRef = useRef(fn)
   fnRef.current = fn
 
+  const inflight = useRef(false)
+
   const run = useCallback((silent: boolean) => {
+    // Poll nền: nếu lượt trước chưa xong thì bỏ qua, kẻo kết quả chậm luôn bị coi là cũ và không bao giờ hiện
+    if (silent && inflight.current) return
     const id = ++seq.current
+    inflight.current = true
     if (!silent) setState((s) => ({ ...s, loading: true, error: null }))
     fnRef.current().then(
       (data) => { if (id === seq.current) setState({ data, error: null, loading: false }) },
       (e: Error) => { if (id === seq.current) setState((s) => ({ ...s, error: e.message, loading: false })) },
-    )
+    ).finally(() => { if (id === seq.current) inflight.current = false })
   }, [])
 
   useEffect(() => {
