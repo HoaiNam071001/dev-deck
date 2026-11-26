@@ -6,6 +6,7 @@ import { bridge, copyText, MOD, revealLabel } from '../lib/platform'
 import { pinRepo, toast, unpinRepo, useStore } from '../lib/store'
 import type { FileChange, RepoSummary } from '../types'
 import { Spinner, Icon } from './ui'
+import { RepoJobs } from './JobDetail'
 
 type Tab = 'changes' | 'branches' | 'commits' | 'remotes'
 
@@ -101,6 +102,8 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
           </button>
           <span className="truncate text-fg-mute">→ {data.upstream ?? 'chưa có upstream'}</span>
         </div>
+
+        <RepoJobs repoPath={data.path} />
 
         <div className="flex gap-1.5">
           <button className="btn flex-1" disabled={!!busy || !data.remotes.length} onClick={() => act('fetch', 'fetch')}>{busy === 'fetch' ? 'Đang fetch…' : 'Fetch'}</button>

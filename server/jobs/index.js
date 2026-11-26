@@ -70,6 +70,23 @@ function groupOf(cwd, folders, repos) {
   return best
 }
 
+/** Nhánh hiện tại của repo, đọc thẳng từ .git/HEAD (không spawn git). Trả về null nếu không phải repo; "@abc1234" nếu detached. */
+function branchOf(dir) {
+  try {
+    let gitDir = path.join(dir, '.git')
+    const st = fs.statSync(gitDir, { throwIfNoEntry: false })
+    if (!st) return null
+    if (st.isFile()) { // worktree / submodule: .git là file "gitdir: <đường dẫn>"
+      const m = /^gitdir:\s*(.+)$/m.exec(fs.readFileSync(gitDir, 'utf8'))
+      if (!m) return null
+      gitDir = path.resolve(dir, m[1].trim())
+    }
+    const head = fs.readFileSync(path.join(gitDir, 'HEAD'), 'utf8').trim()
+    const r = /^ref:\s*refs\/heads\/(.+)$/.exec(head)
+    return r ? r[1] : /^[0-9a-f]{7,}$/i.test(head) ? '@' + head.slice(0, 7) : null
+  } catch { return null }
+}
+
 async function scan() {
   if (process.platform !== 'win32') return { supported: false, at: new Date().toISOString(), jobs: [] }
   const [procs, listening] = await Promise.all([listProcesses(), listeningPorts()])
@@ -119,7 +136,7 @@ async function scan() {
     const ports = jobPorts(alive)
     const progress = progressFor([p, ...procs], progressByPid)
     jobs.push({
-      pid: p.pid, ppid: p.ppid, parent: parent ? parent.name : '', name: p.name, cmd: p.cmd || '', cwd: p.cwd.replace(/[\\/]+$/, ''), repo: repo.path,
+      pid: p.pid, ppid: p.ppid, parent: parent ? parent.name : '', name: p.name, cmd: p.cmd || '', cwd: p.cwd.replace(/[\\/]+$/, ''), repo: repo.path, branch: branchOf(repo.path),
       start: p.start, cpu: root.cpu, mem: (p.mem || 0) + alive.reduce((s, c) => s + c.mem, 0), children: alive.length,
       stats: { running: alive.filter((m) => m.cpu !== null && m.cpu >= BUSY).length, idle: alive.filter((m) => m.cpu === null || m.cpu < BUSY).length, done: procs.filter((m) => m.done).length },
       procs, progress, ports, kind: classify(procs.map((m) => m.cmd).concat(p.cmd || ''), ports, progress),

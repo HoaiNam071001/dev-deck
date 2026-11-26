@@ -118,6 +118,8 @@ export interface Job {
   cmd: string
   cwd: string
   repo: string
+  /** Nhánh hiện tại của repo (null nếu không phải repo git; "@abc1234" nếu detached). */
+  branch: string | null
   start: string
   mem: number
   children: number
