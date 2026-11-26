@@ -69,7 +69,8 @@
       {
         "provider": "github",
         "owner": "HoaiNam071001",
-        "repo": "dev-deck"
+        "repo": "dev-deck",
+        "releaseType": "release"
       }
     ],
     "portable": {

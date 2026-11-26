@@ -13,6 +13,15 @@ contextBridge.exposeInMainWorld('devdeck', {
   minimize: () => ipcRenderer.send('devdeck:win', 'minimize'),
   maximize: () => ipcRenderer.send('devdeck:win', 'maximize'),
   close: () => ipcRenderer.send('devdeck:win', 'close'),
+  version: () => ipcRenderer.invoke('devdeck:version'),
+  updateStatus: () => ipcRenderer.invoke('devdeck:updateStatus'),
+  updateCheck: () => ipcRenderer.invoke('devdeck:updateCheck'),
+  updateInstall: () => ipcRenderer.invoke('devdeck:updateInstall'),
+  onUpdateStatus: (fn) => {
+    const h = (_e, s) => fn(s)
+    ipcRenderer.on('devdeck:updateStatus', h)
+    return () => ipcRenderer.removeListener('devdeck:updateStatus', h)
+  },
   /** Lệnh từ khay hệ thống ('rescan'). Trả về hàm hủy đăng ký. */
   onCommand: (fn) => {
     const h = (_e, cmd) => fn(cmd)

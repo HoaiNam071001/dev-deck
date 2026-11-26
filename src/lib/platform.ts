@@ -3,8 +3,20 @@ export const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(
 export const MOD = isMac ? '⌘' : 'Ctrl+'
 
 /** Cầu nối với vỏ desktop (giai đoạn 6b). Chạy trong trình duyệt thì không có. */
+export interface UpdateStatus {
+  state: 'idle' | 'checking' | 'none' | 'downloading' | 'ready' | 'error' | 'unsupported'
+  version?: string
+  percent?: number
+  message?: string
+}
+
 export interface DesktopBridge {
   platform?: string
+  version?: () => Promise<string>
+  updateStatus?: () => Promise<UpdateStatus>
+  updateCheck?: () => Promise<UpdateStatus>
+  updateInstall?: () => Promise<void>
+  onUpdateStatus?: (fn: (s: UpdateStatus) => void) => () => void
   pickFolder?: () => Promise<string[]>
   notify?: (title: string, body: string) => void
   setAttention?: (n: number) => void

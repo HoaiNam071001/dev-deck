@@ -63,6 +63,7 @@ function openTerminal(dir) {
 
 function setupIpc() {
   const guard = (fn) => async (_e, p) => { try { fn(knownRepo(p)) } catch (e) { return String(e.message || e) } }
+  ipcMain.handle('devdeck:version', () => app.getVersion())
   ipcMain.handle('devdeck:openVSCode', guard(openVSCode))
   ipcMain.handle('devdeck:openTerminal', guard(openTerminal))
   ipcMain.handle('devdeck:reveal', guard((d) => shell.showItemInFolder(d)))
@@ -129,17 +130,50 @@ async function createWindow() {
   win.on('closed', () => { win = null })
 }
 
+// Trạng thái cập nhật gửi cho giao diện: { state: 'idle'|'checking'|'none'|'downloading'|'ready'|'error'|'unsupported', version?, percent?, message? }
+let updateStatus = { state: 'idle' }
+let manualCheck = false
+function setUpdateStatus(s) {
+  updateStatus = s
+  win?.webContents.send('devdeck:updateStatus', s)
+}
+
 function setupUpdater() {
-  if (!app.isPackaged) return
+  ipcMain.handle('devdeck:updateStatus', () => updateStatus)
+  if (!app.isPackaged) {
+    // Bản chạy từ mã nguồn (npm run desktop/dev) không tự cập nhật được
+    updateStatus = { state: 'unsupported' }
+    ipcMain.handle('devdeck:updateCheck', () => updateStatus)
+    ipcMain.handle('devdeck:updateInstall', () => {})
+    return
+  }
   const { autoUpdater } = require('electron-updater')
   autoUpdater.autoDownload = true
+  autoUpdater.on('checking-for-update', () => setUpdateStatus({ state: 'checking' }))
+  autoUpdater.on('update-not-available', () => setUpdateStatus({ state: 'none' }))
+  autoUpdater.on('update-available', (info) => setUpdateStatus({ state: 'downloading', version: info.version, percent: 0 }))
+  autoUpdater.on('download-progress', (p) => setUpdateStatus({ state: 'downloading', version: updateStatus.version, percent: Math.round(p.percent) }))
   autoUpdater.on('update-downloaded', (info) => {
+    setUpdateStatus({ state: 'ready', version: info.version })
+    // Kiểm tra nền thì hỏi luôn; người dùng tự bấm kiểm tra thì đã thấy nút cài trong giao diện
+    if (manualCheck) return
     dialog.showMessageBox(win ?? undefined, {
       type: 'info', buttons: ['Cập nhật ngay', 'Để sau'], defaultId: 0, cancelId: 1,
       title: 'Có bản mới', message: `DevDeck ${info.version} đã tải xong.`, detail: 'Khởi động lại để cài bản mới.',
     }).then((r) => { if (r.response === 0) autoUpdater.quitAndInstall() })
   })
-  autoUpdater.on('error', (e) => console.error('update:', e?.message || e))
+  autoUpdater.on('error', (e) => {
+    console.error('update:', e?.message || e)
+    setUpdateStatus({ state: 'error', message: String(e?.message || e).split('\n')[0].slice(0, 200) })
+  })
+  ipcMain.handle('devdeck:updateCheck', async () => {
+    // Đang tải hoặc đã tải xong thì không kiểm tra lại
+    if (updateStatus.state === 'checking' || updateStatus.state === 'downloading' || updateStatus.state === 'ready') return updateStatus
+    manualCheck = true
+    try { await autoUpdater.checkForUpdates() } catch { /* sự kiện 'error' đã báo */ }
+    return updateStatus
+  })
+  ipcMain.handle('devdeck:updateInstall', () => { if (updateStatus.state === 'ready') autoUpdater.quitAndInstall() })
   setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 5000)
 }
 

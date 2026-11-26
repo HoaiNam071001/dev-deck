@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { createPortal } from 'react-dom'
 import { Link, navigate, useRoute, type Route } from '../lib/router'
 import { usePersisted } from '../lib/persist'
-import { bridge, MOD } from '../lib/platform'
+import { bridge, MOD, type UpdateStatus } from '../lib/platform'
 import { getState, openPalette, setState, useStore } from '../lib/store'
 import { CommandPalette } from './CommandPalette'
 import { Toasts } from './Toasts'
@@ -13,6 +13,43 @@ function useDesktopSync() {
   const attention = useStore((s) => s.attention)
   useEffect(() => { bridge()?.setAttention?.(attention) }, [attention])
   useEffect(() => bridge()?.onCommand?.((cmd) => { if (cmd === 'rescan') { setState({ pending: 'rescan' }); navigate('/git') } }), [])
+}
+
+/** Nút kiểm tra / cài bản mới trên thanh trạng thái (chỉ có trong app desktop). */
+function UpdateButton() {
+  const b = bridge()
+  const [s, setS] = useState<UpdateStatus>({ state: 'idle' })
+  useEffect(() => {
+    let alive = true
+    b?.updateStatus?.().then((v) => { if (alive && v) setS(v) }).catch(() => {})
+    const off = b?.onUpdateStatus?.(setS)
+    return () => { alive = false; off?.() }
+  }, [b])
+  // Tự về nhãn mặc định sau khi báo "đã là bản mới nhất"
+  useEffect(() => {
+    if (s.state !== 'none') return
+    const t = setTimeout(() => setS({ state: 'idle' }), 6000)
+    return () => clearTimeout(t)
+  }, [s.state])
+  if (!b?.updateCheck) return null
+
+  const busy = s.state === 'checking' || s.state === 'downloading'
+  const label = {
+    idle: 'Kiểm tra cập nhật', checking: 'Đang kiểm tra…', none: 'Đã là bản mới nhất',
+    downloading: `Đang tải ${s.version ?? ''} ${s.percent ?? 0}%`, ready: `Cài ${s.version ?? 'bản mới'} và khởi động lại`,
+    error: 'Không kiểm tra được · thử lại', unsupported: 'Kiểm tra cập nhật',
+  }[s.state]
+  const title = s.state === 'error' ? s.message : s.state === 'unsupported' ? 'Chạy từ mã nguồn nên không tự cập nhật; hãy dùng bản đã đóng gói' : undefined
+  const onClick = async () => {
+    if (busy) return
+    if (s.state === 'ready') { await b.updateInstall?.(); return }
+    setS({ state: 'checking' })
+    try { setS(await b.updateCheck!()) } catch { setS({ state: 'error' }) }
+  }
+  return (
+    <button className="sb-btn" style={s.state === 'ready' ? { color: 'var(--accent, #30cf43)', fontWeight: 600 } : undefined}
+      disabled={busy} title={title} onClick={onClick}>{label}</button>
+  )
 }
 
 const Slots = createContext<{ side: HTMLElement | null; status: HTMLElement | null }>({ side: null, status: null })
@@ -118,6 +155,9 @@ function Sidebar({ slotRef }: { slotRef: (el: HTMLElement | null) => void }) {
 export function Shell({ children }: { children: ReactNode }) {
   const route = useRoute()
   useDesktopSync()
+  // Số phiên bản thật của app đã đóng gói; ngoài app desktop thì dùng số lúc build
+  const [version, setVersion] = useState(__APP_VERSION__)
+  useEffect(() => { bridge()?.version?.().then((v) => { if (v) setVersion(v) }).catch(() => {}) }, [])
   const [side, setSide] = useState<HTMLElement | null>(null)
   const [status, setStatus] = useState<HTMLElement | null>(null)
 
@@ -151,7 +191,8 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
         <footer className="statusbar">
           <div className="sb-slot" ref={setStatus} />
-          <span className="mono sb-ver">v{__APP_VERSION__}</span>
+          <UpdateButton />
+          <span className="mono sb-ver">v{version}</span>
         </footer>
         <CommandPalette />
         <Toasts />
