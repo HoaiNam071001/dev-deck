@@ -52,7 +52,7 @@ function listProcesses() {
     execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', SCRIPT],
       { windowsHide: true, timeout: 30000, maxBuffer: 32 * 1024 * 1024 }, (err, stdout) => {
         if (err) return reject(new Error('Không đọc được danh sách tiến trình: ' + err.message))
-        try { const a = JSON.parse(stdout || '[]'); resolve(Array.isArray(a) ? a : [a]) } catch { reject(new Error('Kết quả tiến trình không hợp lệ')) }
+        try { const a = JSON.parse((stdout || '[]').replace(/^﻿/, '').replace(/[\u0000-\u001f]/g, ' ')); resolve(Array.isArray(a) ? a : [a]) } catch { reject(new Error('Kết quả tiến trình không hợp lệ')) }
       })
   })
 }

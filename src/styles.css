@@ -109,11 +109,11 @@
 /* ---------- Trang cuộn được (Tổng quan, Claude) ---------- */
 .page { flex: 1; min-height: 0; overflow-y: auto; box-sizing: border-box; padding: 18px 24px; display: flex; flex-direction: column; gap: 14px; }
 .page > * { flex: none; }
-.page-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.page-t { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.page-h { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; }
+.page-t { display: flex; align-items: baseline; gap: 10px; min-width: 0; flex: 0 0 auto; }
 .page-t h1, .page-h h1 { font-size: var(--text-xl); font-weight: 600; letter-spacing: -.01em; white-space: nowrap; }
 .page-t .muted { font-size: var(--text); white-space: nowrap; }
-.page-tools { display: flex; gap: 6px; align-items: center; }
+.page-tools { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; min-width: 0; }
 .banner { padding: 8px 12px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); font-size: var(--text); }
 .banner.err { color: var(--danger); border-color: rgba(242,107,107,.4); }
 .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; min-width: 0; }

@@ -49,7 +49,7 @@ $out = foreach ($p in Get-CimInstance Win32_Process) {
   if ($p.ProcessId -le 4) { continue }
   [pscustomobject]@{
     pid = [int]$p.ProcessId; ppid = [int]$p.ParentProcessId; name = $p.Name
-    cmd = $p.CommandLine; cwd = if ($p.Name -match $jobExe) { [Cwd]::Get([int]$p.ProcessId) } else { $null }
+    cmd = if ($p.CommandLine) { $p.CommandLine -replace '[\x00-\x1f\x7f]', ' ' } else { $null }; cwd = if ($p.Name -match $jobExe) { [Cwd]::Get([int]$p.ProcessId) } else { $null }
     cpu = [int64]($p.KernelModeTime + $p.UserModeTime)
     mem = [int64]$p.WorkingSetSize; start = if ($p.CreationDate) { $p.CreationDate.ToUniversalTime().ToString('o') } else { $null }
   }
