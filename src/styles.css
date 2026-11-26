@@ -233,3 +233,7 @@ dialog.modal::backdrop { background: rgba(8,9,10,.6); }
 .recent-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: var(--text-sm); color: var(--fg-mute); }
 .recent-row button { max-width: 260px; height: 22px; padding: 0 8px; border: 1px solid var(--border-strong); border-radius: 11px; background: transparent; color: var(--fg-soft); font: var(--text-sm) var(--font-mono); cursor: pointer; }
 .recent-row button.on { border-color: var(--accent); color: var(--accent); }
+
+/* Chấm màu nhà cung cấp (trang AI) */
+.pdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; flex: none; }
+.src { display: flex; align-items: center; color: var(--fg-soft); }

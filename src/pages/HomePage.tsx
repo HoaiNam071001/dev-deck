@@ -20,7 +20,7 @@ const hhmm = (iso: string) => {
 }
 const greeting = () => { const h = new Date().getHours(); return h < 11 ? 'Chào buổi sáng' : h < 14 ? 'Chào buổi trưa' : h < 18 ? 'Chào buổi chiều' : 'Chào buổi tối' }
 
-function QuickCard({ to, icon, tint, title, keyHint, desc, foot }: { to: '/git' | '/claude'; icon: string; tint: string; title: string; keyHint: string; desc: string; foot: React.ReactNode }) {
+function QuickCard({ to, icon, tint, title, keyHint, desc, foot }: { to: '/git' | '/ai'; icon: string; tint: string; title: string; keyHint: string; desc: string; foot: React.ReactNode }) {
   return (
     <Link to={to} className="flex gap-3.5 rounded-[10px] border border-border bg-surface p-4 !text-fg hover:border-border-strong hover:bg-[#1F2124]">
       <span className={'flex size-10 flex-none items-center justify-center rounded-[9px] ' + tint}><Icon name={icon} size={20} /></span>
@@ -69,7 +69,7 @@ export function HomePage() {
   }
   const [notify, setNotify] = useState(notifyEnabled)
   const openRepo = (p: string) => { setState({ selected: p }); navigate('/git') }
-  const keys: [string, string][] = [['Bảng lệnh', MOD + 'K'], ['Mở Git và quét', MOD + '3'], ['Mở Claude', MOD + '2'], ['Quét lại repo', MOD + 'R'], ['Commit', MOD + 'Enter']]
+  const keys: [string, string][] = [['Bảng lệnh', MOD + 'K'], ['Mở Git và quét', MOD + '3'], ['Mở AI', MOD + '2'], ['Quét lại repo', MOD + 'R'], ['Commit', MOD + 'Enter']]
 
   return (
     <>
@@ -107,8 +107,8 @@ export function HomePage() {
         <section aria-label="Mở nhanh" className="grid grid-cols-2 gap-3">
           <QuickCard to="/git" icon="git" tint="bg-accent/12 text-accent" title="Git" keyHint={MOD + '3'} desc="Quản lý repo, nhánh, commit, push / pull"
             foot={scan ? <>Lần quét trước: <span className="text-fg-soft">{relTime(scan.at)}</span> · {scan.repos} repo trong {scan.roots.length} thư mục</> : 'Chưa quét lần nào'} />
-          <QuickCard to="/claude" icon="claude" tint="bg-ahead/12 text-ahead" title="Claude" keyHint={MOD + '2'} desc="Token đã dùng theo thời gian, model, dự án"
-            foot={<>Đọc log từ <span className="font-mono text-fg-soft">~/.claude/projects</span> khi mở</>} />
+          <QuickCard to="/ai" icon="ai" tint="bg-ahead/12 text-ahead" title="AI" keyHint={MOD + '2'} desc="Token Claude Code, Codex, Gemini, Antigravity theo thời gian, model, dự án"
+            foot={<>Đọc log <span className="text-fg-soft">Claude Code · Codex · Gemini CLI · Antigravity</span> khi mở</>} />
         </section>
 
         <div className="grid grid-cols-2 gap-3.5">

@@ -26,7 +26,7 @@ function Palette() {
     const cmd = (id: string, label: string, hint: string | undefined, run: () => void): Item => ({ id, group: 'Lệnh', label, hint, run: () => { openPalette(false); run() } })
     const list: Item[] = [
       cmd('home', 'Mở Tổng quan', MOD + '1', () => navigate('/')),
-      cmd('claude', 'Mở Claude', MOD + '2', () => navigate('/claude')),
+      cmd('ai', 'Mở AI', MOD + '2', () => navigate('/ai')),
       cmd('git', 'Mở Git', MOD + '3', () => navigate('/git')),
       cmd('rescan', 'Quét lại repo', MOD + 'R', () => { setState({ pending: 'rescan' }); navigate('/git') }),
       cmd('fetchAll', 'Fetch tất cả repo', undefined, () => { setState({ pending: 'fetchAll' }); navigate('/git') }),

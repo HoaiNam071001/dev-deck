@@ -2,7 +2,7 @@
 
 DevDeck là dashboard cục bộ cho dev, gồm hai trang:
 
-- **Token**: lượng token Claude Code đã dùng (theo phút / giờ / ngày, theo model, theo dự án).
+- **AI**: lượng token đã dùng của Claude Code, Codex, Gemini CLI và Antigravity (theo phút / giờ / ngày, theo nhà cung cấp, model, dự án). Đọc log cục bộ, không gọi mạng.
 - **Git**: mọi repo trên máy, nhánh của từng repo, nhánh đang mở, trạng thái thay đổi, ahead/behind.
 
 Kế hoạch từng giai đoạn nằm ở [plan/README.md](plan/README.md) (sắp tới: tạo/xóa nhánh, tạo/xóa repo).
@@ -43,7 +43,7 @@ Vite + React 18 + TypeScript (strict), CSS thuần có sẵn chế độ sáng/t
 ## Cấu trúc
 
 ```
-server/   index.js (HTTP + static) · usage.js (đọc log token) · git.js (lệnh git chỉ-đọc)
+server/   index.js (HTTP + static) · usage/ (adapter đọc log token: claude, codex, gemini) · git.js (lệnh git chỉ-đọc)
 src/      App.tsx · api.ts · pages/ · components/ · lib/
 plan/     kế hoạch theo giai đoạn
 ```
@@ -52,10 +52,22 @@ plan/     kế hoạch theo giai đoạn
 
 | Đường dẫn | Mô tả |
 |---|---|
-| `GET /api/usage` | Mỗi phản hồi của model: thời điểm, dự án, model, 4 loại token |
+| `GET /api/usage` | Mỗi phản hồi của model: nhà cung cấp, thời điểm, dự án, model, 4 loại token |
+| `GET /api/usage/sources` | Nguồn log đã dò: có thấy không, số file, số tin |
 | `GET /api/git/repos[?rescan=1]` | Danh sách repo + nhánh hiện tại, trạng thái, ahead/behind |
 | `GET /api/git/repo?path=` | Chi tiết một repo: nhánh local/remote, file thay đổi, 20 commit, remote, stash |
 | `GET/PUT /api/git/config` | Thư mục gốc quét và độ sâu |
+
+## Nguồn log AI
+
+| Nguồn | Thư mục mặc định | Đổi bằng biến môi trường |
+|---|---|---|
+| Claude Code | `~/.claude/projects` | `CLAUDE_CONFIG_DIR` |
+| Codex | `~/.codex/sessions` | `CODEX_HOME` |
+| Gemini CLI | `~/.gemini/tmp/*/chats` | `GEMINI_DIR` |
+| Antigravity | `~/.gemini/antigravity/brain/*/.system_generated/logs/transcript.jsonl` | `ANTIGRAVITY_DIR` |
+
+Parser Antigravity đã đối chiếu với log thật. Parser Codex và Gemini CLI dựa trên định dạng log đã biết, chỉ kiểm thử bằng fixture (`node server/usage/test.js`), chưa kiểm chứng trên log thật. Antigravity không ghi project trong log nên tên project suy ra từ `~/.gemini/projects.json`, không khớp thì hiện `agy-<mã hội thoại>`. Nguồn không có thư mục thì hiện "chưa có".
 
 ## An toàn
 

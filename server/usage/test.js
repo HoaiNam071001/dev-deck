@@ -1,0 +1,33 @@
+// Chạy: node server/usage/test.js  (chưa có test runner nên dùng assert thuần)
+const assert = require('assert')
+const fs = require('fs')
+const path = require('path')
+const codex = require('./codex')
+const gemini = require('./gemini')
+const claude = require('./claude')
+const fx = (n) => path.join(__dirname, '__fixtures__', n)
+
+const c = codex.parse(fs.readFileSync(fx('codex.jsonl'), 'utf8'), fx('codex.jsonl'))
+assert.strictEqual(c.length, 2, 'bỏ token_count lặp và info=null')
+assert.deepStrictEqual([c[0].input, c[0].cacheRead, c[0].output, c[0].model, c[0].project], [60, 40, 50, 'gpt-5-codex', 'demo'])
+assert.strictEqual(c[1].input, 50)
+
+const g = gemini.parse(fs.readFileSync(fx('gemini.json'), 'utf8'), fx('gemini.json'))
+assert.strictEqual(g.length, 2, 'bỏ message không phải gemini')
+assert.deepStrictEqual([g[0].input, g[0].cacheRead, g[0].output], [400, 600, 100])
+assert.strictEqual(g[1].input, 505)
+
+const line = '{"timestamp":"t","uuid":"u","message":{"id":"m","model":"claude-x","usage":{"input_tokens":1,"output_tokens":2,"cache_creation_input_tokens":3,"cache_read_input_tokens":4}}}\n{"junk'
+const cl = claude.parse(line, path.join(claude.root, 'c--Users-bob-Desktop-app', 's.jsonl'))
+assert.deepStrictEqual([cl.length, cl[0].project, cl[0].cacheRead], [1, 'app', 4])
+console.log('ok')
+
+const ag = require('./antigravity')
+const agFile = path.join(ag.root, 'conv-12345678-aaaa', '.system_generated', 'logs', 'transcript.jsonl')
+const a = ag.parse(fs.readFileSync(fx('antigravity.jsonl'), 'utf8'), agFile)
+assert.strictEqual(a.length, 2, 'bỏ USER_INPUT/GENERIC, dòng đang stream và dòng hỏng')
+assert.deepStrictEqual([a[0].input, a[0].cacheRead, a[0].output, a[0].model], [14932, 0, 54, 'gemini-4-hydrogen-high'])
+assert.deepStrictEqual([a[1].input, a[1].cacheRead, a[1].model], [2176, 12883, 'claude-sonnet-x'])
+assert.strictEqual(a[0].id, 'conv-12345678-aaaa#1')
+assert.strictEqual(a[0].project, 'agy-conv-123', 'không có workspace khớp thì dùng mã hội thoại')
+console.log('ok antigravity')

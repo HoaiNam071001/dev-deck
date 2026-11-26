@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { fmt, short } from '../lib/format'
-import { KEYS, totalOf, type Bucket } from '../lib/usage'
+import { KEYS, PROVIDERS, totalOf, type Bucket } from '../lib/usage'
 
 const H = 220
 const PAD = { l: 48, r: 8, t: 8, b: 42 }
 
-export function StackedChart({ data, g }: { data: Bucket[]; g: number }) {
+export function StackedChart({ data, g, by = 'type' }: { data: Bucket[]; g: number; by?: 'type' | 'provider' }) {
+  const keys: { k: string; label: string; color: string }[] =
+    by === 'provider' ? PROVIDERS.map((p) => ({ k: p.id, label: p.label, color: p.color })) : [...KEYS]
+  const val = (d: Bucket, k: string) => (k in d.byProvider ? d.byProvider[k as keyof Bucket['byProvider']] : (d as unknown as Record<string, number>)[k])
   const wrap = useRef<HTMLDivElement>(null)
   const [W, setW] = useState(800)
   const [hover, setHover] = useState<{ i: number; x: number; y: number } | null>(null)
@@ -47,9 +50,9 @@ export function StackedChart({ data, g }: { data: Bucket[]; g: number }) {
           const showTick = i % step === 0 || (!dayMode && newDay)
           return (
             <g key={d.b}>
-              {KEYS.map(({ k, color }) => {
-                const y0 = y(acc), y1 = y(acc + d[k])
-                acc += d[k]
+              {keys.map(({ k, color }) => {
+                const y0 = y(acc), y1 = y(acc + val(d, k))
+                acc += val(d, k)
                 return <rect key={k} x={x} y={y1} width={w} height={Math.max(0, y0 - y1)} style={{ fill: color }} />
               })}
               {!dayMode && newDay && i > 0 && <line x1={PAD.l + i * bw} x2={PAD.l + i * bw} y1={PAD.t} y2={H - PAD.b + 32} className="day-line" />}
@@ -71,7 +74,7 @@ export function StackedChart({ data, g }: { data: Bucket[]; g: number }) {
       {hover && h && (
         <div className="tip" style={{ left: Math.min(hover.x + 12, window.innerWidth - 220), top: hover.y + 12 }}>
           <b>{h.date} {dayMode ? '' : h.time}</b>
-          {KEYS.map(({ k, label, color }) => <div key={k} className="tip-r"><span><i style={{ background: color }} />{label}</span><span className="mono">{fmt(h[k])}</span></div>)}
+          {keys.map(({ k, label, color }) => <div key={k} className="tip-r"><span><i style={{ background: color }} />{label}</span><span className="mono">{fmt(val(h, k))}</span></div>)}
           <div className="tip-r tip-t"><span>Tổng</span><span className="mono">{fmt(totalOf(h))}</span></div>
           <div className="tip-r"><span>Tin nhắn</span><span className="mono">{fmt(h.msgs)}</span></div>
         </div>

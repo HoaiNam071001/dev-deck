@@ -1,7 +1,7 @@
 const http = require('http')
 const fs = require('fs')
 const path = require('path')
-const { collect } = require('./usage')
+const usage = require('./usage')
 const git = require('./git')
 const gitActions = require('./git-actions')
 
@@ -21,7 +21,8 @@ const readBody = (req) => new Promise((resolve, reject) => {
 
 async function api(req, res, url) {
   try {
-    if (url.pathname === '/api/usage') return json(res, 200, collect())
+    if (url.pathname === '/api/usage') return json(res, 200, usage.collect())
+    if (url.pathname === '/api/usage/sources') return json(res, 200, usage.sources())
     if (url.pathname === '/api/git/repos') return json(res, 200, await git.listRepos(url.searchParams.get('rescan') === '1'))
     if (url.pathname === '/api/git/repo') return json(res, 200, await git.repoDetail(url.searchParams.get('path') || ''))
     if (url.pathname === '/api/git/action') {

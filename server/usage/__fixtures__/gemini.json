@@ -1,0 +1,5 @@
+{"sessionId":"x","messages":[
+ {"id":"a","timestamp":"2026-01-01T10:00:00Z","type":"user","content":"hi"},
+ {"id":"b","timestamp":"2026-01-01T10:00:02Z","type":"gemini","model":"gemini-2.5-pro","tokens":{"input":1000,"output":80,"cached":600,"thoughts":20,"tool":0,"total":1100}},
+ {"id":"c","timestamp":"2026-01-01T10:00:09Z","type":"gemini","model":"gemini-2.5-pro","tokens":{"input":500,"output":10,"cached":0,"thoughts":0,"tool":5,"total":515}}
+]}

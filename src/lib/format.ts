@@ -3,8 +3,6 @@ export const fmt = (n: number) => n.toLocaleString('vi-VN')
 export const short = (n: number) =>
   n >= 1e9 ? (n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : String(n)
 
-export const projName = (p: string) => p.replace(/^c--Users-[^-]+-/, '').replace(/^Desktop-/, '')
-
 export const p2 = (n: number) => String(n).padStart(2, '0')
 
 export const dayKey = (d: Date) => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`

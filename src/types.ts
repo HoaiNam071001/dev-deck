@@ -1,4 +1,7 @@
+export type Provider = 'claude' | 'codex' | 'gemini' | 'antigravity'
+
 export interface UsageRow {
+  provider: Provider
   t: string
   project: string
   model: string
@@ -7,6 +10,8 @@ export interface UsageRow {
   cacheWrite: number
   cacheRead: number
 }
+
+export interface UsageSource { id: Provider; label: string; root: string; found: boolean; files: number; rows: number }
 
 export interface LastCommit { date: string; subject: string; author: string }
 

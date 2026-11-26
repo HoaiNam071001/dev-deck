@@ -78,7 +78,11 @@ API:
 - Chưa tính chi phí tiền (mỗi hãng giá khác nhau) — để backlog.
 - Log lớn: đọc toàn bộ file mỗi 5s đã chậm với Claude; thêm Codex/Gemini sẽ nặng hơn → cân nhắc cache theo `mtime` ở bước 1.
 
-## Câu hỏi cần bạn chốt
+## Đã chốt
+
+Tên "AI"; làm cả Codex và Gemini; đổi tên thư mục thành `dev-deck`.
+
+## Câu hỏi ban đầu
 
 1. Tên mục: **"AI"** (đề xuất) hay "Token" / "Usage"?
 2. Có cần làm cả Codex và Gemini ngay, hay Claude + Codex trước?

@@ -6,5 +6,5 @@ import { TokenPage } from './pages/TokenPage'
 
 export function App() {
   const route = useRoute()
-  return <Shell>{route === '/git' ? <GitPage /> : route === '/claude' ? <TokenPage /> : <HomePage />}</Shell>
+  return <Shell>{route === '/git' ? <GitPage /> : route === '/ai' ? <TokenPage /> : <HomePage />}</Shell>
 }

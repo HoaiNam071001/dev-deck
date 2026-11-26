@@ -29,7 +29,7 @@ export function StatusSlot({ children }: { children: ReactNode }) {
 
 const NAV: { to: Route; label: string; icon: string; n: string }[] = [
   { to: '/', label: 'Tổng quan', icon: 'home', n: '1' },
-  { to: '/claude', label: 'Claude', icon: 'claude', n: '2' },
+  { to: '/ai', label: 'AI', icon: 'ai', n: '2' },
   { to: '/git', label: 'Git', icon: 'git', n: '3' },
 ]
 
@@ -88,7 +88,7 @@ export function Shell({ children }: { children: ReactNode }) {
       const k = e.key.toLowerCase()
       const go = (to: Route) => { e.preventDefault(); navigate(to) }
       if (k === '1') go('/')
-      else if (k === '2') go('/claude')
+      else if (k === '2') go('/ai')
       else if (k === '3') go('/git')
       else if (k === 'k') { e.preventDefault(); setState({ palette: !getState().palette }) }
       else if (k === 'r') { e.preventDefault(); setState({ pending: 'rescan' }); navigate('/git') }
@@ -98,7 +98,7 @@ export function Shell({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    document.title = { '/': 'Tổng quan', '/claude': 'Claude', '/git': 'Git' }[route] + ' · DevDeck'
+    document.title = { '/': 'Tổng quan', '/ai': 'AI', '/git': 'Git' }[route] + ' · DevDeck'
   }, [route])
 
   return (

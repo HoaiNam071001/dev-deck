@@ -1,11 +1,12 @@
 import { useEffect, useState, type AnchorHTMLAttributes, type MouseEvent } from 'react'
 
-export type Route = '/' | '/claude' | '/git'
-const ROUTES: Route[] = ['/', '/claude', '/git']
-const LEGACY: Record<string, Route> = { '#/git': '/git', '#/tokens': '/claude', '#/claude': '/claude' }
+export type Route = '/' | '/ai' | '/git'
+const ROUTES: Route[] = ['/', '/ai', '/git']
+const LEGACY: Record<string, Route> = { '#/git': '/git', '#/tokens': '/ai', '#/claude': '/ai', '#/ai': '/ai' }
 
 const current = (): Route => {
-  const p = location.pathname.replace(/\/+$/, '') || '/'
+  let p = location.pathname.replace(/\/+$/, '') || '/'
+  if (p === '/claude') p = '/ai'
   return (ROUTES as string[]).includes(p) ? (p as Route) : '/'
 }
 

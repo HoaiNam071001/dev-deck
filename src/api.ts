@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { BrowseResult, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow } from './types'
+import type { BrowseResult, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource } from './types'
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
@@ -10,6 +10,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   usage: () => request<UsageRow[]>('/api/usage'),
+  usageSources: () => request<UsageSource[]>('/api/usage/sources'),
   repos: (rescan = false) => request<ReposResponse>('/api/git/repos' + (rescan ? '?rescan=1' : '')),
   repo: (path: string) => request<RepoDetail>('/api/git/repo?path=' + encodeURIComponent(path)),
   action: (path: string, action: string, params: Record<string, unknown> = {}) =>
