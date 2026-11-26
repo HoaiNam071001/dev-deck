@@ -237,3 +237,42 @@ dialog.modal::backdrop { background: rgba(8,9,10,.6); }
 /* Chấm màu nhà cung cấp (trang AI) */
 .pdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; flex: none; }
 .src { display: flex; align-items: center; color: var(--fg-soft); }
+
+/* Mức dùng 5h / tuần */
+.usage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.usage-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.usage-h { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.usage-group { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.usage-sub { font-size: var(--text-xs); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--fg-soft); }
+.meter { display: flex; flex-direction: column; gap: 5px; }
+.meter-top { display: flex; align-items: center; gap: 8px; }
+.meter-l { color: var(--fg-mute); flex: 1; }
+.meter-v { font-size: 16px; }
+.meter .chip { border: 1px solid; border-radius: 9px; padding: 0 7px; font-size: var(--text-xs); background: transparent; }
+.meter-sub { display: flex; justify-content: space-between; gap: 8px; align-items: center; color: var(--fg-mute); font-size: var(--text-sm); }
+.meter-in { width: 110px; min-width: 0; }
+.meter-edit { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 2px; }
+.meter-edit select { height: 26px; font-size: var(--text-sm); }
+.meter-edit input { height: 26px; font-size: var(--text-sm); }
+.link-btn { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font: inherit; white-space: nowrap; }
+.link-btn:hover { color: var(--accent-hover); }
+
+/* Chọn tài khoản Claude */
+.acct { display: flex; flex-direction: column; gap: 6px; }
+.acct-row { display: flex; align-items: center; gap: 10px; }
+.acct-row select { flex: 1; min-width: 0; }
+.acct-add { display: flex; flex-wrap: wrap; gap: 6px; }
+.acct-add input { flex: 1; min-width: 180px; }
+.acct-add p { flex-basis: 100%; margin: 0; font-size: var(--text-sm); }
+.acct-add code { font-family: var(--font-mono); color: var(--fg-soft); }
+
+.collapse-h { display: flex; align-items: center; gap: 6px; background: none; border: 0; padding: 0; color: inherit; cursor: pointer; font: inherit; }
+.collapse-h:hover .collapse-ic { color: var(--fg); }
+.collapse-ic { color: var(--fg-mute); width: 12px; }
+.collapse-sum { display: flex; gap: 14px; font-size: var(--text-sm); }
+
+/* Đơn vị số gọn */
+.unit { font-weight: 600; margin-left: 1px }
+.unit-K { color: #5eb1ff }
+.unit-M { color: #f5a742 }
+.unit-B { color: #ff6b6b }

@@ -69,7 +69,7 @@ export function ShareBar({ pct, color = 'var(--ahead)' }: { pct: number; color?:
 export function KpiStrip({ children, label }: { children: ReactNode; label: string }) {
   return <section className="kpi-strip" aria-label={label}>{children}</section>
 }
-export function Kpi({ label, value, sub, valueColor, children }: { label: string; value: string; sub?: ReactNode; valueColor?: string; children?: ReactNode }) {
+export function Kpi({ label, value, sub, valueColor, children }: { label: string; value: ReactNode; sub?: ReactNode; valueColor?: string; children?: ReactNode }) {
   return (
     <div className="kpi">
       <span className="kpi-l">{label}</span>

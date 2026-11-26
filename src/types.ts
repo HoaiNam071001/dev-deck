@@ -4,6 +4,10 @@ export interface UsageRow {
   provider: Provider
   t: string
   project: string
+  /** Đường dẫn đầy đủ của dự án (nếu log có ghi) */
+  projectPath?: string
+  /** Chỉ có với Claude: thư mục cấu hình của tài khoản ('' = mặc định) */
+  account?: string
   model: string
   input: number
   output: number
@@ -12,6 +16,11 @@ export interface UsageRow {
 }
 
 export interface UsageSource { id: Provider; label: string; root: string; found: boolean; files: number; rows: number }
+
+/** Một tài khoản Claude Code = một thư mục cấu hình. dir '' là tài khoản mặc định. */
+export interface ClaudeProfile { dir: string; path: string; email: string | null; org: string | null }
+export interface AccountWindow { pct: number; resetsAt: string | null }
+export interface ClaudeAccount { error?: string; plan?: string | null; email?: string | null; org?: string | null; five?: AccountWindow | null; week?: AccountWindow | null; fetchedAt?: string }
 
 export interface LastCommit { date: string; subject: string; author: string }
 

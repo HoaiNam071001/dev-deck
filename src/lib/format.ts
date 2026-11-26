@@ -1,7 +1,14 @@
 export const fmt = (n: number) => n.toLocaleString('vi-VN')
 
+const dec = (v: number, d: number) => v.toFixed(d).replace('.', ',')
+
+/** Số token dạng chữ tiếng Việt: 266,8K · 21,3M · 1,2B. */
 export const short = (n: number) =>
-  n >= 1e9 ? (n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : String(n)
+  n >= 1e9 ? dec(n / 1e9, 2) + 'B' : n >= 1e6 ? dec(n / 1e6, n >= 1e7 ? 1 : 2) + 'M' : n >= 1e3 ? dec(n / 1e3, n >= 1e5 ? 0 : 1) + 'K' : String(n)
+
+/** Bản gọn cho nhãn trục biểu đồ: 12,6tr · 266k */
+export const shortAxis = (n: number) =>
+  n >= 1e9 ? dec(n / 1e9, 1) + ' tỷ' : n >= 1e6 ? dec(n / 1e6, 1) + 'tr' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n)
 
 export const p2 = (n: number) => String(n).padStart(2, '0')
 

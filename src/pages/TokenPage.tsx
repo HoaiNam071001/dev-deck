@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { api, useLoad } from '../api'
 import { SideSlot, StatusSlot } from '../components/Shell'
 import { StackedChart } from '../components/StackedChart'
+import { UsageWindows } from '../components/UsageWindows'
 import { Icon, Kpi, KpiStrip, NavLabel, Segmented, ShareBar } from '../components/ui'
-import { dayKey, fmt, short } from '../lib/format'
+import { ShortNum } from '../components/ShortNum'
+import { dayKey, fmt } from '../lib/format'
 import { usePersisted } from '../lib/persist'
 import { buckets, filterRows, granOf, group, KEYS, PROVIDERS, providerOf, sum, totalOf, type Totals } from '../lib/usage'
 
@@ -16,7 +18,10 @@ const RANGES = [
 const p2 = (n: number) => String(n).padStart(2, '0')
 const clock = (d: Date) => `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`
 
-function GroupTable({ title, label, rows, render, dot }: { title: string; label: string; rows: (Totals & { k: string })[]; render: (k: string) => string; dot?: (k: string) => string | undefined }) {
+/** Màu theo phần của dòng so với dòng lớn nhất: xanh ít → cam nhiều → đỏ chiếm phần lớn. */
+const heat = (r: number) => (r >= 0.85 ? 'var(--danger)' : r >= 0.5 ? 'var(--behind)' : r >= 0.15 ? 'var(--accent)' : 'var(--fg-mute)')
+
+function GroupTable({ title, label, rows, render, dot, tip }: { tip?: (k: string) => string | undefined; title: string; label: string; rows: (Totals & { k: string })[]; render: (k: string) => string; dot?: (k: string) => string | undefined }) {
   const max = Math.max(1, ...rows.map(totalOf))
   return (
     <section className="panel">
@@ -26,11 +31,11 @@ function GroupTable({ title, label, rows, render, dot }: { title: string; label:
         <tbody>
           {rows.map((r) => (
             <tr key={r.k}>
-              <td title={r.k}>{dot?.(r.k) && <i className="pdot" style={{ background: dot(r.k) }} />}{render(r.k)}</td>
+              <td title={tip?.(r.k) ?? r.k}>{dot?.(r.k) && <i className="pdot" style={{ background: dot(r.k) }} />}{render(r.k)}</td>
               <td className="muted">{fmt(r.msgs)}</td>
-              <td>{short(r.input)} / {short(r.output)}</td>
-              <td>{short(r.cacheRead + r.cacheWrite)}</td>
-              <td><span className="total-cell"><ShareBar pct={(totalOf(r) / max) * 100} /><span>{short(totalOf(r))}</span></span></td>
+              <td>{<ShortNum n={r.input} />} / {<ShortNum n={r.output} />}</td>
+              <td>{<ShortNum n={r.cacheRead + r.cacheWrite} />}</td>
+              <td><span className="total-cell"><ShareBar pct={(totalOf(r) / max) * 100} color={heat((totalOf(r) / max))} /><span style={{ color: heat(totalOf(r) / max) }}>{<ShortNum n={totalOf(r)} />}</span></span></td>
             </tr>
           ))}
           {!rows.length && <tr><td colSpan={5} className="empty">Không có dữ liệu</td></tr>}
@@ -44,6 +49,7 @@ export function TokenPage() {
   const { data, error, loading, reload } = useLoad(api.usage, [], 30000)
   const [range, setRange] = useState('1')
   const [gran, setGran] = useState(0)
+  const [tab, setTab] = usePersisted<'chart' | 'detail'>('ai.tab', 'chart', (v) => v === 'chart' || v === 'detail')
   const [stack, setStack] = usePersisted<'type' | 'provider'>('ai.stack', 'type', (v) => v === 'type' || v === 'provider')
   const [project, setProject] = useState('')
   const [provider, setProvider] = usePersisted<string>('ai.provider', '', (v) => typeof v === 'string')
@@ -53,6 +59,7 @@ export function TokenPage() {
 
   const all = data ?? []
   const projects = useMemo(() => [...new Set(all.map((r) => r.project))].sort(), [all])
+  const projPath = useMemo(() => { const m = new Map<string, string>(); for (const r of all) if (r.projectPath && !m.has(r.project)) m.set(r.project, r.projectPath); return m }, [all])
   // Đổi nhà cung cấp mà dự án đang chọn không có ở đó thì bỏ lọc dự án
   useEffect(() => { if (project && data && !data.some((r) => r.project === project && (!provider || r.provider === provider))) setProject('') }, [provider, project, data])
   const inRange = useMemo(() => filterRows(all, range, '', provider), [all, range, provider])
@@ -100,11 +107,11 @@ export function TokenPage() {
         <div className="side-group">
           <NavLabel>Dự án</NavLabel>
           <button className={'nav-item' + (!project ? ' on' : '')} aria-pressed={!project} onClick={() => setProject('')}>
-            Mọi dự án<span className="nav-n">{short(totalOf(sum(inRange)))}</span>
+            Mọi dự án<span className="nav-n">{<ShortNum n={totalOf(sum(inRange))} />}</span>
           </button>
           {projects.map((p) => (
-            <button key={p} className={'nav-item' + (project === p ? ' on' : '')} aria-pressed={project === p} title={p} onClick={() => setProject(p)}>
-              <span className="truncate">{p}</span><span className="nav-n">{short(projTotals.get(p) ?? 0)}</span>
+            <button key={p} className={'nav-item' + (project === p ? ' on' : '')} aria-pressed={project === p} title={projPath.get(p) ?? p} onClick={() => setProject(p)}>
+              <span className="truncate">{p}</span><span className="nav-n">{<ShortNum n={projTotals.get(p) ?? 0} />}</span>
             </button>
           ))}
         </div>
@@ -134,6 +141,7 @@ ${s.files} file · ${s.rows} tin` : `Chưa thấy log${s.root ? ' tại ' + s.ro
             <Segmented label="Nhà cung cấp" value={provider} onChange={setProvider}
               options={[{ id: '', label: 'Tất cả' }, ...PROVIDERS.filter((p) => hasData(p.id) || provider === p.id).map((p) => ({ id: p.id as string, label: p.label }))]} />
             <Segmented label="Khoảng thời gian" value={range} onChange={setRange} options={RANGES.map(({ id, label }) => ({ id, label }))} />
+            {tab === 'chart' && <>
             <select value={gran} onChange={(e) => setGran(Number(e.target.value))} aria-label="Độ chi tiết">
               <option value="0">Tự động</option><option value="1">1 phút</option><option value="5">5 phút</option>
               <option value="15">15 phút</option><option value="60">Theo giờ</option><option value="1440">Theo ngày</option>
@@ -141,6 +149,7 @@ ${s.files} file · ${s.rows} tin` : `Chưa thấy log${s.root ? ' tại ' + s.ro
             <select value={stack} onChange={(e) => setStack(e.target.value as 'type' | 'provider')} aria-label="Chia biểu đồ theo">
               <option value="type">Theo loại token</option><option value="provider">Theo nhà cung cấp</option>
             </select>
+            </>}
             <button className="icon-btn" aria-label="Tải lại" title="Tải lại" onClick={reload} disabled={loading}><Icon name="refresh" size={13} /></button>
             <button className="icon-btn" aria-label="Xuất CSV" title="Xuất CSV" onClick={exportCsv} disabled={!series.length}><Icon name="download" size={13} /></button>
           </div>
@@ -148,11 +157,17 @@ ${s.files} file · ${s.rows} tin` : `Chưa thấy log${s.root ? ' tại ' + s.ro
 
         {error && <div className="banner err" role="alert">Không đọc được dữ liệu: {error}</div>}
 
+        <UsageWindows rows={provider ? all.filter((r) => r.provider === provider) : all} />
+
+        <Segmented label="Mục xem" value={tab} onChange={setTab}
+          options={[{ id: 'chart', label: 'Tổng quan' }, { id: 'detail', label: 'Chi tiết', count: byProvider.length + byModel.length + byProject.length }]} />
+
+        {tab === 'chart' && <>
         <KpiStrip label="Chỉ số">
-          <Kpi label="Tổng token" value={short(total)}
+          <Kpi label="Tổng token" value={<ShortNum n={total} />}
             sub={delta === null ? `${fmt(total)} token` : <><span style={{ color: delta > 0 ? 'var(--behind)' : 'var(--accent)' }}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta * 100).toFixed(0)}%</span> so với hôm qua</>} />
-          <Kpi label="Input + Output" value={short(s.input + s.output)} sub={<><span style={{ color: 'var(--series-input)' }}>in</span> {short(s.input)} · <span style={{ color: 'var(--series-output)' }}>out</span> {short(s.output)}</>} />
-          <Kpi label="Cache" value={short(s.cacheRead + s.cacheWrite)} sub={`đọc ${short(s.cacheRead)} · ghi ${short(s.cacheWrite)}`} />
+          <Kpi label="Input + Output" value={<ShortNum n={s.input + s.output} />} sub={<><span style={{ color: 'var(--series-input)' }}>in</span> <ShortNum n={s.input} /> · <span style={{ color: 'var(--series-output)' }}>out</span> <ShortNum n={s.output} /></>} />
+          <Kpi label="Cache" value={<ShortNum n={s.cacheRead + s.cacheWrite} />} sub={<>đọc <ShortNum n={s.cacheRead} /> · ghi <ShortNum n={s.cacheWrite} /></>} />
           <Kpi label="Tỉ lệ cache đọc" value={(hit * 100).toFixed(1) + '%'} valueColor="var(--accent)"><ShareBar pct={hit * 100} color="var(--accent)" /></Kpi>
           <Kpi label="Tin nhắn" value={fmt(s.msgs)} sub="phản hồi của model" />
         </KpiStrip>
@@ -164,14 +179,17 @@ ${s.files} file · ${s.rows} tin` : `Chưa thấy log${s.root ? ' tại ' + s.ro
           </div>
           <StackedChart data={series} g={g} by={stack} />
         </section>
+        </>}
 
+        {tab === 'detail' && <>
         <div className="two">
           <GroupTable title="Theo nhà cung cấp" label="Nhà cung cấp" rows={byProvider} render={(k) => providerOf(k)?.label ?? k} dot={(k) => providerOf(k)?.color} />
           <GroupTable title="Theo model" label="Model" rows={byModel} render={(k) => k} dot={(k) => providerOf(modelProvider.get(k) ?? '')?.color} />
         </div>
         <div className="two">
-          <GroupTable title="Theo dự án" label="Dự án" rows={byProject} render={(k) => k} />
+          <GroupTable title="Theo dự án" label="Dự án" rows={byProject} render={(k) => k} tip={(k) => projPath.get(k)} />
         </div>
+        </>}
       </div>
     </>
   )

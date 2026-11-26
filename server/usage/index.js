@@ -27,4 +27,4 @@ function refresh() {
   return cache
 }
 
-module.exports = { collect: () => refresh().rows, sources: () => refresh().sources }
+module.exports = { collect: () => refresh().rows, sources: () => refresh().sources, invalidate: () => { cache.at = 0 } }

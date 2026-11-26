@@ -2,6 +2,8 @@ const http = require('http')
 const fs = require('fs')
 const path = require('path')
 const usage = require('./usage')
+const { claudeAccount } = require('./usage/account')
+const profiles = require('./usage/profiles')
 const git = require('./git')
 const gitActions = require('./git-actions')
 
@@ -22,6 +24,15 @@ const readBody = (req) => new Promise((resolve, reject) => {
 async function api(req, res, url) {
   try {
     if (url.pathname === '/api/usage') return json(res, 200, usage.collect())
+    if (url.pathname === '/api/account/claude') return json(res, 200, await claudeAccount(url.searchParams.get('dir') || ''))
+    if (url.pathname === '/api/accounts/claude') {
+      if (req.method !== 'POST') return json(res, 200, profiles.list())
+      if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
+      const body = await readBody(req)
+      const out = body.action === 'remove' ? profiles.remove(String(body.dir || '')) : profiles.add(String(body.dir || ''))
+      usage.invalidate()
+      return json(res, 200, out)
+    }
     if (url.pathname === '/api/usage/sources') return json(res, 200, usage.sources())
     if (url.pathname === '/api/git/repos') return json(res, 200, await git.listRepos(url.searchParams.get('rescan') === '1'))
     if (url.pathname === '/api/git/repo') return json(res, 200, await git.repoDetail(url.searchParams.get('path') || ''))
