@@ -5,6 +5,7 @@ import { usePersisted } from '../lib/persist'
 import { bridge, MOD, type UpdateStatus } from '../lib/platform'
 import { getState, openPalette, setState, useStore } from '../lib/store'
 import { CommandPalette } from './CommandPalette'
+import { ReleaseNotesModal } from './ReleaseNotesModal'
 import { Toasts } from './Toasts'
 import { Icon, Spinner } from './ui'
 
@@ -159,6 +160,7 @@ export function Shell({ children }: { children: ReactNode }) {
   // Số phiên bản thật của app đã đóng gói; ngoài app desktop thì dùng số lúc build
   const [version, setVersion] = useState(__APP_VERSION__)
   useEffect(() => { bridge()?.version?.().then((v) => { if (v) setVersion(v) }).catch(() => {}) }, [])
+  const [notesSignal, setNotesSignal] = useState(0)
   const [side, setSide] = useState<HTMLElement | null>(null)
   const [status, setStatus] = useState<HTMLElement | null>(null)
 
@@ -194,9 +196,10 @@ export function Shell({ children }: { children: ReactNode }) {
         <footer className="statusbar">
           <div className="sb-slot" ref={setStatus} />
           <UpdateButton />
-          <span className="mono sb-ver">v{version}</span>
+          <button className="ghost mono sb-ver cursor-pointer px-1 hover:text-fg" title="Xem có gì mới trong bản này" onClick={() => setNotesSignal((n) => n + 1)}>v{version}</button>
         </footer>
         <CommandPalette />
+        <ReleaseNotesModal version={version} openSignal={notesSignal} />
         <Toasts />
       </div>
     </Slots.Provider>

@@ -18,6 +18,8 @@ case "${1:-z}" in
   *) echo "Đối số: x | y | z | X.Y.Z" >&2; exit 1 ;;
 esac
 
+grep -q "version: '$next'" src/releaseNotes.ts || { echo "Chưa có ghi chú phát hành cho v$next: thêm một mục vào src/releaseNotes.ts rồi commit." >&2; exit 1; }
+
 echo "Phát hành v$next (bản trước: v$last)"
 npm run typecheck
 git push origin main
