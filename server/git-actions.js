@@ -2,18 +2,21 @@
 const { execFile } = require('child_process')
 const fs = require('fs')
 const path = require('path')
+const git = require('./git')
+const { STASH_REF, buildPatch, fileDiff, checkFile } = require('./git-diff')
 
 const AUDIT = path.join(process.env.DEVDECK_DATA || path.join(__dirname, '..', 'data'), 'audit.log')
 
-function run(cwd, args, timeout = 60000) {
+function run(cwd, args, timeout = 60000, input) {
   return new Promise((resolve, reject) => {
-    execFile('git', ['-c', 'core.quotepath=off', ...args], {
+    const child = execFile('git', ['-c', 'core.quotepath=off', ...args], {
       cwd, timeout, maxBuffer: 16 * 1024 * 1024, windowsHide: true,
       env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
     }, (err, stdout, stderr) => {
       if (err) return reject(new Error((stderr || stdout || err.message).trim() || 'Lệnh git thất bại'))
       resolve((stdout + stderr).trim())
     })
+    if (input !== undefined) child.stdin.end(input)
   })
 }
 
@@ -60,11 +63,61 @@ async function splitRemoteRef(cwd, ref) {
   return { remote, branch: await checkBranchName(cwd, ref.slice(remote.length + 1)) }
 }
 
+/** Cất thay đổi hiện có vào stash. Không có gì để cất thì trả về false (strict: ném lỗi). */
+async function stashIfDirty(cwd, message, includeUntracked, strict = false) {
+  const dirty = await run(cwd, ['status', '--porcelain', includeUntracked ? '--untracked-files=all' : '--untracked-files=no'])
+  if (!dirty) { if (strict) throw new Error('Không có thay đổi nào để stash'); return false }
+  if (!(await hasCommits(cwd))) throw new Error('Repo chưa có commit nên chưa stash được')
+  await run(cwd, ['stash', 'push', ...(includeUntracked ? ['--include-untracked'] : []), '-m', message])
+  return true
+}
+
+async function checkStashRef(cwd, ref) {
+  if (typeof ref !== 'string' || !STASH_REF.test(ref)) throw new Error('Tham chiếu stash không hợp lệ')
+  if (!(await refExists(cwd, ref))) throw new Error('Không còn ' + ref + ' (danh sách stash đã đổi, hãy tải lại)')
+  return ref
+}
+
+/** apply/pop gặp xung đột: git giữ lại stash, nói rõ cho người dùng. */
+const stashRun = (cwd, verb, ref) => run(cwd, ['stash', verb, ref]).catch((e) => {
+  throw new Error(/conflict/i.test(e.message) ? `Xung đột khi ${verb} ${ref}. Stash vẫn được giữ lại; sửa xung đột rồi stage, hoặc bỏ thay đổi để thử lại.\n${e.message}` : e.message)
+})
+
+/** Dựng patch một hunk theo hash trong diff hiện tại; lệch thì từ chối (tệp đã đổi giữa lúc xem và lúc stage). */
+async function hunkPatch(cwd, { file, hash, staged }) {
+  checkFile(file)
+  if (typeof hash !== 'string' || !/^[0-9a-f]{12}$/.test(hash)) throw new Error('Mã hunk không hợp lệ')
+  const d = await fileDiff(cwd, { file, kind: staged ? 'staged' : 'unstaged' })
+  if (d.binary || d.tooLarge) throw new Error('Tệp nhị phân hoặc quá lớn, không stage theo hunk được')
+  if (d.nonUtf8) throw new Error('Tệp không phải UTF-8, hãy stage cả tệp')
+  const hunk = d.hunks.find((h) => h.hash === hash)
+  if (!hunk) throw new Error('Tệp đã thay đổi kể từ lúc xem diff. Tải lại diff rồi thử lại.')
+  return buildPatch(d.head, hunk)
+}
+
+const applyPatch = (cwd, patch, reverse) => run(cwd, ['apply', '--cached', '--whitespace=nowarn', ...(reverse ? ['--reverse'] : []), '-'], 30000, patch)
+
+const normP = (p) => path.resolve(p).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase()
+const worktreeList = async (cwd) => git.parseWorktrees(await run(cwd, ['worktree', 'list', '--porcelain']))
+const defaultWorktreeDir = (repo, branch) => path.join(path.resolve(repo) + '-wt', branch.replace(/[\\/:*?"<>|]+/g, '-'))
+
+/** Thư mục đích của worktree: trong thư mục quét, không nằm trong repo, chưa có hoặc đang trống. */
+function checkWorktreeDir(repo, dir, branch) {
+  const target = path.resolve(typeof dir === 'string' && dir.trim() ? dir.trim() : defaultWorktreeDir(repo, branch))
+  const n = normP(target), r = normP(repo)
+  if (!git.loadConfig().roots.some((x) => n.startsWith(normP(x) + '/'))) throw new Error('Thư mục worktree phải nằm trong thư mục quét: ' + target)
+  if (n === r || n.startsWith(r + '/')) throw new Error('Không đặt worktree bên trong chính repo')
+  const st = fs.statSync(target, { throwIfNoEntry: false })
+  if (st && (!st.isDirectory() || fs.readdirSync(target).length)) throw new Error('Thư mục đã tồn tại và không trống: ' + target)
+  return target
+}
+
 const needName = (body, name) => { if (body.confirmName !== name) throw new Error('Cần gõ đúng tên nhánh để xác nhận') }
 
 const actions = {
-  async checkout(cwd, { branch, remote }) {
+  async checkout(cwd, { branch, remote, stash }) {
     await checkBranchName(cwd, branch)
+    if (stash === true) await stashIfDirty(cwd, `DevDeck: tự stash trước khi chuyển sang ${branch}`, false)
     await assertClean(cwd, 'chuyển nhánh')
     if (remote) {
       // "origin/feat" → tạo nhánh local "feat" theo dõi remote
@@ -122,6 +175,59 @@ const actions = {
     const list = all ? ['.'] : checkPaths(paths)
     return run(cwd, (await hasCommits(cwd)) ? ['restore', '--staged', '--', ...list] : ['rm', '--cached', '-r', '-q', '--', ...list])
   },
+  /** Thêm worktree: create=true tạo nhánh mới (từ `from` hoặc HEAD), ngược lại dùng nhánh local có sẵn. */
+  async worktreeAdd(cwd, { dir, branch, create, from }) {
+    await checkBranchName(cwd, branch)
+    const target = checkWorktreeDir(cwd, dir, branch)
+    const exists = await refExists(cwd, 'refs/heads/' + branch)
+    let args
+    if (create === true) {
+      if (exists) throw new Error('Nhánh đã tồn tại: ' + branch)
+      if (from !== undefined && from !== '' && (typeof from !== 'string' || from.startsWith('-') || !(await refExists(cwd, from + '^{commit}')))) throw new Error('Điểm bắt đầu không hợp lệ: ' + from)
+      args = ['worktree', 'add', '-b', branch, target, ...(from ? [from] : [])]
+    } else {
+      if (!exists) throw new Error('Không có nhánh local: ' + branch)
+      args = ['worktree', 'add', target, branch]
+    }
+    try { await run(cwd, args, 120000) } finally { git.invalidate() }
+    return 'Đã tạo worktree ' + target
+  },
+  /** Xóa worktree phụ (không xóa nhánh). Còn thay đổi chưa commit thì cần force. dryRun trả thông tin để UI cảnh báo. */
+  async worktreeRemove(cwd, body) {
+    const w = (await worktreeList(cwd)).find((x) => normP(x.path) === normP(String(body.dir || '')))
+    if (!w) throw new Error('Không phải worktree của repo này')
+    if (w.main) throw new Error('Không xóa được worktree chính')
+    if (w.locked) throw new Error('Worktree đang bị khóa (git worktree unlock trước)')
+    if (w.prunable) throw new Error('Thư mục worktree đã mất; dùng "Dọn worktree hỏng" (prune)')
+    const dirty = (await run(w.path, ['status', '--porcelain'])).split('\n').filter(Boolean).length
+    if (body.dryRun) return { output: dirty ? `${dirty} tệp thay đổi chưa commit` : 'Sạch', info: { dir: w.path, branch: w.branch, dirty } }
+    needName(body, path.basename(w.path))
+    if (dirty && body.force !== true) throw new Error(`Worktree còn ${dirty} thay đổi chưa commit. Tick "vẫn xóa" để bỏ chúng.`)
+    try { return await run(cwd, ['worktree', 'remove', ...(body.force === true ? ['--force'] : []), w.path]) } finally { git.invalidate() }
+  },
+  async worktreePrune(cwd) {
+    try { return (await run(cwd, ['worktree', 'prune', '-v'])) || 'Không có worktree hỏng' } finally { git.invalidate() }
+  },
+  async stageHunk(cwd, { file, hash }) {
+    await applyPatch(cwd, await hunkPatch(cwd, { file, hash, staged: false }), false)
+    return 'Đã stage một hunk của ' + file
+  },
+  async unstageHunk(cwd, { file, hash }) {
+    await applyPatch(cwd, await hunkPatch(cwd, { file, hash, staged: true }), true)
+    return 'Đã bỏ stage một hunk của ' + file
+  },
+  async stash(cwd, { message, includeUntracked }) {
+    const msg = typeof message === 'string' ? message.trim().slice(0, 200) : ''
+    await stashIfDirty(cwd, msg || 'DevDeck stash ' + new Date().toISOString().slice(0, 16).replace('T', ' '), includeUntracked === true, true)
+    return 'Đã cất thay đổi vào stash'
+  },
+  async stashApply(cwd, { ref }) { return stashRun(cwd, 'apply', await checkStashRef(cwd, ref)) },
+  async stashPop(cwd, { ref }) { return stashRun(cwd, 'pop', await checkStashRef(cwd, ref)) },
+  async stashDrop(cwd, { ref, confirm }) {
+    await checkStashRef(cwd, ref)
+    if (confirm !== true) throw new Error('Cần xác nhận xóa stash')
+    return run(cwd, ['stash', 'drop', ref])
+  },
   async commit(cwd, { message, amend }) {
     const msg = typeof message === 'string' ? message.trim() : ''
     if (!msg && !amend) throw new Error('Cần nhập nội dung commit')
@@ -165,7 +271,7 @@ function audit(entry) {
 }
 
 /** Hành động có chế độ dryRun (chỉ đọc, trả về điều sẽ xảy ra). */
-const DRY_RUN = new Set(['deleteBranch', 'deleteRemoteBranch'])
+const DRY_RUN = new Set(['deleteBranch', 'deleteRemoteBranch', 'worktreeRemove'])
 
 async function perform(repoPath, body) {
   const fn = actions[body.action]

@@ -1,5 +1,11 @@
 import type { RepoSummary } from '../types'
 
+/** Thư mục worktree mặc định: `<repo>-wt/<nhánh>`, dấu "/" và ký tự cấm trong tên nhánh đổi thành "-". Khớp với server (git-actions.js). */
+export const worktreeDir = (repoPath: string, branch: string) => {
+  const sep = repoPath.includes('\\') ? '\\' : '/'
+  return repoPath.replace(/[\\/]+$/, '') + '-wt' + sep + branch.trim().replace(/[\\/:*?"<>|]+/g, '-')
+}
+
 export const changeCount = (r: RepoSummary) => r.staged + r.modified + r.untracked + r.conflicts
 export const isDirty = (r: RepoSummary) => changeCount(r) > 0
 export const isOut = (r: RepoSummary) => r.ahead > 0 || r.behind > 0

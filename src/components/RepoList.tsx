@@ -67,8 +67,7 @@ function RepoRow({ r, active, pinned, menuOpen, menuUp, top, onPick, onMenu, onC
       <button onClick={onPick} aria-current={active} className="flex min-w-0 flex-1 flex-col gap-[3px] border-0 bg-transparent py-[9px] pr-1 pl-3.5 text-left text-inherit">
         <span className="flex w-full items-center gap-2">
           <span className="truncate font-medium">{r.name}</span>
-          
-          <span className="ml-auto flex gap-1"><StatusChips r={r} /></span>
+          <span className="ml-auto flex gap-1">{!!r.worktrees && <Chip tone="info" title={r.worktrees + ' worktree phụ (đã gom vào repo này)'}>{r.worktrees} worktree</Chip>}<StatusChips r={r} /></span>
         </span>
         <span className="flex w-full min-w-0 items-center gap-2 text-sm text-fg-mute">
           <span className={'font-mono whitespace-nowrap ' + (r.branch ? 'text-fg-soft' : 'text-behind')}>{r.branch ?? 'detached @ ' + r.head}</span>

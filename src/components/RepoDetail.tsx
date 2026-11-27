@@ -5,42 +5,18 @@ import { relTime } from '../lib/format'
 import { bridge, copyText, MOD, revealLabel } from '../lib/platform'
 import { pinRepo, toast, unpinRepo, useStore } from '../lib/store'
 import type { FileChange, RepoSummary } from '../types'
+import { RepoChanges } from './RepoChanges'
+import { RepoStash } from './RepoStash'
+import { RepoWorktrees } from './RepoWorktrees'
 import { Spinner, Icon } from './ui'
 import { RepoJobs } from './JobDetail'
 import { RepoMr } from './RepoMr'
 import { ContextMenu } from './ContextMenu'
 import { DeleteBranchDialog, DeleteRemoteBranchDialog, RenameBranchDialog } from './BranchDialogs'
 
-type Tab = 'changes' | 'branches' | 'commits' | 'remotes'
+type Tab = 'changes' | 'stash' | 'worktree' | 'branches' | 'commits' | 'remotes'
 
 const isStaged = (f: FileChange) => f.kind === 'change' && f.x !== '.'
-const isUnstaged = (f: FileChange) => f.kind !== 'change' || f.y !== '.'
-
-const LETTER: Record<string, string> = {
-  M: 'bg-behind/15 text-behind', A: 'bg-accent/15 text-accent', D: 'bg-danger/15 text-danger',
-  R: 'bg-ahead/15 text-ahead', C: 'bg-ahead/15 text-ahead', U: 'bg-danger/15 text-danger', '?': 'bg-border text-untracked',
-}
-
-function FileRow({ f, staged, add, del, busy, onToggle }: { f: FileChange; staged: boolean; add?: number; del?: number; busy: boolean; onToggle: () => void }) {
-  const letter = staged ? f.x : f.kind === 'untracked' ? '?' : f.kind === 'conflict' ? 'U' : f.y
-  const i = f.path.lastIndexOf('/')
-  return (
-    <label className="flex cursor-default items-center gap-2 px-4 py-1 font-mono text-[12px] hover:bg-selected">
-      <input type="checkbox" checked={staged} disabled={busy} onChange={onToggle} aria-label={(staged ? 'Bỏ stage ' : 'Stage ') + f.path} />
-      <span className={'flex size-4 flex-none items-center justify-center rounded-[3px] text-[10px] font-semibold ' + (LETTER[letter] ?? LETTER['?'])}>{letter}</span>
-      <span className="min-w-0 flex-1 truncate" title={f.path}><span className="text-fg-mute">{f.path.slice(0, i + 1)}</span>{f.path.slice(i + 1)}</span>
-      <span className="text-[10px]">
-        {!!add && <span className="text-accent">+{add}</span>} {!!del && <span className="text-danger">−{del}</span>}
-      </span>
-    </label>
-  )
-}
-
-const SectionHead = ({ title, action }: { title: string; action: React.ReactNode }) => (
-  <div className="flex items-center justify-between px-4 pt-2 pb-0.5">
-    <span className="text-[10px] font-semibold tracking-[.08em] text-fg-mute uppercase">{title}</span>{action}
-  </div>
-)
 
 type BranchDialog = { kind: 'delete' | 'rename' | 'deleteRemote'; name: string }
 
@@ -78,9 +54,8 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
 
   const b = bridge()
   const staged = data.files.filter(isStaged)
-  const unstaged = data.files.filter(isUnstaged)
   const tabs: [Tab, string, number][] = [
-    ['changes', 'Thay đổi', data.files.length], ['branches', 'Nhánh', data.branches.filter((x) => !x.remote).length],
+    ['changes', 'Thay đổi', data.files.length], ['stash', 'Stash', data.stashes.length], ['worktree', 'Worktree', Math.max(0, data.worktrees.length - 1)], ['branches', 'Nhánh', data.branches.filter((x) => !x.remote).length],
     ['commits', 'Lịch sử', data.commits.length], ['remotes', 'Remote', data.remotes.length],
   ]
   const trackedDirty = data.files.some((f) => f.kind !== 'untracked')
@@ -135,19 +110,14 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
             className={'h-9 cursor-pointer border-0 border-b-2 bg-transparent px-2 text-[12px] font-medium whitespace-nowrap ' + (tab === id ? 'border-accent text-fg' : 'border-transparent text-fg-mute hover:text-fg')}
             onClick={() => setTab(id)}>{label} <span className="font-mono text-fg-mute">{n}</span></button>
         ))}
-        {data.stashes > 0 && <span className="ml-auto self-center pr-2 text-sm text-fg-mute">{data.stashes} stash</span>}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {tab === 'changes' && (data.files.length ? (
-          <div className="pb-1.5">
-            <SectionHead title={`Đã stage · ${staged.length}`} action={<button className="ghost h-6 text-sm disabled:opacity-40" disabled={!!busy || !staged.length} onClick={() => act('unstageAll', 'unstage', { all: true }, true)}>Bỏ stage tất cả</button>} />
-            {staged.map((f) => <FileRow key={'s' + f.path} f={f} staged add={data.numstat?.staged[f.path]?.[0]} del={data.numstat?.staged[f.path]?.[1]} busy={!!busy} onToggle={() => act('u:' + f.path, 'unstage', { paths: [f.path] }, true)} />)}
-            {!staged.length && <p className="px-4 py-1 text-sm text-fg-mute">Chưa có tệp nào được stage</p>}
-            <SectionHead title={`Chưa stage · ${unstaged.length}`} action={<button className="ghost h-6 text-sm !text-accent disabled:opacity-40" disabled={!!busy || !unstaged.length} onClick={() => act('stageAll', 'stage', { all: true }, true)}>Stage tất cả</button>} />
-            {unstaged.map((f) => <FileRow key={'u' + f.path} f={f} staged={false} add={data.numstat?.unstaged[f.path]?.[0]} del={data.numstat?.unstaged[f.path]?.[1]} busy={!!busy} onToggle={() => act('s:' + f.path, 'stage', { paths: [f.path] }, true)} />)}
-          </div>
-        ) : <p className="empty">Working tree sạch</p>)}
+        {tab === 'changes' && <RepoChanges data={data} busy={busy} act={act} />}
+
+        {tab === 'stash' && <RepoStash data={data} busy={busy} act={act} />}
+
+        {tab === 'worktree' && <RepoWorktrees data={data} busy={busy} act={act} />}
 
         {tab === 'branches' && (
           <div className="flex flex-col">
@@ -171,7 +141,7 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
                 <span className="font-mono text-sm">{x.ahead > 0 && <span className="text-ahead">↑{x.ahead}</span>} {x.behind > 0 && <span className="text-behind">↓{x.behind}</span>}</span>
                 {!x.remote && x.upstream && !x.gone && x.behind > 0 && <button className="btn sm" disabled={!!busy} title="Fast-forward từ upstream" onClick={() => act('pl:' + x.name, 'pullBranch', { branch: x.name })}>Pull</button>}
                 {!x.remote && data.remotes.length > 0 && (x.ahead > 0 || !x.upstream || x.gone) && <button className="btn sm" disabled={!!busy} title={x.upstream && !x.gone ? 'Push lên upstream' : 'Push và đặt upstream'} onClick={() => act('ps:' + x.name, 'pushBranch', { branch: x.name })}>Push</button>}
-                {!x.current && <button className="btn sm" disabled={!!busy || trackedDirty} title={trackedDirty ? 'Còn thay đổi chưa commit: commit hoặc stash trước khi chuyển nhánh' : undefined} onClick={() => act('co:' + x.name, 'checkout', { branch: x.name, remote: x.remote })}>Chuyển</button>}
+                {!x.current && <button className="btn sm" disabled={!!busy} title={trackedDirty ? 'Còn thay đổi chưa commit: cất vào stash rồi chuyển nhánh (lấy lại ở tab Stash)' : undefined} onClick={() => act('co:' + x.name, 'checkout', { branch: x.name, remote: x.remote, stash: trackedDirty })}>{trackedDirty ? 'Stash rồi chuyển' : 'Chuyển'}</button>}
                 {(!x.current) && (
                   <span className="relative">
                     <button className="ghost flex size-6 items-center justify-center" aria-label={'Thao tác cho nhánh ' + x.name} aria-haspopup="menu" aria-expanded={branchMenu === bkey(x)} onClick={() => setBranchMenu(branchMenu === bkey(x) ? null : bkey(x))}><Icon name="dots" size={13} /></button>

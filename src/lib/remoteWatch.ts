@@ -13,11 +13,12 @@ const WAIT_KEY = 'remote.waitSeen'
 const WATCH_MS = 120000
 
 /** Phần trạng thái của một MR / PR đủ để nhận ra thay đổi đáng báo. */
-export interface CrSnap { ci: string; threads: number; open: number; conflict: boolean; reviewMe: boolean }
+export interface CrSnap { ci: string; threads: number; open: number; conflict: boolean | null; reviewMe: boolean }
 export type Seen = Record<string, CrSnap>
 export interface CrEvent { key: string; title: string; body: string }
 
-const snap = (c: ChangeRequest): CrSnap => ({ ci: c.ci, threads: c.threads?.total ?? 0, open: unresolved(c), conflict: c.conflict === true, reviewMe: c.reviewMe })
+/** Conflict "chưa rõ" (null: GitLab / GitHub đang kiểm tra) giữ giá trị đã biết trước đó, kẻo lần sau có kết quả bị tưởng là mới conflict. */
+const snap = (c: ChangeRequest, old?: CrSnap): CrSnap => ({ ci: c.ci, threads: c.threads?.total ?? 0, open: unresolved(c), conflict: typeof c.conflict === 'boolean' ? c.conflict : (old?.conflict ?? null), reviewMe: c.reviewMe })
 
 /**
  * So danh sách hiện tại với lần thấy trước. Chưa có `prev` (lần đầu) thì chỉ ghi nhớ, không báo.
@@ -28,9 +29,9 @@ export function diffCrs(prev: Seen | null, items: ChangeRequest[]): { next: Seen
   const events: CrEvent[] = []
   for (const c of items) {
     if (c.state !== 'opened') continue
-    const cur = snap(c)
-    next[c.key] = cur
     const old = prev?.[c.key]
+    const cur = snap(c, old)
+    next[c.key] = cur
     if (!prev) continue
     const ref = `${c.project} #${c.number}`
     if (c.reviewMe && !c.mine && (!old || !old.reviewMe)) { events.push({ key: c.key, title: 'Cần bạn review', body: `${ref} · ${c.title}` }); continue }
@@ -38,7 +39,7 @@ export function diffCrs(prev: Seen | null, items: ChangeRequest[]): { next: Seen
     if (cur.ci === 'failed' && old.ci !== 'failed') events.push({ key: c.key, title: 'Pipeline lỗi', body: `${ref} · ${c.title}` })
     if (cur.open > old.open) events.push({ key: c.key, title: 'Thread review mới', body: `${ref} · ${cur.open} thread chưa resolve` })
     else if (cur.threads > old.threads) events.push({ key: c.key, title: 'Có comment mới', body: `${ref} · ${c.title}` })
-    if (cur.conflict && !old.conflict) events.push({ key: c.key, title: 'MR bị conflict', body: `${ref} · ${c.title}` })
+    if (cur.conflict === true && old.conflict === false) events.push({ key: c.key, title: 'MR bị conflict', body: `${ref} · ${c.title}` })
   }
   return { next, events }
 }

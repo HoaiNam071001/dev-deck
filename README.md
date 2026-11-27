@@ -78,7 +78,9 @@ plan/     kế hoạch theo giai đoạn
 | `GET /api/git/repos[?rescan=1]` | Danh sách repo + nhánh hiện tại, trạng thái, ahead/behind |
 | `GET /api/git/repo?path=` | Chi tiết một repo: nhánh local/remote, file thay đổi, 20 commit, remote, stash |
 | `GET/PUT /api/git/config` | Thư mục gốc quét và độ sâu |
-| `POST /api/git/action` | Thao tác ghi trên một repo đã quét: stage, commit, fetch, pull, push, checkout, tạo / đổi tên / xóa nhánh (local và remote). `dryRun: true` chỉ cho xóa nhánh, trả về điều sẽ xảy ra |
+| `GET /api/git/diff?path=&file=&kind=&ref=` | Diff một tệp đã tách hunk (`kind`: staged / unstaged / untracked / stash). Tệp nhị phân hoặc > 500 KB chỉ trả cờ |
+| `GET /api/git/stash?path=&ref=` | Các tệp (và số dòng +/−) của một stash |
+| `POST /api/git/action` | Thao tác ghi trên một repo đã quét: stage, commit, fetch, pull, push, checkout (tùy chọn `stash` để tự cất thay đổi), tạo / đổi tên / xóa nhánh (local và remote), stash / stashApply / stashPop / stashDrop, worktreeAdd / worktreeRemove (có dry-run) / worktreePrune, stageHunk / unstageHunk (chỉ nhận `file` + `hash` hunk, server tự dựng patch). `dryRun: true` chỉ cho xóa nhánh, trả về điều sẽ xảy ra |
 | `POST /api/git/repo-action` | `create` (git init + README / .gitignore tùy chọn), `delete` (dry-run rồi chuyển vào Thùng rác) |
 | `POST /api/git/clone`, `GET /api/git/clone?id=` | Bắt đầu clone (trả `id`), hỏi tiến độ; `{action:'cancel', id}` để hủy và dọn bản dở |
 

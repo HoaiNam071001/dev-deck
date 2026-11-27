@@ -55,7 +55,23 @@ function git(cwd, args, timeout = 20000) {
   })
 }
 
-function discover(roots, depth) {
+/** Worktree phụ của một repo chính: đọc gitdir trong .git/worktrees, không spawn git. */
+function linkedWorktrees(main) {
+  const dir = path.join(main, '.git', 'worktrees')
+  let names
+  try { names = fs.readdirSync(dir) } catch { return [] }
+  const out = []
+  for (const n of names) {
+    try {
+      const g = fs.readFileSync(path.join(dir, n, 'gitdir'), 'utf8').trim()
+      if (g) out.push(path.resolve(path.dirname(g)))
+    } catch { /* bỏ qua mục hỏng */ }
+  }
+  return out
+}
+
+/** Quét repo; worktree phụ (có repo chính trong danh sách) được gom vào repo chính thay vì hiện riêng. linked: repo chính → các worktree. */
+function scanRepos(roots, depth) {
   const found = new Set()
   const visit = (dir, level) => {
     let entries
@@ -67,15 +83,23 @@ function discover(roots, depth) {
     }
   }
   for (const r of roots) visit(r, 0)
-  return [...found].sort((a, b) => a.localeCompare(b))
+  const linked = new Map()
+  const hidden = new Set()
+  for (const p of found) {
+    const l = linkedWorktrees(p)
+    if (l.length) { linked.set(p, l); for (const w of l) hidden.add(normPath(w)) }
+  }
+  return { paths: [...found].filter((p) => !hidden.has(normPath(p))).sort((a, b) => a.localeCompare(b)), linked }
 }
+
+const discover = (roots, depth) => scanRepos(roots, depth).paths
 
 function repoPaths(force) {
   const cfg = loadConfig()
   if (force || !repoCache || Date.now() - repoCache.at > 5 * 60000) {
-    repoCache = { at: Date.now(), paths: discover(cfg.roots, cfg.depth) }
+    repoCache = { at: Date.now(), ...scanRepos(cfg.roots, cfg.depth) }
   }
-  return { cfg, at: repoCache.at, paths: repoCache.paths }
+  return { cfg, at: repoCache.at, paths: repoCache.paths, linked: repoCache.linked }
 }
 
 function parseStatus(out) {
@@ -111,13 +135,13 @@ const counts = (files) => ({
   conflicts: files.filter((f) => f.kind === 'conflict').length,
 })
 
-async function summarize(p) {
+async function summarize(p, worktrees = 0) {
   const [st, br, last] = await Promise.all([
     git(p, ['status', '--porcelain=v2', '--branch']),
     git(p, ['for-each-ref', '--format=%(refname:short)', 'refs/heads']),
     git(p, ['log', '-1', `--format=%aI${SEP}%s${SEP}%an`]),
   ])
-  const base = { path: p, name: path.basename(p) }
+  const base = { path: p, name: path.basename(p), worktrees }
   if (st === null) {
     const dotGit = path.join(p, '.git')
     const stub = fs.statSync(dotGit, { throwIfNoEntry: false })?.isDirectory() && !fs.existsSync(path.join(dotGit, 'HEAD'))
@@ -166,8 +190,8 @@ function saveScan(cfg, repos, ms) {
 
 async function listRepos(rescan) {
   const t0 = Date.now()
-  const { cfg, paths, at } = repoPaths(rescan)
-  const repos = await pool(paths, 8, summarize)
+  const { cfg, paths, at, linked } = repoPaths(rescan)
+  const repos = await pool(paths, 8, (p) => summarize(p, linked.get(p)?.length || 0))
   saveScan(cfg, repos, Date.now() - t0)
   return { roots: cfg.roots, depth: cfg.depth, scannedAt: new Date(at).toISOString(), repos }
 }
@@ -183,18 +207,45 @@ function parseNumstat(out) {
   return m
 }
 
+/** `git stash list --format=%gd␟%gs␟%cI` → { ref, message, at, branch }. Nhánh lấy từ "WIP on <nhánh>: …" / "On <nhánh>: …". */
+function parseStashList(out) {
+  return out.split('\n').filter(Boolean).map((l) => {
+    const [ref, subject = '', at = ''] = l.split(SEP)
+    const m = /^(?:WIP on|On) ([^:]*): ?(.*)$/.exec(subject)
+    return { ref, message: m ? m[2] : subject, at, branch: m ? m[1] : null }
+  })
+}
+
+/** `git worktree list --porcelain` → { path, branch, head, detached, bare, locked, prunable, main }. Mục đầu tiên là worktree chính. */
+function parseWorktrees(out) {
+  return out.split(/\r?\n\r?\n/).map((b) => b.trim()).filter(Boolean).map((block, i) => {
+    const w = { path: '', branch: null, head: '', detached: false, bare: false, locked: false, prunable: false, main: i === 0 }
+    for (const line of block.split(/\r?\n/)) {
+      if (line.startsWith('worktree ')) w.path = path.resolve(line.slice(9))
+      else if (line.startsWith('HEAD ')) w.head = line.slice(5, 12)
+      else if (line.startsWith('branch ')) w.branch = line.slice(7).replace(/^refs\/heads\//, '')
+      else if (line === 'detached') w.detached = true
+      else if (line === 'bare') w.bare = true
+      else if (line === 'locked' || line.startsWith('locked ')) w.locked = true
+      else if (line === 'prunable' || line.startsWith('prunable ')) w.prunable = true
+    }
+    return w
+  }).filter((w) => w.path)
+}
+
 async function repoDetail(p) {
   const { paths } = repoPaths(false)
   if (!paths.includes(p)) throw new Error('Repo không nằm trong danh sách đã quét')
   const refFmt = ['%(refname)', '%(refname:short)', '%(HEAD)', '%(upstream:short)', '%(upstream:track)', '%(committerdate:iso-strict)', '%(subject)', '%(objectname:short)'].join(SEP)
-  const [st, refs, log, remotes, stash, nsUnstaged, nsStaged] = await Promise.all([
+  const [st, refs, log, remotes, stash, nsUnstaged, nsStaged, wtOut] = await Promise.all([
     git(p, ['status', '--porcelain=v2', '--branch']),
     git(p, ['for-each-ref', `--format=${refFmt}`, 'refs/heads', 'refs/remotes']),
     git(p, ['log', '-n', '20', `--format=%h${SEP}%an${SEP}%aI${SEP}%s`]),
     git(p, ['remote', '-v']),
-    git(p, ['stash', 'list']),
+    git(p, ['stash', 'list', `--format=%gd${SEP}%gs${SEP}%cI`]),
     git(p, ['diff', '--numstat', '--no-renames']),
     git(p, ['diff', '--cached', '--numstat', '--no-renames']),
+    git(p, ['worktree', 'list', '--porcelain']),
   ])
   if (st === null) throw new Error('Không đọc được repo')
   const s = parseStatus(st)
@@ -203,6 +254,11 @@ async function repoDetail(p) {
     const a = /ahead (\d+)/.exec(track), b = /behind (\d+)/.exec(track)
     return { name, remote: ref.startsWith('refs/remotes/'), current: head === '*', upstream: upstream || null, ahead: a ? +a[1] : 0, behind: b ? +b[1] : 0, gone: track === '[gone]', date, subject, sha }
   }).filter((b) => !b.name.endsWith('/HEAD'))
+  const worktrees = parseWorktrees(wtOut || '')
+  await pool(worktrees, 4, async (w) => {
+    const o = w.prunable || w.bare ? null : await git(w.path, ['status', '--porcelain'])
+    w.dirty = o === null ? null : o.split('\n').filter(Boolean).length
+  })
   const rmap = new Map()
   for (const l of (remotes || '').split('\n').filter(Boolean)) {
     const [n, u] = l.split(/\s+/)
@@ -213,7 +269,8 @@ async function repoDetail(p) {
     ...counts(s.files), files: s.files, branches,
     commits: (log || '').split('\n').filter(Boolean).map((l) => { const [hash, author, date, subject] = l.split(SEP); return { hash, author, date, subject } }),
     remotes: [...rmap].map(([name, url]) => ({ name, url })),
-    stashes: (stash || '').split('\n').filter(Boolean).length,
+    stashes: parseStashList(stash || ''),
+    worktrees,
     numstat: { staged: parseNumstat(nsStaged), unstaged: parseNumstat(nsUnstaged) },
   }
 }
@@ -243,14 +300,17 @@ function browse(dir) {
   return { path: dir, parent: up !== dir ? up : process.platform === 'win32' ? '' : null, home, isRepo: fs.existsSync(path.join(dir, '.git')), dirs }
 }
 
+/** Repo đã quét, hoặc worktree phụ của một repo đã quét (để mở VS Code / Terminal / Explorer ở đó). */
 function knownRepo(p) {
-  const { paths } = repoPaths(false)
-  if (!paths.includes(p)) throw new Error('Repo không nằm trong danh sách đã quét')
-  return p
+  const { paths, linked } = repoPaths(false)
+  if (paths.includes(p)) return p
+  const n = normPath(String(p))
+  for (const l of linked.values()) if (l.some((w) => normPath(w) === n)) return p
+  throw new Error('Repo không nằm trong danh sách đã quét')
 }
 
 /** Danh sách repo đã quét (bộ nhớ đệm), cho module khác đối chiếu. */
-function repoPathsInfo() { return { paths: repoPaths(false).paths } }
+function repoPathsInfo() { const r = repoPaths(false); return { paths: r.paths, worktrees: [...r.linked.values()].flat() } }
 
 module.exports = { repoPathsInfo, lastScan, listRepos, repoDetail, loadConfig, saveConfig, knownRepo, browse }
 
@@ -279,4 +339,6 @@ module.exports.remoteUrlMap = remoteUrlMap
 module.exports.localBranchNames = localBranchNames
 module.exports.invalidate = invalidate
 module.exports.parseStatus = parseStatus
+module.exports.parseStashList = parseStashList
+module.exports.parseWorktrees = parseWorktrees
 module.exports.discover = discover

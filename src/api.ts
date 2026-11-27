@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ActionResult, CloneJob, DeleteRepoInfo, ChangeRequest, ChangeRequestDetail, RemoteBranchesResponse, RemoteLocalJobs, PipelineRun, PipelineJob, CrListResponse, CrScope, CrState, RemoteAccount, ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource } from './types'
+import type { ActionResult, CloneJob, DeleteRepoInfo, ChangeRequest, ChangeRequestDetail, RemoteBranchesResponse, RemoteLocalJobs, PipelineRun, PipelineJob, CrListResponse, CrScope, CrState, RemoteAccount, ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, DiffKind, FileDiff, StashFile, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource } from './types'
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
@@ -17,6 +17,9 @@ export const api = {
   usageSources: () => request<UsageSource[]>('/api/usage/sources'),
   repos: (rescan = false) => request<ReposResponse>('/api/git/repos' + (rescan ? '?rescan=1' : '')),
   repo: (path: string) => request<RepoDetail>('/api/git/repo?path=' + encodeURIComponent(path)),
+  diff: (path: string, file: string, kind: DiffKind, ref = '') =>
+    request<FileDiff>(`/api/git/diff?path=${encodeURIComponent(path)}&file=${encodeURIComponent(file)}&kind=${kind}&ref=${encodeURIComponent(ref)}`),
+  stashFiles: (path: string, ref: string) => request<StashFile[]>(`/api/git/stash?path=${encodeURIComponent(path)}&ref=${encodeURIComponent(ref)}`),
   action: (path: string, action: string, params: Record<string, unknown> = {}) =>
     request<ActionResult>('/api/git/action', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...params, action, path }) }),
   createRepo: (p: { parent: string; name: string; readme: boolean; gitignore: boolean }) =>

@@ -92,7 +92,8 @@ async function scan() {
   const [procs, listening] = await Promise.all([listProcesses(), listeningPorts()])
   const cfg = loadConfig()
   const folders = cfg.folders.map((p) => ({ path: p, n: norm(p) })).filter((r) => r.n)
-  const repos = git.repoPathsInfo().paths.map((p) => ({ path: p, n: norm(p) })).filter((r) => r.n)
+  const info = git.repoPathsInfo() // worktree phụ cũng là nhóm riêng, để job hiện đúng nhánh của worktree
+  const repos = [...info.paths, ...info.worktrees].map((p) => ({ path: p, n: norm(p) })).filter((r) => r.n)
   const byPid = new Map(procs.map((p) => [p.pid, p]))
   const kids = new Map()
   for (const p of procs) { if (!kids.has(p.ppid)) kids.set(p.ppid, []); kids.get(p.ppid).push(p) }

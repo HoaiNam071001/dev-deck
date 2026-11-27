@@ -7,6 +7,7 @@ const profiles = require('./usage/profiles')
 const git = require('./git')
 const gitActions = require('./git-actions')
 const gitRepos = require('./git-repos')
+const gitDiff = require('./git-diff')
 const jobs = require('./jobs')
 const reporter = require('./jobs/reporter')
 const remotes = require('./remotes')
@@ -40,6 +41,11 @@ async function api(req, res, url) {
     if (url.pathname === '/api/usage/sources') return json(res, 200, usage.sources())
     if (url.pathname === '/api/git/repos') return json(res, 200, await git.listRepos(url.searchParams.get('rescan') === '1'))
     if (url.pathname === '/api/git/repo') return json(res, 200, await git.repoDetail(url.searchParams.get('path') || ''))
+    if (url.pathname === '/api/git/diff') {
+      const q = url.searchParams
+      return json(res, 200, await gitDiff.fileDiff(git.knownRepo(q.get('path') || ''), { file: q.get('file') || '', kind: q.get('kind') || 'unstaged', ref: q.get('ref') || '' }))
+    }
+    if (url.pathname === '/api/git/stash') return json(res, 200, await gitDiff.stashFiles(git.knownRepo(url.searchParams.get('path') || ''), url.searchParams.get('ref') || ''))
     if (url.pathname === '/api/git/action') {
       if (req.method !== 'POST') return json(res, 405, { error: 'Chỉ nhận POST' })
       if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })

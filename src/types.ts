@@ -40,6 +40,8 @@ export interface RepoSummary {
   conflicts: number
   branches: string[]
   lastCommit: LastCommit | null
+  /** Số worktree phụ đã gom vào repo này. */
+  worktrees?: number
 }
 
 export interface ReposResponse {
@@ -62,6 +64,14 @@ export interface BranchInfo {
   sha: string
 }
 
+export interface StashInfo { ref: string; message: string; at: string; branch: string | null }
+/** Một mục của `git worktree list`; mục đầu (main) là worktree chính. dirty = số tệp thay đổi, null nếu không đọc được. */
+export interface WorktreeInfo { path: string; branch: string | null; head: string; detached: boolean; bare: boolean; locked: boolean; prunable: boolean; main: boolean; dirty: number | null }
+export interface StashFile { path: string; add: number; del: number }
+export type DiffKind = 'staged' | 'unstaged' | 'untracked' | 'stash'
+export interface DiffHunk { header: string; lines: string[]; hash: string }
+export interface FileDiff { file: string; kind: DiffKind; binary: boolean; tooLarge: boolean; size: number; hunks: DiffHunk[]; nonUtf8?: boolean }
+
 export interface FileChange { path: string; x: string; y: string; kind: 'change' | 'untracked' | 'conflict' }
 
 export interface RepoDetail {
@@ -81,7 +91,8 @@ export interface RepoDetail {
   branches: BranchInfo[]
   commits: { hash: string; author: string; date: string; subject: string }[]
   remotes: { name: string; url: string }[]
-  stashes: number
+  stashes: StashInfo[]
+  worktrees: WorktreeInfo[]
   numstat?: NumStat
 }
 

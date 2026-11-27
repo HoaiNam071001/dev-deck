@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { relTime } from './format'
-import { baseName, changeCount, isDirty, isOut, rootOf, shortPath, toneOf } from './repo'
+import { baseName, changeCount, isDirty, isOut, rootOf, shortPath, toneOf, worktreeDir } from './repo'
 import { nameFromUrl } from '../components/RepoDialogs'
 import type { RepoSummary, UsageRow } from '../types'
 import { csvCell, toCsv } from './csv'
 import { buckets, OTHER_KEY, topSeries } from './usage'
-import { unreadThreads } from './remoteWatch'
+import { diffCrs, unreadThreads } from './remoteWatch'
+import { diffRows, hunkContext, hunkStats, stepIndex } from './diff'
 import { authorQueue, queueCounts, reviewQueue, reviewState, reviewerWait, sizeLines, waitAlerts, waitHours, waitLevel, waitSince } from './reviewQueue'
 import type { ChangeRequest } from '../types'
 
@@ -195,5 +196,49 @@ describe('waitAlerts / queueCounts (nhắc review trễ)', () => {
   })
   it('đếm chờ và trễ, bỏ draft', () => {
     expect(queueCounts([cr('a', 1), cr('b', 30), cr('c', 99, { draft: true })], NOW)).toEqual({ waiting: 2, late: 1 })
+  })
+})
+
+describe('diff (số dòng theo hunk)', () => {
+  const h = { header: '@@ -10,4 +10,5 @@ function foo() {', hash: 'x', lines: [' a', '-b', '+c', '+d', ' e\r', '\\ No newline at end of file'] }
+  it('đánh số dòng cũ / mới, bỏ \r, nhận dòng ghi chú', () => {
+    expect(diffRows(h).map((r) => [r.kind, r.old, r.new, r.text])).toEqual([
+      ['ctx', 10, 10, 'a'], ['del', 11, undefined, 'b'], ['add', undefined, 11, 'c'], ['add', undefined, 12, 'd'], ['ctx', 12, 13, 'e'], ['note', undefined, undefined, '\\ No newline at end of file'],
+    ])
+  })
+  it('tiêu đề không có số dòng đếm (@@ -5 +5 @@) vẫn đọc được', () => {
+    expect(diffRows({ header: '@@ -5 +7 @@', hash: 'y', lines: ['-x', '+y'] }).map((r) => [r.old, r.new])).toEqual([[5, undefined], [undefined, 7]])
+  })
+  it('ngữ cảnh, thống kê, bước chọn', () => {
+    expect(hunkContext(h)).toBe('function foo() {'); expect(hunkContext({ ...h, header: '@@ -1 +1 @@' })).toBe('')
+    expect(hunkStats(h)).toEqual({ add: 2, del: 1 })
+    expect([stepIndex(0, -1, 3), stepIndex(0, 1, 3), stepIndex(2, 1, 3), stepIndex(0, 1, 0)]).toEqual([0, 1, 2, -1])
+  })
+})
+
+describe('diffCrs: thông báo conflict', () => {
+  const mr = (conflict: boolean | null) => ({ key: 'k', state: 'opened', mine: true, reviewMe: false, project: 'g/p', number: 361, title: 't', ci: 'passed', conflict, threads: { resolved: 0, total: 0 } } as unknown as ChangeRequest)
+  const run = (seq: (boolean | null)[]) => {
+    let seen = diffCrs(null, [mr(seq[0])]).next
+    const out: string[] = []
+    for (const c of seq.slice(1)) { const r = diffCrs(seen, [mr(c)]); seen = r.next; out.push(...r.events.map((e) => e.title)) }
+    return out
+  }
+  it('MR đã conflict từ trước, trạng thái chập chờn "chưa rõ" không báo lại', () => {
+    expect(run([true, null, true, true, null, true])).toEqual([])
+  })
+  it('đang chưa rõ rồi có kết quả conflict ở lần đầu thấy thì không báo', () => {
+    expect(run([null, true])).toEqual([])
+  })
+  it('đang sạch rồi mới conflict thì báo; qua cả lúc chưa rõ', () => {
+    expect(run([false, true])).toEqual(['MR bị conflict'])
+    expect(run([false, null, true])).toEqual(['MR bị conflict'])
+  })
+})
+
+describe("worktreeDir", () => {
+  it("<repo>-wt/<nhanh>, giu kieu dau phan cach", () => {
+    expect(worktreeDir('C:\\code\\app', 'feat/login')).toBe('C:\\code\\app-wt\\feat-login')
+    expect(worktreeDir("/home/u/app/", "fix")).toBe("/home/u/app-wt/fix")
   })
 })
