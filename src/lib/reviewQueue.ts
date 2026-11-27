@@ -32,6 +32,24 @@ export function reviewQueue(list: ChangeRequest[], now = Date.now()): ChangeRequ
     .sort((a, b) => Number(a.draft) - Number(b.draft) || waitHours(b, now) - waitHours(a, now) || a.key.localeCompare(b.key))
 }
 
+/** Mốc chờ của một reviewer (phía tác giả): lúc họ được yêu cầu, không thì lúc tạo MR / PR. */
+export function reviewerWait(w: { since: string | null }, c: Pick<ChangeRequest, 'createdAt'>, now = Date.now()): { hours: number; exact: boolean } {
+  const t = Date.parse(w.since || c.createdAt)
+  return { hours: Number.isFinite(t) ? Math.max(0, (now - t) / 3_600_000) : 0, exact: !!w.since }
+}
+
+/** Số giờ MR của tôi đã chờ người chờ lâu nhất; 0 khi không còn ai. */
+export function authorWaitHours(c: Pick<ChangeRequest, 'waitingOn' | 'createdAt'>, now = Date.now()): number {
+  return Math.max(0, ...(c.waitingOn ?? []).map((w) => reviewerWait(w, c, now).hours))
+}
+
+/** Phía tác giả: MR / PR mở của tôi còn reviewer chưa phản hồi, chờ lâu nhất trước (draft cuối). */
+export function authorQueue(list: ChangeRequest[], now = Date.now()): ChangeRequest[] {
+  return list
+    .filter((c) => c.state === 'opened' && c.mine && (c.waitingOn?.length ?? 0) > 0)
+    .sort((a, b) => Number(a.draft) - Number(b.draft) || authorWaitHours(b, now) - authorWaitHours(a, now) || a.key.localeCompare(b.key))
+}
+
 /** Trạng thái riêng của tôi với một MR / PR trong hàng đợi. */
 export type ReviewState = 'new' | 'reviewing' | 'waiting' | 'again'
 export const REVIEW_STATE_LABEL: Record<ReviewState, string> = { new: 'Chưa xem', reviewing: 'Đang xem', waiting: 'Chờ tác giả sửa', again: 'Cần xem lại' }

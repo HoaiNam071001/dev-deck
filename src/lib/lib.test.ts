@@ -6,7 +6,7 @@ import type { RepoSummary, UsageRow } from '../types'
 import { csvCell, toCsv } from './csv'
 import { buckets, OTHER_KEY, topSeries } from './usage'
 import { unreadThreads } from './remoteWatch'
-import { queueCounts, reviewQueue, reviewState, sizeLines, waitAlerts, waitHours, waitLevel, waitSince } from './reviewQueue'
+import { authorQueue, queueCounts, reviewQueue, reviewState, reviewerWait, sizeLines, waitAlerts, waitHours, waitLevel, waitSince } from './reviewQueue'
 import type { ChangeRequest } from '../types'
 
 const repo = (o: Partial<RepoSummary> = {}): RepoSummary => ({
@@ -137,6 +137,24 @@ describe('reviewQueue (hàng đợi review)', () => {
       cr('mine', { mine: true, createdAt: h(99) }), cr('merged', { state: 'merged', createdAt: h(99) }), cr('notme', { reviewMe: false, createdAt: h(99) }),
     ], NOW)
     expect(q.map((c) => c.key)).toEqual(['old', 'new', 'draft'])
+  })
+})
+
+describe('authorQueue (MR của tôi đang chờ ai)', () => {
+  const NOW = Date.parse('2026-11-27T12:00:00Z')
+  const h = (n: number) => new Date(NOW - n * 3_600_000).toISOString()
+  const mk = (key: string, o: Partial<ChangeRequest> = {}) => ({ key, state: 'opened', mine: true, draft: false, createdAt: h(50), waitingOn: [], ...o } as ChangeRequest)
+  it('mốc chờ từng reviewer: since nếu có, không thì createdAt', () => {
+    expect(reviewerWait({ since: h(3) }, { createdAt: h(50) }, NOW)).toEqual({ hours: 3, exact: true })
+    expect(reviewerWait({ since: null }, { createdAt: h(50) }, NOW)).toEqual({ hours: 50, exact: false })
+  })
+  it('chỉ MR mở của tôi còn người chưa phản hồi; người chờ lâu nhất trước, draft cuối', () => {
+    const w = (since: string | null) => [{ name: 'A', username: 'a', since }]
+    const q = authorQueue([
+      mk('short', { waitingOn: w(h(2)) }), mk('long', { waitingOn: [...w(h(5)), ...w(h(30))] }), mk('draft', { draft: true, waitingOn: w(h(99)) }),
+      mk('done'), mk('theirs', { mine: false, waitingOn: w(h(99)) }), mk('merged', { state: 'merged', waitingOn: w(h(99)) }),
+    ], NOW)
+    expect(q.map((c) => c.key)).toEqual(['long', 'short', 'draft'])
   })
 })
 

@@ -7,6 +7,14 @@ export interface ReleaseNote { version: string; date: string; title: string; ite
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '2.6.0',
+    date: '2026-11-27',
+    title: 'Hàng đợi review: phía tác giả',
+    items: [
+      { tag: 'new', text: 'Hàng đợi review có thêm chế độ "MR của tôi đang chờ": mỗi MR / PR của bạn hiện từng reviewer chưa phản hồi và đã chờ bao lâu, màu theo mức chờ.' },
+    ],
+  },
+  {
     version: '2.5.0',
     date: '2026-11-27',
     title: 'Hàng đợi review, so sánh dự án, xuất CSV, chạy nền',

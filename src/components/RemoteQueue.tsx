@@ -2,11 +2,11 @@ import { useMemo, useState } from 'react'
 import { api, useLoad } from '../api'
 import { relTime } from '../lib/format'
 import { usePersisted } from '../lib/persist'
-import { REVIEW_STATE_LABEL, reviewQueue, reviewState, sizeLines, waitHours, waitLevel, waitSince, type ReviewState, type WaitLevel } from '../lib/reviewQueue'
+import { REVIEW_STATE_LABEL, authorQueue, reviewQueue, reviewState, reviewerWait, sizeLines, waitHours, waitLevel, waitSince, type ReviewState, type WaitLevel } from '../lib/reviewQueue'
 import type { ChangeRequest } from '../types'
 import { RemoteDetailModal } from './RemoteDetail'
 import { ApprovalChip, CiChip, crRef, ProviderTag, ThreadChip } from './RemoteBits'
-import { ErrorBanner, Chip, Spinner } from './ui'
+import { ErrorBanner, Chip, Segmented, Spinner } from './ui'
 
 const TONE: Record<WaitLevel, 'ok' | 'behind' | 'danger'> = { ok: 'ok', warn: 'behind', late: 'danger' }
 const STATE_TONE: Record<ReviewState, 'muted' | 'info' | 'ok' | 'danger'> = { new: 'muted', reviewing: 'info', waiting: 'ok', again: 'danger' }
@@ -17,8 +17,72 @@ function hoursText(h: number) {
   return `${Math.round(h / 24)} ngày`
 }
 
-/** Hàng đợi review: MR / PR người khác đang chờ tôi, chờ lâu nhất trước. */
+type Side = 'reviewer' | 'author'
+
+/** Hàng đợi review: phía người review (chờ tôi) hoặc phía tác giả (tôi đang chờ ai). */
 export function RemoteQueue({ account, refreshMs }: { account: string; refreshMs: number }) {
+  const [side, setSide] = usePersisted<Side>('remotes.queueSide', 'reviewer', (v) => v === 'reviewer' || v === 'author')
+  return (
+    <div className="flex flex-col gap-3">
+      <Segmented<Side> label="Phía hàng đợi" value={side} onChange={setSide} options={[{ id: 'reviewer', label: 'Chờ tôi review' }, { id: 'author', label: 'MR của tôi đang chờ' }]} />
+      {side === 'reviewer' ? <ReviewerQueue account={account} refreshMs={refreshMs} /> : <AuthorQueue account={account} refreshMs={refreshMs} />}
+    </div>
+  )
+}
+
+/** Phía tác giả: MR / PR của tôi còn reviewer chưa phản hồi, ai chờ bao lâu. */
+function AuthorQueue({ account, refreshMs }: { account: string; refreshMs: number }) {
+  const res = useLoad(() => api.changeRequests(account, 'mine', 'opened'), [account], refreshMs, `crs:${account}:mine:opened`)
+  const queue = useMemo(() => authorQueue(res.data?.items ?? []), [res.data])
+  const now = Date.now()
+  const [open, setOpen] = useState<ChangeRequest | null>(null)
+  return (
+    <div className="flex flex-col gap-3">
+      {open && <RemoteDetailModal key={open.key} cr={open} onClose={() => setOpen(null)} />}
+      <div className="text-[12px] text-fg-mute">MR / PR đang mở của bạn còn reviewer chưa phản hồi, chờ lâu nhất trước. Màu theo cùng ngưỡng với hàng đợi review.</div>
+      {res.error && <ErrorBanner onRetry={res.reload}>Không tải được: {res.error}</ErrorBanner>}
+      {res.data?.errors.map((e) => <div key={e.accountId} className="banner err" role="alert">{e.name}: {e.error}</div>)}
+      {res.loading && !res.data && <Spinner label="Đang lấy MR của bạn…" />}
+      {res.data && !queue.length && !res.loading && <div className="banner">Không có MR / PR nào của bạn đang chờ reviewer.</div>}
+      {queue.length > 0 && (
+        <div className="overflow-hidden rounded-[10px] border border-border bg-surface" role="list" aria-label="MR của tôi đang chờ">
+          {queue.map((c) => (
+            <div role="listitem" key={c.key} className="border-b border-line last:border-b-0 hover:bg-[#1F2124]">
+            <button type="button" onClick={() => setOpen(c)} aria-haspopup="dialog"
+              className="flex w-full items-center gap-3.5 px-4 py-2.5 text-left">
+              <ProviderTag provider={c.provider} />
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-2">
+                  {c.draft && <Chip tone="muted">Draft</Chip>}
+                  <span className="truncate text-[13.5px] font-semibold" title={c.title}>{c.title}</span>
+                </span>
+                <span className="mt-1 flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[12px] text-fg-mute">
+                  <span className="mono">{crRef(c)}</span>·<span className="truncate" title={c.project}>{c.project}</span>
+                </span>
+              </span>
+              <span className="flex flex-none flex-wrap justify-end gap-1.5">
+                {[...(c.waitingOn ?? [])].sort((a, b) => reviewerWait(b, c, now).hours - reviewerWait(a, c, now).hours).map((w) => {
+                  const rw = reviewerWait(w, c, now)
+                  return (
+                    <Chip key={w.username || w.name} tone={TONE[waitLevel(rw.hours)]}
+                      title={rw.exact ? `${w.name} được yêu cầu review ${relTime(w.since!)}` : `${w.name}: remote không có mốc yêu cầu, tính từ lúc tạo`}>
+                      {w.name} · {hoursText(rw.hours)}{rw.exact ? '' : '*'}
+                    </Chip>
+                  )
+                })}
+              </span>
+            </button>
+            </div>
+          ))}
+        </div>
+      )}
+      {queue.length > 0 && <div className="text-[12px] text-fg-mute">{queue.length} mục · dấu * = tính từ lúc tạo (GitLab chưa có mốc yêu cầu review)</div>}
+    </div>
+  )
+}
+
+/** Phía người review: MR / PR người khác đang chờ tôi, chờ lâu nhất trước. */
+function ReviewerQueue({ account, refreshMs }: { account: string; refreshMs: number }) {
   const res = useLoad(() => api.changeRequests(account, 'review', 'opened'), [account], refreshMs, `crs:${account}:review:opened`)
   const queue = useMemo(() => reviewQueue(res.data?.items ?? []), [res.data])
   const now = Date.now()

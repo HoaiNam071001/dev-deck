@@ -170,6 +170,8 @@ export interface ChangeRequest {
   reviewers: RemotePerson[]
   mine: boolean
   reviewMe: boolean
+  /** Reviewer chưa phản hồi và mốc họ được yêu cầu (null = remote không có mốc → dùng createdAt) */
+  waitingOn?: { name: string; username: string; since: string | null }[]
   /** Lúc tôi được yêu cầu review (GitHub: ReviewRequestedEvent; GitLab: chưa có mốc chính xác → null, dùng createdAt) */
   reviewRequestedAt?: string | null
   /** Lần review gần nhất của tôi (GitHub; GitLab chưa có → null) và commit mới nhất của MR / PR */

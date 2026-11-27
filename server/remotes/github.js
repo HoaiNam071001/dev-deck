@@ -54,6 +54,8 @@ function toCR(acc, p, me) {
     reviewers,
     mine: p.author?.login === me,
     reviewMe: reviewers.some((r) => r.username === me),
+    // reviewRequests chỉ còn người chưa phản hồi; mốc = lần yêu cầu gần nhất của chính người đó
+    waitingOn: reviewers.map((r) => ({ ...r, since: [...(p.timelineItems?.nodes || [])].reverse().find((n) => n?.requestedReviewer?.login === r.username)?.createdAt || null })),
     // Lần gần nhất tôi được yêu cầu review (nodes theo thứ tự cũ → mới)
     reviewRequestedAt: [...(p.timelineItems?.nodes || [])].reverse().find((n) => n?.requestedReviewer?.login === me)?.createdAt || null,
     myReviewAt: (p.latestReviews?.nodes || []).find((n) => n?.author?.login === me)?.submittedAt || null,

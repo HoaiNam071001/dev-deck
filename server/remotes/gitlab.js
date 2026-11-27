@@ -74,6 +74,7 @@ function base(acc, m, me) {
     reviewers: (m.reviewers || []).map(person),
     mine: m.author?.username === me,
     reviewMe: (m.reviewers || []).some((r) => r.username === me),
+    waitingOn: (m.reviewers || []).map((r) => ({ ...person(r), since: null })),
     reviewRequestedAt: null, myReviewAt: null, lastCommitAt: null,
     size: m.changes_count && Number.isFinite(Number(m.changes_count)) ? { additions: null, deletions: null, files: Number(m.changes_count) } : null,
   }
@@ -91,6 +92,8 @@ function enrich(acc, m, me) {
     if (one?.head_pipeline) cr.ci = ci(one.head_pipeline.status)
     if (one && typeof one.has_conflicts === 'boolean') cr.conflict = one.has_conflicts
     cr.approvals = ap ? { have: ap.have, need: ap.need, approved: ap.approved, changes: ap.changes } : null
+    // Reviewer đã approve thì không còn "đang chờ"
+    if (ap) cr.waitingOn = cr.waitingOn.filter((w) => !ap.by.includes(w.name))
     if (dis) { const t = threadsOf(dis); cr.threads = { resolved: t.filter((x) => x.resolved).length, total: t.length } }
     return cr
   })
