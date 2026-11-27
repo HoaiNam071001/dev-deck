@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ChangeRequest, ChangeRequestDetail, RemoteBranchesResponse, RemoteLocalJobs, PipelineRun, PipelineJob, CrListResponse, CrScope, CrState, RemoteAccount, ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource } from './types'
+import type { ActionResult, CloneJob, DeleteRepoInfo, ChangeRequest, ChangeRequestDetail, RemoteBranchesResponse, RemoteLocalJobs, PipelineRun, PipelineJob, CrListResponse, CrScope, CrState, RemoteAccount, ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource } from './types'
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
@@ -18,7 +18,16 @@ export const api = {
   repos: (rescan = false) => request<ReposResponse>('/api/git/repos' + (rescan ? '?rescan=1' : '')),
   repo: (path: string) => request<RepoDetail>('/api/git/repo?path=' + encodeURIComponent(path)),
   action: (path: string, action: string, params: Record<string, unknown> = {}) =>
-    request<{ ok: true; output: string }>('/api/git/action', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...params, action, path }) }),
+    request<ActionResult>('/api/git/action', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...params, action, path }) }),
+  createRepo: (p: { parent: string; name: string; readme: boolean; gitignore: boolean }) =>
+    request<{ ok: true; path: string }>('/api/git/repo-action', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...p, action: 'create' }) }),
+  deleteRepo: (p: { path: string; dryRun?: boolean; confirmName?: string }) =>
+    request<{ ok: true; dryRun?: boolean; info?: DeleteRepoInfo }>('/api/git/repo-action', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...p, action: 'delete' }) }),
+  cloneStart: (p: { url: string; parent: string; name: string }) =>
+    request<CloneJob>('/api/git/clone', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(p) }),
+  cloneStatus: (id: string) => request<CloneJob>('/api/git/clone?id=' + encodeURIComponent(id)),
+  cloneCancel: (id: string) =>
+    request<CloneJob>('/api/git/clone', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'cancel', id }) }),
   jobs: () => request<JobsResponse>('/api/jobs'),
   reporterStatus: () => request<ReporterStatus>('/api/jobs/reporter'),
   reporterSetup: (body: { action: 'install' | 'uninstall'; folders: string[] } | { action: 'enable' | 'disable' }) =>

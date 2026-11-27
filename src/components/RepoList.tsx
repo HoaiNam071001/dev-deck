@@ -22,7 +22,7 @@ export function StatusChips({ r }: { r: RepoSummary }) {
 }
 
 /** Menu thao tác của một repo, dùng chung cho nút "⋯" và các phím tắt. */
-export function repoMenu(r: RepoSummary, pinned: boolean): MenuItem[] {
+export function repoMenu(r: RepoSummary, pinned: boolean, onDelete?: (r: RepoSummary) => void): MenuItem[] {
   const b = bridge()
   const open: MenuItem[] = []
   if (b?.openVSCode) open.push({ label: 'Mở trong VS Code', key: MOD + 'O', run: () => b.openVSCode!(r.path) })
@@ -37,6 +37,7 @@ export function repoMenu(r: RepoSummary, pinned: boolean): MenuItem[] {
     { label: 'Push', key: MOD + 'P', disabled: r.detached, run: () => void runAction(r.path, r.name, 'push') },
     { sep: true },
     { label: pinned ? 'Bỏ ghim' : 'Ghim lên đầu', run: () => (pinned ? unpinRepo(r.path) : pinRepo(r.path)) },
+    ...(onDelete ? [{ sep: true } as const, { label: 'Xóa khỏi máy…', danger: true, run: () => onDelete(r) }] : []),
   ]
 }
 
@@ -49,11 +50,12 @@ interface RowProps {
   onPick: () => void
   onMenu: () => void
   onCloseMenu: () => void
+  onDelete?: (r: RepoSummary) => void
 }
 
-function RepoRow({ r, active, pinned, menuOpen, menuUp, onPick, onMenu, onCloseMenu }: RowProps) {
+function RepoRow({ r, active, pinned, menuOpen, menuUp, onPick, onMenu, onCloseMenu, onDelete }: RowProps) {
   return (
-    <div className={'group relative flex items-stretch border-b border-raised ' + (active ? 'bg-selected shadow-[inset_2px_0_0_var(--accent)]' : 'hover:bg-[#1F2124]')}>
+    <div style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 54px' }} className={'group relative flex items-stretch border-b border-raised ' + (active ? 'bg-selected shadow-[inset_2px_0_0_var(--accent)]' : 'hover:bg-[#1F2124]')}>
       <button onClick={onPick} aria-current={active} className="flex min-w-0 flex-1 flex-col gap-[3px] border-0 bg-transparent py-[9px] pr-1 pl-3.5 text-left text-inherit">
         <span className="flex w-full items-center gap-2">
           <span className="truncate font-medium">{r.name}</span>
@@ -77,12 +79,13 @@ function RepoRow({ r, active, pinned, menuOpen, menuUp, onPick, onMenu, onCloseM
       <button className="ghost flex w-8 flex-none items-center justify-center" aria-label={'Thao tác cho ' + r.name} aria-haspopup="menu" aria-expanded={menuOpen} onClick={onMenu}>
         <Icon name="dots" size={14} />
       </button>
-      {menuOpen && <ContextMenu label={'Thao tác cho ' + r.name} items={repoMenu(r, pinned)} onClose={onCloseMenu} up={menuUp} />}
+      {menuOpen && <ContextMenu label={'Thao tác cho ' + r.name} items={repoMenu(r, pinned, onDelete)} onClose={onCloseMenu} up={menuUp} />}
     </div>
   )
 }
 
-export function RepoList({ repos, selected, pinned, menu, setMenu, onPick, empty }: {
+export function RepoList({ repos, selected, pinned, menu, setMenu, onPick, empty, onDelete }: {
+  onDelete?: (r: RepoSummary) => void
   repos: RepoSummary[]; selected: string | null; pinned: string[]
   menu: string | null; setMenu: (p: string | null) => void
   onPick: (p: string) => void; empty: React.ReactNode
@@ -92,7 +95,7 @@ export function RepoList({ repos, selected, pinned, menu, setMenu, onPick, empty
       {repos.map((r, i) => (
         <RepoRow key={r.path} r={r} active={selected === r.path} pinned={pinned.includes(r.path)}
           menuOpen={menu === r.path} menuUp={i >= repos.length - 3 && repos.length > 4}
-          onPick={() => { setMenu(null); onPick(r.path) }} onMenu={() => setMenu(menu === r.path ? null : r.path)} onCloseMenu={() => setMenu(null)} />
+          onPick={() => { setMenu(null); onPick(r.path) }} onMenu={() => setMenu(menu === r.path ? null : r.path)} onCloseMenu={() => setMenu(null)} onDelete={onDelete} />
       ))}
       {!repos.length && (typeof empty === 'string' ? <p className="empty">{empty}</p> : empty)}
     </div>

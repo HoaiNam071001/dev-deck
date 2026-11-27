@@ -6,6 +6,7 @@ const { claudeAccount } = require('./usage/account')
 const profiles = require('./usage/profiles')
 const git = require('./git')
 const gitActions = require('./git-actions')
+const gitRepos = require('./git-repos')
 const jobs = require('./jobs')
 const reporter = require('./jobs/reporter')
 const remotes = require('./remotes')
@@ -44,6 +45,20 @@ async function api(req, res, url) {
       if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
       const body = await readBody(req)
       return json(res, 200, await gitActions.perform(git.knownRepo(String(body.path || '')), body))
+    }
+    if (url.pathname === '/api/git/repo-action') {
+      if (req.method !== 'POST') return json(res, 405, { error: 'Chỉ nhận POST' })
+      if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
+      const body = await readBody(req)
+      if (body.action === 'create') return json(res, 200, await gitRepos.createRepo(body))
+      if (body.action === 'delete') return json(res, 200, await gitRepos.deleteRepo(body))
+      return json(res, 400, { error: 'Hành động không hỗ trợ' })
+    }
+    if (url.pathname === '/api/git/clone') {
+      if (req.method !== 'POST') return json(res, 200, gitRepos.cloneStatus(url.searchParams.get('id') || ''))
+      if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
+      const body = await readBody(req)
+      return json(res, 200, body.action === 'cancel' ? gitRepos.cancelClone(String(body.id || '')) : gitRepos.startClone(body))
     }
     if (url.pathname === '/api/jobs/config') {
       if (req.method === 'PUT') {

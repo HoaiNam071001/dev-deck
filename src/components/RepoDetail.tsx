@@ -8,6 +8,8 @@ import type { FileChange, RepoSummary } from '../types'
 import { Spinner, Icon } from './ui'
 import { RepoJobs } from './JobDetail'
 import { RepoMr } from './RepoMr'
+import { ContextMenu } from './ContextMenu'
+import { DeleteBranchDialog, DeleteRemoteBranchDialog, RenameBranchDialog } from './BranchDialogs'
 
 type Tab = 'changes' | 'branches' | 'commits' | 'remotes'
 
@@ -40,7 +42,9 @@ const SectionHead = ({ title, action }: { title: string; action: React.ReactNode
   </div>
 )
 
-export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCommit }: { mode?: 'panel' | 'modal'; onMode?: (m: 'panel' | 'modal') => void; repo: RepoSummary; tab: Tab; setTab: (t: Tab) => void; onClose?: () => void; onFocusCommit?: (focus: () => void) => void }) {
+type BranchDialog = { kind: 'delete' | 'rename' | 'deleteRemote'; name: string }
+
+export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCommit, onDelete }: { onDelete?: () => void; mode?: 'panel' | 'modal'; onMode?: (m: 'panel' | 'modal') => void; repo: RepoSummary; tab: Tab; setTab: (t: Tab) => void; onClose?: () => void; onFocusCommit?: (focus: () => void) => void }) {
   const rev = useStore((s) => s.rev)
   const isPinned = useStore((s) => s.pinned.includes(repo.path))
   const { data, error, reload } = useLoad(() => api.repo(repo.path), [repo.path, rev], 0, 'repo:' + repo.path)
@@ -48,7 +52,10 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
   const [message, setMessage] = useState('')
   const [amend, setAmend] = useState(false)
   const [newBranch, setNewBranch] = useState('')
-  useEffect(() => { setMessage(''); setAmend(false); setNewBranch('') }, [repo.path])
+  const [from, setFrom] = useState('')
+  const [dialog, setDialog] = useState<BranchDialog | null>(null)
+  const [branchMenu, setBranchMenu] = useState<string | null>(null)
+  useEffect(() => { setMessage(''); setAmend(false); setNewBranch(''); setFrom(''); setDialog(null); setBranchMenu(null) }, [repo.path])
 
   const act = async (label: string, action: string, params: Record<string, unknown> = {}, quiet = false) => {
     setBusy(label)
@@ -76,6 +83,9 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
     ['changes', 'Thay đổi', data.files.length], ['branches', 'Nhánh', data.branches.filter((x) => !x.remote).length],
     ['commits', 'Lịch sử', data.commits.length], ['remotes', 'Remote', data.remotes.length],
   ]
+  const trackedDirty = data.files.some((f) => f.kind !== 'untracked')
+  const bkey = (x: { remote: boolean; name: string }) => (x.remote ? 'r:' : 'l:') + x.name
+  const localNames = data.branches.filter((x) => !x.remote).map((x) => x.name)
   const canCommit = !busy && (amend ? !!data.commits.length : !!staged.length && !!message.trim())
   const commit = async () => { if (canCommit && await act('commit', 'commit', { message, amend })) { setMessage(''); setAmend(false) } }
   const iconBtn = 'icon-btn sm'
@@ -93,6 +103,7 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
           {b?.reveal && <button className={iconBtn} title={revealLabel} aria-label={revealLabel} onClick={() => b.reveal!(data.path)}><Icon name="folder" size={13} /></button>}
           <button className={iconBtn} title="Sao chép đường dẫn" aria-label="Sao chép đường dẫn" onClick={async () => toast(await copyText(data.path) ? { kind: 'ok', title: 'Đã sao chép đường dẫn' } : { kind: 'err', title: 'Không sao chép được' })}><Icon name="copy" size={13} /></button>
           <button className={iconBtn + (isPinned ? ' !text-accent' : '')} title={isPinned ? 'Bỏ ghim' : 'Ghim lên đầu'} aria-label={isPinned ? 'Bỏ ghim' : 'Ghim lên đầu'} aria-pressed={isPinned} onClick={() => (isPinned ? unpinRepo(data.path) : pinRepo(data.path))}><Icon name="pin" size={13} fill={isPinned} /></button>
+          {onDelete && <button className={iconBtn + ' hover:!text-danger'} title="Xóa repo khỏi máy…" aria-label="Xóa repo khỏi máy" onClick={onDelete}><Icon name="trash" size={13} /></button>}
           {onMode && <button className={iconBtn} title={mode === 'modal' ? 'Chuyển sang khung bên phải' : 'Chuyển sang cửa sổ nổi'} aria-label={mode === 'modal' ? 'Chuyển sang khung bên phải' : 'Chuyển sang cửa sổ nổi'} onClick={() => onMode(mode === 'modal' ? 'panel' : 'modal')}><Icon name={mode === 'modal' ? 'panel' : 'modal'} size={13} /></button>}
           {onClose && <button className={iconBtn} title="Đóng chi tiết (Esc)" aria-label="Đóng chi tiết" onClick={onClose}><Icon name="x" size={13} /></button>}
         </div>
@@ -140,8 +151,12 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
 
         {tab === 'branches' && (
           <div className="flex flex-col">
-            <form className="flex gap-1.5 px-4 py-2.5" onSubmit={async (e) => { e.preventDefault(); if (newBranch.trim() && await act('create', 'createBranch', { name: newBranch.trim() })) setNewBranch('') }}>
-              <input className="min-w-0 flex-1 font-mono" value={newBranch} onChange={(e) => setNewBranch(e.target.value)} placeholder="Tên nhánh mới từ HEAD" aria-label="Tên nhánh mới" />
+            <form className="flex gap-1.5 px-4 py-2.5" onSubmit={async (e) => { e.preventDefault(); if (newBranch.trim() && await act('create', 'createBranch', { name: newBranch.trim(), from: from || undefined })) { setNewBranch(''); setFrom('') } }}>
+              <input className="min-w-0 flex-1 font-mono" value={newBranch} onChange={(e) => setNewBranch(e.target.value)} placeholder="Tên nhánh mới" aria-label="Tên nhánh mới" />
+              <select className="max-w-[40%] font-mono" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="Tạo từ" title="Điểm bắt đầu của nhánh mới">
+                <option value="">từ HEAD</option>
+                {data.branches.filter((x) => !x.current).map((x) => <option key={(x.remote ? 'r:' : 'l:') + x.name} value={x.name}>từ {x.name}</option>)}
+              </select>
               <button type="submit" className="btn" disabled={!!busy || !newBranch.trim()}>Tạo nhánh</button>
             </form>
             {[...data.branches.filter((x) => !x.remote), ...data.branches.filter((x) => x.remote)].map((x) => (
@@ -156,7 +171,16 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
                 <span className="font-mono text-sm">{x.ahead > 0 && <span className="text-ahead">↑{x.ahead}</span>} {x.behind > 0 && <span className="text-behind">↓{x.behind}</span>}</span>
                 {!x.remote && x.upstream && !x.gone && x.behind > 0 && <button className="btn sm" disabled={!!busy} title="Fast-forward từ upstream" onClick={() => act('pl:' + x.name, 'pullBranch', { branch: x.name })}>Pull</button>}
                 {!x.remote && data.remotes.length > 0 && (x.ahead > 0 || !x.upstream || x.gone) && <button className="btn sm" disabled={!!busy} title={x.upstream && !x.gone ? 'Push lên upstream' : 'Push và đặt upstream'} onClick={() => act('ps:' + x.name, 'pushBranch', { branch: x.name })}>Push</button>}
-                {!x.current && <button className="btn sm" disabled={!!busy} onClick={() => act('co:' + x.name, 'checkout', { branch: x.name, remote: x.remote })}>Chuyển</button>}
+                {!x.current && <button className="btn sm" disabled={!!busy || trackedDirty} title={trackedDirty ? 'Còn thay đổi chưa commit: commit hoặc stash trước khi chuyển nhánh' : undefined} onClick={() => act('co:' + x.name, 'checkout', { branch: x.name, remote: x.remote })}>Chuyển</button>}
+                {(!x.current) && (
+                  <span className="relative">
+                    <button className="ghost flex size-6 items-center justify-center" aria-label={'Thao tác cho nhánh ' + x.name} aria-haspopup="menu" aria-expanded={branchMenu === bkey(x)} onClick={() => setBranchMenu(branchMenu === bkey(x) ? null : bkey(x))}><Icon name="dots" size={13} /></button>
+                    {branchMenu === bkey(x) && <ContextMenu label={'Thao tác cho nhánh ' + x.name} onClose={() => setBranchMenu(null)} items={x.remote
+                      ? [{ label: 'Xóa trên remote…', danger: true, run: () => setDialog({ kind: 'deleteRemote', name: x.name }) }]
+                      : [{ label: 'Đổi tên…', run: () => setDialog({ kind: 'rename', name: x.name }) }, { sep: true }, { label: 'Xóa nhánh…', danger: true, run: () => setDialog({ kind: 'delete', name: x.name }) }]} />}
+                  </span>
+                )}
+                {x.current && !x.remote && <button className="ghost flex size-6 items-center justify-center" aria-label={'Đổi tên nhánh ' + x.name} title="Đổi tên nhánh đang mở" onClick={() => setDialog({ kind: 'rename', name: x.name })}><Icon name="dots" size={13} /></button>}
               </div>
             ))}
             {!data.branches.length && <p className="empty">Chưa có nhánh nào (repo chưa có commit)</p>}
@@ -194,6 +218,9 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
           </div>
         </form>
       )}
+      {dialog?.kind === 'delete' && <DeleteBranchDialog repoPath={repo.path} repoName={repo.name} branch={dialog.name} onClose={() => setDialog(null)} />}
+      {dialog?.kind === 'deleteRemote' && <DeleteRemoteBranchDialog repoPath={repo.path} repoName={repo.name} refName={dialog.name} onClose={() => setDialog(null)} />}
+      {dialog?.kind === 'rename' && <RenameBranchDialog repoPath={repo.path} repoName={repo.name} branch={dialog.name} existing={localNames} onClose={() => setDialog(null)} />}
       {/* tải lại thủ công khi cần (ví dụ sau thay đổi ngoài app) */}
       <button className="sr-only" onClick={reload}>Tải lại chi tiết</button>
     </>

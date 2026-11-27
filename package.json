@@ -11,7 +11,9 @@
     "desktop": "npm run build && electron .",
     "dist": "npm run build && electron-builder --win --publish never",
     "release": "bash scripts/release.sh",
-    "desktop:dev": "concurrently -k -n web,app -c green,blue \"vite --strictPort\" \"wait-on tcp:5183 && cross-env DEVDECK_DEV_URL=http://localhost:5183 electron .\""
+    "desktop:dev": "concurrently -k -n web,app -c green,blue \"vite --strictPort\" \"wait-on tcp:5183 && cross-env DEVDECK_DEV_URL=http://localhost:5183 electron .\"",
+    "test": "vitest run",
+    "test:server": "node server/git-test.js && node server/usage/test.js"
   },
   "engines": {
     "node": ">=18"
@@ -35,6 +37,7 @@
     "tailwindcss": "^4.3.5",
     "typescript": "^5.6.3",
     "vite": "^5.4.11",
+    "vitest": "^2.1.9",
     "wait-on": "^9.5.1"
   },
   "main": "electron/main.cjs",

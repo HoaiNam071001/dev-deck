@@ -3,6 +3,7 @@ import { api, useLoad } from '../api'
 import { FolderPicker } from '../components/FolderPicker'
 import { RepoDetail } from '../components/RepoDetail'
 import { RepoList } from '../components/RepoList'
+import { CloneDialog, DeleteRepoDialog, NewRepoDialog } from '../components/RepoDialogs'
 import { RefreshInfo, useRefreshMs } from '../components/RefreshInfo'
 import { SideSlot, StatusSlot } from '../components/Shell'
 import { Icon, NavLabel, Segmented, Spinner } from '../components/ui'
@@ -76,6 +77,8 @@ export function GitPage() {
   const [rootFilter, setRootFilter] = usePersisted<string>('git.root', '', (v) => typeof v === 'string')
   const [tab, setTab] = usePersisted<Tab>('git.tab', 'changes', (v) => ['changes', 'branches', 'commits', 'remotes'].includes(v as string))
   const [menu, setMenu] = useState<string | null>(null)
+  const [dialog, setDialog] = useState<'new' | 'clone' | null>(null)
+  const [deleting, setDeleting] = useState<RepoSummary | null>(null)
   const [mode, setMode] = usePersisted<'panel' | 'modal'>('git.detailMode', 'panel', (v) => v === 'panel' || v === 'modal')
   const [detailW, setDetailW] = usePersisted('git.detailW', 460, (v) => typeof v === 'number' && v >= MIN_W && v <= MAX_W)
 
@@ -212,6 +215,9 @@ export function GitPage() {
         <RefreshInfo at={repos.at} ms={repos.ms} loading={repos.loading} sec={sec} onSec={setSec} />
       </StatusSlot>
 
+      {dialog === 'new' && <NewRepoDialog roots={roots} onClose={() => setDialog(null)} />}
+      {dialog === 'clone' && <CloneDialog roots={roots} onClose={() => setDialog(null)} />}
+      {deleting && <DeleteRepoDialog repo={deleting} onClose={() => setDeleting(null)} />}
       {picking && <FolderPicker start={roots[roots.length - 1] ?? ''} selected={roots} recent={cfg.data?.recent ?? []}
         onClose={() => { setPicking(false); if (roots.length && roots.join('|') !== (repos.data?.roots ?? []).join('|')) void rescan() }}
         onToggle={(p) => setRoots((l) => (l.includes(p) ? l.filter((x) => x !== p) : [...l, p]))} />}
@@ -229,9 +235,11 @@ export function GitPage() {
             </label>
             <button className="icon-btn sm" style={{ border: '1px solid var(--border-strong)' }} aria-label="Sắp xếp" title={'Sắp xếp theo ' + sortLabel + ' (bấm để đổi)'}
               onClick={() => setSort(SORTS[(SORTS.findIndex((s) => s.id === sort) + 1) % SORTS.length].id)}><Icon name="sort" size={13} /></button>
+            <button className="icon-btn sm" style={{ border: '1px solid var(--border-strong)' }} aria-label="Tạo repo mới" title="Tạo repo mới" disabled={!roots.length} onClick={() => setDialog('new')}><Icon name="plus" size={13} /></button>
+            <button className="icon-btn sm" style={{ border: '1px solid var(--border-strong)' }} aria-label="Clone từ URL" title="Clone từ URL" disabled={!roots.length} onClick={() => setDialog('clone')}><Icon name="download" size={13} /></button>
           </div>
           {repos.error && <div className="banner err m-3" role="alert">Lỗi: {repos.error}</div>}
-          <RepoList repos={shown} selected={selected} pinned={pinned} menu={menu} setMenu={setMenu} empty={empty}
+          <RepoList repos={shown} selected={selected} pinned={pinned} menu={menu} setMenu={setMenu} empty={empty} onDelete={setDeleting}
             onPick={(p) => { setState({ selected: p }) }} />
         </section>
 
@@ -241,14 +249,14 @@ export function GitPage() {
             <span className="h-7 w-0.5 rounded-sm bg-border-pop group-hover:bg-accent group-focus-visible:bg-accent" />
           </div>
           <section aria-label={'Chi tiết repo ' + current.name} className="flex h-full flex-col border-l border-border bg-surface-2">
-            <RepoDetail key={current!.path} repo={current!} tab={tab} setTab={setTab} mode={mode} onMode={setMode} onClose={() => setState({ selected: null })} />
+            <RepoDetail key={current!.path} repo={current!} tab={tab} setTab={setTab} mode={mode} onMode={setMode} onClose={() => setState({ selected: null })} onDelete={() => setDeleting(current!)} />
           </section>
         </div>}
         {current && mode === 'modal' && (
           <div className="absolute inset-0 z-20 flex items-center justify-center p-8">
             <button className="absolute inset-0 border-0 bg-[rgba(8,9,10,.6)]" aria-label="Đóng chi tiết" tabIndex={-1} onClick={() => setState({ selected: null })} />
             <section role="dialog" aria-modal="true" aria-label={'Chi tiết repo ' + current.name} className="relative flex h-full max-h-[620px] w-full max-w-[860px] flex-col overflow-hidden rounded-xl border border-border-pop bg-surface-2 shadow-[0_24px_64px_rgba(0,0,0,.6)]">
-              <RepoDetail key={current!.path} repo={current!} tab={tab} setTab={setTab} mode={mode} onMode={setMode} onClose={() => setState({ selected: null })} />
+              <RepoDetail key={current!.path} repo={current!} tab={tab} setTab={setTab} mode={mode} onMode={setMode} onClose={() => setState({ selected: null })} onDelete={() => setDeleting(current!)} />
             </section>
           </div>
         )}

@@ -238,6 +238,9 @@ svg.spin { animation: spin .8s linear infinite; }
 /* Hộp thoại chọn thư mục (dùng đến khi có hộp thoại hệ thống ở giai đoạn 6b) */
 dialog.modal { margin: auto; /* Tailwind preflight đặt margin 0 nên hộp thoại bị dính góc, cần auto để canh giữa */ width: min(720px, calc(100vw - 32px)); height: min(560px, calc(100vh - 48px)); padding: 0; border: 1px solid var(--border-pop); border-radius: var(--radius-xl); background: var(--surface); color: var(--fg); overflow: hidden; }
 dialog.modal.modal-wide { width: min(1240px, calc(100vw - 48px)); height: calc(100vh - 48px); }
+dialog.modal.modal-sm { width: min(480px, calc(100vw - 32px)); height: auto; max-height: calc(100vh - 48px); }
+.btn.danger { background: var(--danger); border-color: var(--danger); color: #fff; font-weight: 600; }
+.btn.danger:hover:not(:disabled) { filter: brightness(1.1); }
 dialog.modal[open] { display: flex; flex-direction: column; }
 dialog.modal::backdrop { background: rgba(8,9,10,.6); }
 .modal-head { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }

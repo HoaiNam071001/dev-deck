@@ -7,6 +7,18 @@ export interface ReleaseNote { version: string; date: string; title: string; ite
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '2.4.0',
+    date: '2026-11-27',
+    title: 'Git: quản lý nhánh và repo ngay trong app',
+    items: [
+      { tag: 'new', text: 'Xóa nhánh local (gõ lại tên để xác nhận, nhánh chưa merge phải tick "vẫn xóa"), xóa nhánh trên remote, đổi tên nhánh.' },
+      { tag: 'new', text: 'Tạo nhánh từ HEAD hoặc từ một nhánh khác.' },
+      { tag: 'new', text: 'Tạo repo mới (README, .gitignore tùy chọn) và clone từ URL có thanh tiến độ, hủy được.' },
+      { tag: 'new', text: 'Xóa repo khỏi máy: xem trước thay đổi và nhánh chưa push sẽ mất, gõ tên repo để xác nhận, repo được chuyển vào Thùng rác.' },
+      { tag: 'improve', text: 'Chuyển nhánh bị từ chối kèm lý do khi còn thay đổi chưa commit; danh sách repo dài cuộn mượt hơn.' },
+    ],
+  },
+  {
     version: '2.3.1',
     date: '2026-11-27',
     title: 'Sửa giao diện modal "Có gì mới"',

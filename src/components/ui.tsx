@@ -20,6 +20,7 @@ const PATHS: Record<string, ReactNode> = {
   panel: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M14 4v16" /></>,
   modal: <><rect x="3" y="4" width="18" height="16" rx="2" /><rect x="7" y="8" width="10" height="8" rx="1" /></>,
   merge: <><circle cx="6" cy="5" r="2" /><circle cx="6" cy="19" r="2" /><circle cx="18" cy="15" r="2" /><path d="M6 7v10M18 13V9a3 3 0 0 0-3-3h-4M13 3l-2 3 2 3" /></>,
+  trash: <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />,
   refresh: <path d="M20 11a8 8 0 0 0-14.9-3M4 4v4h4M4 13a8 8 0 0 0 14.9 3M20 20v-4h-4" />,
 }
 

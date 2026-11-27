@@ -6,7 +6,7 @@ type ModalProps = {
   header: ReactNode
   titleId?: string
   /** 'wide': gần kín cửa sổ, cho nội dung nhiều cột (vd. chi tiết MR) */
-  size?: 'default' | 'wide'
+  size?: 'default' | 'wide' | 'sm'
   children: ReactNode
 }
 
@@ -19,7 +19,7 @@ export function Modal({ onClose, header, titleId = 'modal-title', size = 'defaul
     return () => { if (d?.open) d.close() }
   }, [])
   return (
-    <dialog ref={ref} className={size === 'wide' ? 'modal modal-wide' : 'modal'} aria-labelledby={titleId} onCancel={(e) => { e.preventDefault(); onClose() }}
+    <dialog ref={ref} className={size === 'wide' ? 'modal modal-wide' : size === 'sm' ? 'modal modal-sm' : 'modal'} aria-labelledby={titleId} onCancel={(e) => { e.preventDefault(); onClose() }}
       onClick={(e) => { if (e.target === ref.current) onClose() }}>
       <div className="modal-head">
         <div className="modal-title">{header}</div>

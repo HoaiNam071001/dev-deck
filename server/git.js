@@ -255,6 +255,8 @@ function repoPathsInfo() { return { paths: repoPaths(false).paths } }
 module.exports = { repoPathsInfo, lastScan, listRepos, repoDetail, loadConfig, saveConfig, knownRepo, browse }
 
 let urlCache = null
+/** Bắt buộc quét lại ở lần đọc kế tiếp (sau khi tạo / clone / xóa repo). */
+function invalidate() { repoCache = null; urlCache = null }
 /** URL các remote của mọi repo đã quét (cache 5 phút), để ghép repo local với project trên GitLab / GitHub. */
 async function remoteUrlMap() {
   if (urlCache && Date.now() - urlCache.at < 5 * 60000) return urlCache.list
@@ -275,3 +277,6 @@ async function localBranchNames(p) {
 
 module.exports.remoteUrlMap = remoteUrlMap
 module.exports.localBranchNames = localBranchNames
+module.exports.invalidate = invalidate
+module.exports.parseStatus = parseStatus
+module.exports.discover = discover

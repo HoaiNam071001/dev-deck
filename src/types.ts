@@ -85,6 +85,12 @@ export interface RepoDetail {
   numstat?: NumStat
 }
 
+/** Kết quả POST /api/git/action. dryRun=true thì chưa làm gì, info mô tả điều sẽ xảy ra. */
+export interface ActionResult { ok: true; output: string; dryRun?: boolean; info?: Record<string, unknown> }
+export interface DeleteBranchInfo { branch: string; merged: boolean; unmerged: number; upstream: string | null }
+export interface DeleteRepoInfo { name: string; path: string; dirty: number; unpushed: string[]; stashes: number; hasRemote: boolean; nested: number }
+export interface CloneJob { id: string; url: string; path: string; name: string; status: 'running' | 'done' | 'error' | 'cancelled'; percent: number; phase: string; error: string | null }
+
 export interface GitConfig { roots: string[]; depth: number; recent: string[] }
 export interface BrowseResult { path: string; parent: string | null; home: string; isRepo?: boolean; dirs: { name: string; path: string; isRepo: boolean }[] }
 

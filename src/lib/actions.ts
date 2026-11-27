@@ -13,6 +13,9 @@ const TITLES: Record<string, [ok: string, fail: string]> = {
   pushBranch: ['Đã push nhánh', 'Push nhánh thất bại'],
   stage: ['Đã stage', 'Stage thất bại'],
   unstage: ['Đã bỏ stage', 'Bỏ stage thất bại'],
+  renameBranch: ['Đã đổi tên nhánh', 'Đổi tên nhánh thất bại'],
+  deleteBranch: ['Đã xóa nhánh', 'Xóa nhánh thất bại'],
+  deleteRemoteBranch: ['Đã xóa nhánh trên remote', 'Xóa nhánh remote thất bại'],
 }
 const lastLine = (s: string) => s.split('\n').map((l) => l.trim()).filter(Boolean).pop() ?? ''
 

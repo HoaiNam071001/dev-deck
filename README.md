@@ -33,6 +33,14 @@ Phát triển (hot reload, giao diện ở http://localhost:5183):
 npm run dev
 ```
 
+Kiểm thử:
+
+```bash
+npm test              # vitest: hàm thuần ở src/ (relTime, rootOf, nameFromUrl…)
+npm run test:server   # node: parseStatus, kiểm tra tên, thao tác nhánh / repo trên repo tạm, parser log AI
+npm run typecheck
+```
+
 Đổi cổng API bằng biến `PORT`. Đổi thư mục quét repo trong giao diện (nút "Thư mục quét", lưu ở `data/config.json`)
 hoặc đặt biến `GIT_ROOTS` (nhiều thư mục ngăn cách bằng `;` trên Windows). Mặc định quét `~/Desktop`, sâu 4 cấp.
 
@@ -43,7 +51,7 @@ Vite + React 18 + TypeScript (strict), CSS thuần có sẵn chế độ sáng/t
 ## Cấu trúc
 
 ```
-server/   index.js (HTTP + static) · usage/ (adapter đọc log token: claude, codex, gemini) · git.js (lệnh git chỉ-đọc)
+server/   index.js (HTTP + static) · usage/ (adapter đọc log token: claude, codex, gemini) · git.js (lệnh git đọc) · git-actions.js (lệnh git ghi theo từng repo) · git-repos.js (tạo / clone / xóa repo)
 src/      App.tsx · api.ts · pages/ · components/ · lib/
 plan/     kế hoạch theo giai đoạn
 ```
@@ -57,6 +65,9 @@ plan/     kế hoạch theo giai đoạn
 | `GET /api/git/repos[?rescan=1]` | Danh sách repo + nhánh hiện tại, trạng thái, ahead/behind |
 | `GET /api/git/repo?path=` | Chi tiết một repo: nhánh local/remote, file thay đổi, 20 commit, remote, stash |
 | `GET/PUT /api/git/config` | Thư mục gốc quét và độ sâu |
+| `POST /api/git/action` | Thao tác ghi trên một repo đã quét: stage, commit, fetch, pull, push, checkout, tạo / đổi tên / xóa nhánh (local và remote). `dryRun: true` chỉ cho xóa nhánh, trả về điều sẽ xảy ra |
+| `POST /api/git/repo-action` | `create` (git init + README / .gitignore tùy chọn), `delete` (dry-run rồi chuyển vào Thùng rác) |
+| `POST /api/git/clone`, `GET /api/git/clone?id=` | Bắt đầu clone (trả `id`), hỏi tiến độ; `{action:'cancel', id}` để hủy và dọn bản dở |
 
 ## Nguồn log AI
 
@@ -71,6 +82,11 @@ Parser Antigravity đã đối chiếu với log thật. Parser Codex và Gemini
 
 ## An toàn
 
-Chỉ nghe `127.0.0.1`, từ chối Host khác localhost (chống DNS rebinding). Hiện tại chỉ chạy lệnh git đọc
-(`status`, `for-each-ref`, `log`, `remote`, `stash list`) bằng `execFile`, không qua shell; `/api/git/repo` chỉ nhận
-đường dẫn nằm trong danh sách repo đã quét.
+Chỉ nghe `127.0.0.1`, từ chối Host khác localhost (chống DNS rebinding). Mọi lệnh git chạy bằng `execFile`, không qua shell,
+và chỉ nhận đường dẫn nằm trong danh sách repo đã quét.
+
+Thao tác ghi:
+- Mỗi hành động là một hàm riêng trong `server/git-actions.js` (không nhận chuỗi lệnh tự do); tên nhánh qua `git check-ref-format`, chặn tên bắt đầu bằng `-`; API chỉ nhận `application/json`.
+- Thao tác phá hủy cần xác nhận hai bước: giao diện bắt gõ lại tên, server kiểm lại `confirmName`. Xóa nhánh local dùng `-d`, chỉ dùng `-D` khi người dùng tick "vẫn xóa" cho nhánh chưa merge. Không xóa nhánh đang mở và nhánh mặc định. Chuyển nhánh bị từ chối khi còn thay đổi chưa commit.
+- Tạo repo, clone, xóa repo chỉ làm trong các thư mục quét đã cấu hình (không phải chính thư mục gốc khi xóa). Clone chỉ nhận URL `https://`, `ssh://`, `git@`; tắt giao thức `ext`/`file`, không hỏi mật khẩu (dùng credential manager / ssh-agent có sẵn). Xóa repo chuyển vào Thùng rác chứ không xóa vĩnh viễn; không có Thùng rác thì từ chối.
+- Mọi thao tác ghi (kể cả lỗi) vào `data/audit.log`; không ghi `confirmName`, dry-run không được ghi.
