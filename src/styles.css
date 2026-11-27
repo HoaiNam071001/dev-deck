@@ -98,6 +98,9 @@
 .sb-end { margin-left: auto; }
 .sb-btn { border: 0; background: transparent; color: inherit; cursor: pointer; padding: 0; font-size: inherit; }
 .sb-btn:hover { color: var(--fg); }
+.statusbar select, .sb-slot select { height: 20px; padding: 0 4px; font-size: inherit; background: transparent; border-color: transparent; color: var(--fg-soft); cursor: pointer; }
+.statusbar select:hover, .sb-slot select:hover { border-color: var(--border-strong); }
+.statusbar select:focus-visible, .sb-slot select:focus-visible { outline-offset: -2px; }
 .fg-soft { color: var(--fg-soft); }
 
 .mono { font-family: var(--font-mono); }
@@ -131,6 +134,8 @@ select, input[type=search], input[type=text], input[type=password], input[type=n
   background: var(--bg-chrome); border: 1px solid var(--border-strong); border-radius: var(--radius); color: var(--fg); font-size: var(--text);
 }
 select { height: 30px; padding: 0 8px; background: var(--surface); }
+select { color-scheme: dark; }
+select option { background: var(--raised); color: var(--fg); }
 input:not([type]), input[type=text], input[type=search], input[type=password], input[type=number] { height: 28px; padding: 0 8px; box-sizing: border-box; }
 textarea { padding: 7px 9px; font-family: var(--font-mono); resize: none; }
 .btn, .icon-btn { height: 30px; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--raised); color: var(--fg); font-size: var(--text); font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }

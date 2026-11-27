@@ -41,7 +41,7 @@ const Panel = ({ title, action, children }: { title: string; action?: React.Reac
 )
 
 export function HomePage() {
-  const ov = useLoad(api.overview, [])
+  const ov = useLoad(api.overview, [], 30000, 'overview')
   const pinned = useStore((s) => s.pinned)
   const [picking, setPicking] = useState(false)
   const b = bridge()

@@ -6,7 +6,7 @@ import { Chip } from './ui'
 
 /** MR / PR của nhánh hiện tại, tìm qua URL remote khớp với account ở tab Remotes. Không có account khớp thì không hiện gì. */
 export function RepoMr({ remotes, branch }: { remotes: string[]; branch: string | null }) {
-  const { data } = useLoad(() => (branch && remotes.length ? api.branchChangeRequests(remotes, branch) : Promise.resolve([])), [remotes.join('\n'), branch], 120000)
+  const { data } = useLoad(() => (branch && remotes.length ? api.branchChangeRequests(remotes, branch) : Promise.resolve([])), [remotes.join('\n'), branch], 120000, 'repoMr:' + remotes.join(',') + '#' + branch)
   const [open, setOpen] = useState<string | null>(null)
   if (!data?.length) return null
   const picked = data.find((c) => c.key === open)

@@ -61,7 +61,7 @@ export function RemoteBranches({ projects, accounts }: { projects: ProjectEntry[
   const cur = all.find((o) => o.value === sel) ?? all[0]
   const accountId = cur ? cur.value.slice(0, cur.value.indexOf('|')) : ''
   const project = cur ? cur.value.slice(cur.value.indexOf('|') + 1) : ''
-  const data = useLoad(() => (cur ? api.remoteBranches(accountId, project) : Promise.resolve(null)), [cur?.value])
+  const data = useLoad(() => (cur ? api.remoteBranches(accountId, project) : Promise.resolve(null)), [cur?.value], 60000, 'branches:' + (cur?.value ?? ''))
   const [open, setOpen] = useState<string | null>(null)
   const [creating, setCreating] = useState<string | null>(null)
   const canWrite = !!accounts.find((a) => a.id === accountId)?.write

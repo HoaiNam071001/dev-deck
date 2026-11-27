@@ -64,7 +64,7 @@ export function RemotePipelines({ projects, accounts }: { projects: ProjectEntry
   const cur = all.find((o) => o.value === sel) ?? all[0]
   const accountId = cur ? cur.value.slice(0, cur.value.indexOf('|')) : ''
   const project = cur ? cur.value.slice(cur.value.indexOf('|') + 1) : ''
-  const data = useLoad(() => (cur ? api.pipelines(accountId, project) : Promise.resolve(null)), [cur?.value], 30000)
+  const data = useLoad(() => (cur ? api.pipelines(accountId, project) : Promise.resolve(null)), [cur?.value], 30000, 'pipelines:' + (cur?.value ?? ''))
   const canWrite = !!accounts.find((a) => a.id === accountId)?.write
   const retry = async (id: string) => {
     if (confirmRetry !== id) { setConfirmRetry(id); return }

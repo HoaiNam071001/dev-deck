@@ -339,7 +339,7 @@ const samePath = (a: string, b: string) => normPath(a) === normPath(b)
 
 /** Dải "Job đang chạy" của một repo (trang Git): mỗi job một dòng, bấm mở modal chi tiết. Không hiện gì nếu repo không có job. */
 export function RepoJobs({ repoPath }: { repoPath: string }) {
-  const jobs = useLoad(api.jobs, [], 10000)
+  const jobs = useLoad(api.jobs, [], 10000, 'jobs')
   const [pid, setPid] = useState<number | null>(null)
   const [now, setNow] = useState(Date.now())
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t) }, [])

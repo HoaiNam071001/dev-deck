@@ -8,5 +8,5 @@ const { version } = JSON.parse(readFileSync(new URL('./package.json', import.met
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   define: { __APP_VERSION__: JSON.stringify(version) },
-  server: { port: 5173, proxy: { '/api': 'http://127.0.0.1:4317' } },
+  server: { port: 5183, proxy: { '/api': 'http://127.0.0.1:4317' } },
 })

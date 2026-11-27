@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { api, useLoad } from '../api'
+import { RefreshInfo, useRefreshMs } from '../components/RefreshInfo'
 import { SideSlot, StatusSlot } from '../components/Shell'
 import { StackedChart } from '../components/StackedChart'
 import { UsageWindows } from '../components/UsageWindows'
-import { Icon, Kpi, KpiStrip, NavLabel, Segmented, ShareBar, Spinner } from '../components/ui'
+import { Icon, Kpi, KpiStrip, NavLabel, Segmented, Select, ShareBar, Spinner } from '../components/ui'
 import { ShortNum } from '../components/ShortNum'
 import { dayKey, fmt } from '../lib/format'
 import { usePersisted } from '../lib/persist'
@@ -15,8 +16,6 @@ const RANGES = [
   { id: '0', label: 'Tất cả', name: 'Toàn bộ' },
 ]
 
-const p2 = (n: number) => String(n).padStart(2, '0')
-const clock = (d: Date) => `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`
 
 /** Màu theo phần của dòng so với dòng lớn nhất: xanh ít → cam nhiều → đỏ chiếm phần lớn. */
 const heat = (r: number) => (r >= 0.85 ? 'var(--danger)' : r >= 0.5 ? 'var(--behind)' : r >= 0.15 ? 'var(--accent)' : 'var(--fg-mute)')
@@ -46,16 +45,15 @@ function GroupTable({ title, label, rows, render, dot, tip }: { tip?: (k: string
 }
 
 export function TokenPage() {
-  const { data, error, loading, reload } = useLoad(api.usage, [], 30000)
-  const [range, setRange] = useState('1')
-  const [gran, setGran] = useState(0)
+  const [ms, sec, setSec] = useRefreshMs('ai', 30)
+  const { data, error, loading, reload, at, ms: tookMs } = useLoad(api.usage, [], ms, 'usage')
+  const [range, setRange] = usePersisted<string>('ai.range', '1', (v) => typeof v === 'string' && RANGES.some((r) => r.id === v))
+  const [gran, setGran] = usePersisted<number>('ai.gran', 0, (v) => typeof v === 'number')
   const [tab, setTab] = usePersisted<'chart' | 'detail'>('ai.tab', 'chart', (v) => v === 'chart' || v === 'detail')
   const [stack, setStack] = usePersisted<'type' | 'provider'>('ai.stack', 'type', (v) => v === 'type' || v === 'provider')
-  const [project, setProject] = useState('')
+  const [project, setProject] = usePersisted<string>('ai.project', '', (v) => typeof v === 'string')
   const [provider, setProvider] = usePersisted<string>('ai.provider', '', (v) => typeof v === 'string')
-  const sources = useLoad(api.usageSources, [], 30000).data ?? []
-  const [readAt, setReadAt] = useState<Date | null>(null)
-  useEffect(() => { if (data) setReadAt(new Date()) }, [data])
+  const sources = useLoad(api.usageSources, [], ms, 'usageSources').data ?? []
 
   const all = data ?? []
   const projects = useMemo(() => [...new Set(all.map((r) => r.project))].sort(), [all])
@@ -126,9 +124,9 @@ ${s.files} file · ${s.rows} tin` : `Chưa thấy log${s.root ? ' tại ' + s.ro
         </div>
       </SideSlot>
       <StatusSlot>
-        <span className="sb-item"><span className={'dot ' + (error ? 'bad' : loading ? 'busy' : 'ok')} />Đọc log lúc <span className="mono fg-soft">{readAt ? clock(readAt) : '—'}</span></span>
+        <span className="sb-item"><span className={'dot ' + (error ? 'bad' : loading ? 'busy' : 'ok')} />{error ? 'Lỗi đọc log' : 'Log'}</span>
         <span>{fmt(all.length)} tin · {projects.length} dự án</span>
-        <span className="sb-end">Tự làm mới 30s</span>
+        <RefreshInfo at={at} ms={tookMs} loading={loading} sec={sec} onSec={setSec} />
       </StatusSlot>
 
       <div className="page">
@@ -138,9 +136,9 @@ ${s.files} file · ${s.rows} tin` : `Chưa thấy log${s.root ? ' tại ' + s.ro
             <span className="muted">{rangeName} · {project || 'mọi dự án'}</span>
           </div>
           <div className="page-tools">
-            <Segmented label="Nhà cung cấp" value={provider} onChange={setProvider}
+            <Select label="Nhà cung cấp" value={provider} onChange={setProvider}
               options={[{ id: '', label: 'Tất cả' }, ...PROVIDERS.filter((p) => hasData(p.id) || provider === p.id).map((p) => ({ id: p.id as string, label: p.label }))]} />
-            <Segmented label="Khoảng thời gian" value={range} onChange={setRange} options={RANGES.map(({ id, label }) => ({ id, label }))} />
+            <Select label="Khoảng thời gian" value={range} onChange={setRange} options={RANGES.map(({ id, label }) => ({ id, label }))} />
             {tab === 'chart' && <>
             <select value={gran} onChange={(e) => setGran(Number(e.target.value))} aria-label="Độ chi tiết">
               <option value="0">Tự động</option><option value="1">1 phút</option><option value="5">5 phút</option>

@@ -128,9 +128,9 @@ function LocalJobs({ cr }: { cr: ChangeRequest }) {
 }
 
 export function RemoteDetailModal({ cr, onClose }: { cr: ChangeRequest; onClose: () => void }) {
-  const d = useLoad(() => api.changeRequest(cr.key), [cr.key], 30000)
+  const d = useLoad(() => api.changeRequest(cr.key), [cr.key], 30000, 'cr:' + cr.key)
   const [filter, setFilter] = useState<ThreadFilter>('open')
-  const accounts = useLoad(api.remoteAccounts, [])
+  const accounts = useLoad(api.remoteAccounts, [], 0, 'remoteAccounts')
   const canWrite = !!accounts.data?.find((a) => a.id === cr.accountId)?.write
   const act: ActFn = async (action, threadId, body) => {
     try {

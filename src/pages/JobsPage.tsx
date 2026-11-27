@@ -3,6 +3,8 @@ import { api, useLoad } from '../api'
 import { FolderPicker } from '../components/FolderPicker'
 import { BranchChip, BUSY, CopyBtn, isVitest, JobDetailModal, KIND, mb, PortLinks, ProgressBar, ProgressTop, ramColor, relDir, runtime, shortCmd } from '../components/JobDetail'
 import { ReporterSetup } from '../components/ReporterSetup'
+import { usePersisted } from '../lib/persist'
+import { RefreshInfo, useRefreshMs } from '../components/RefreshInfo'
 import { SideSlot, StatusSlot } from '../components/Shell'
 import { Chip, Icon, NavLabel, Spinner } from '../components/ui'
 import { bridge } from '../lib/platform'
@@ -83,15 +85,16 @@ export function JobsPage() {
   const [modal, setModal] = useState<{ pid: number; tab: 'procs' | 'test' } | null>(null)
   const [setupOpen, setSetupOpen] = useState(false)
   // Mở chi tiết thì quét nhanh hơn để thấy tiến trình con chạy / xong
-  const jobs = useLoad(api.jobs, [], modal ? 5000 : 10000)
+  const [rms, sec, setSec] = useRefreshMs('jobs', 10)
+  const jobs = useLoad(api.jobs, [], rms && modal ? Math.min(rms, 5000) : rms, 'jobs')
   const [now, setNow] = useState(Date.now())
   const [confirm, setConfirm] = useState<number | null>(null)
   const [busy, setBusy] = useState<number | null>(null)
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t) }, [])
 
-  const cfg = useLoad(api.jobsConfig, [])
+  const cfg = useLoad(api.jobsConfig, [], 0, 'jobsConfig')
   const [picking, setPicking] = useState(false)
-  const [filter, setFilter] = useState('')
+  const [filter, setFilter] = usePersisted<string>('jobs.filter', '', (v) => typeof v === 'string')
   const folders = cfg.data?.folders ?? []
 
   const all = jobs.data?.jobs ?? []
@@ -163,7 +166,7 @@ export function JobsPage() {
       <StatusSlot>
         <span className="sb-item"><span className={'dot ' + (list.length ? 'busy' : 'ok')} />{list.length ? `${list.length} job đang chạy` : 'Không có job nào'}</span>
         {list.length > 0 && <span>{mb(total)} RAM</span>}
-        <span className="sb-end">Tự làm mới mỗi {modal ? 5 : 10} giây</span>
+        <RefreshInfo at={jobs.at} ms={jobs.ms} loading={jobs.loading} sec={sec} onSec={setSec} />
       </StatusSlot>
 
       <div className="page" style={{ padding: '24px 28px', gap: 16 }}>

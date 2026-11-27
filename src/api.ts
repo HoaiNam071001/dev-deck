@@ -65,15 +65,60 @@ export interface Loadable<T> {
   data: T | null
   error: string | null
   loading: boolean
+  /** Lúc tải xong lần gần nhất (ms epoch), null nếu chưa có */
+  at: number | null
+  /** Thời gian tải lần gần nhất (ms) */
+  ms: number | null
   reload: () => void
 }
 
-/** Gọi `fn` khi mount / khi `deps` đổi; `reload()` gọi lại; `every` (ms) tự làm mới. */
-export function useLoad<T>(fn: () => Promise<T>, deps: unknown[], every = 0): Loadable<T> {
-  const [state, setState] = useState<{ data: T | null; error: string | null; loading: boolean }>({ data: null, error: null, loading: true })
+interface Entry { data: unknown; at: number; ms: number }
+/** Cache theo khóa, dùng chung giữa các trang: quay lại trang là có dữ liệu ngay, rồi làm mới ngầm nếu đã cũ. */
+const memo = new Map<string, Entry>()
+const LS = 'cache.v1:'
+const LS_MAX = 600_000 // ký tự; entry lớn hơn chỉ giữ trong RAM
+
+function readCache(key: string): Entry | null {
+  const hit = memo.get(key)
+  if (hit) return hit
+  try {
+    const raw = localStorage.getItem(LS + key)
+    if (raw) { const e = JSON.parse(raw) as Entry; memo.set(key, e); return e }
+  } catch { /* bỏ qua */ }
+  return null
+}
+function writeCache(key: string, e: Entry) {
+  memo.set(key, e)
+  try {
+    const raw = JSON.stringify(e)
+    if (raw.length <= LS_MAX) localStorage.setItem(LS + key, raw)
+    else localStorage.removeItem(LS + key)
+  } catch { /* hết dung lượng: bỏ qua */ }
+}
+/** Xóa cache theo tiền tố khóa (vd. sau khi đổi cấu hình). */
+export function dropCache(prefix: string) {
+  for (const k of [...memo.keys()]) if (k.startsWith(prefix)) memo.delete(k)
+  try { for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k?.startsWith(LS + prefix)) localStorage.removeItem(k) } } catch { /* bỏ qua */ }
+}
+
+const DEFAULT_TTL = 5 * 60000
+
+/**
+ * Gọi `fn` khi mount / khi `deps` đổi; `reload()` gọi lại; `every` (ms) tự làm mới ngầm.
+ * Có `key`: kết quả được cache (RAM + localStorage). Mount lại với cache còn mới thì không gọi lại;
+ * cache cũ hơn `every` (hoặc 5 phút nếu không tự làm mới) thì hiện ngay dữ liệu cũ và làm mới ngầm.
+ */
+export function useLoad<T>(fn: () => Promise<T>, deps: unknown[], every = 0, key?: string): Loadable<T> {
+  const init = (): { data: T | null; error: string | null; loading: boolean; at: number | null; ms: number | null } => {
+    const c = key ? readCache(key) : null
+    return c ? { data: c.data as T, error: null, loading: false, at: c.at, ms: c.ms } : { data: null, error: null, loading: true, at: null, ms: null }
+  }
+  const [state, setState] = useState(init)
   const seq = useRef(0)
   const fnRef = useRef(fn)
   fnRef.current = fn
+  const keyRef = useRef(key)
+  keyRef.current = key
 
   const inflight = useRef(false)
 
@@ -81,21 +126,34 @@ export function useLoad<T>(fn: () => Promise<T>, deps: unknown[], every = 0): Lo
     // Poll nền: nếu lượt trước chưa xong thì bỏ qua, kẻo kết quả chậm luôn bị coi là cũ và không bao giờ hiện
     if (silent && inflight.current) return
     const id = ++seq.current
+    const k = keyRef.current
+    const t0 = performance.now()
     inflight.current = true
     if (!silent) setState((s) => ({ ...s, loading: true, error: null }))
     fnRef.current().then(
-      (data) => { if (id === seq.current) setState({ data, error: null, loading: false }) },
+      (data) => {
+        const at = Date.now(), ms = Math.round(performance.now() - t0)
+        if (k) writeCache(k, { data, at, ms })
+        if (id === seq.current) setState({ data, error: null, loading: false, at, ms })
+      },
       (e: Error) => { if (id === seq.current) setState((s) => ({ ...s, error: e.message, loading: false })) },
     ).finally(() => { if (id === seq.current) inflight.current = false })
   }, [])
 
+  const prevKey = useRef<string | undefined | null>(null) // null = chưa chạy lần nào
   useEffect(() => {
-    run(false)
+    // Mount hoặc khóa đổi (vd. chọn project khác): dùng cache nếu còn mới. Chỉ `deps` đổi (vd. sau thao tác ghi) thì luôn tải lại.
+    const c = key ? readCache(key) : null
+    const entering = prevKey.current === null || prevKey.current !== key
+    if (prevKey.current !== null && entering && c) setState({ data: c.data as T, error: null, loading: false, at: c.at, ms: c.ms })
+    prevKey.current = key
+    const ttl = every || DEFAULT_TTL
+    if (!(entering && c && Date.now() - c.at <= ttl)) run(!!c)
     if (!every) return
     const t = setInterval(() => run(true), every)
     return () => clearInterval(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [every, run, ...deps])
+  }, [every, run, key, ...deps])
 
   return { ...state, reload: () => run(false) }
 }

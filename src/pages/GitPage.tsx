@@ -3,6 +3,7 @@ import { api, useLoad } from '../api'
 import { FolderPicker } from '../components/FolderPicker'
 import { RepoDetail } from '../components/RepoDetail'
 import { RepoList } from '../components/RepoList'
+import { RefreshInfo, useRefreshMs } from '../components/RefreshInfo'
 import { SideSlot, StatusSlot } from '../components/Shell'
 import { Icon, NavLabel, Segmented, Spinner } from '../components/ui'
 import { runAction } from '../lib/actions'
@@ -21,7 +22,7 @@ const clock = (iso: string) => { const d = new Date(iso); return `${p2(d.getHour
 const MIN_W = 380, MAX_W = 720
 
 export function GitPage() {
-  const [auto, setAuto] = usePersisted('git.auto', true, (v) => typeof v === 'boolean')
+  const [rms, sec, setSec] = useRefreshMs('git', 30)
   const cached = useStore((s) => s.repos)
   const scannedAt = useStore((s) => s.scannedAt)
   const scanMs = useStore((s) => s.scanMs)
@@ -41,8 +42,8 @@ export function GitPage() {
       setRepos(r.repos, new Date().toISOString(), Math.round(performance.now() - t0))
       return r
     } finally { setState({ scanning: false }) }
-  }, [], auto ? 30000 : 0)
-  const cfg = useLoad(api.config, [])
+  }, [], rms, 'repos')
+  const cfg = useLoad(api.config, [], 0, 'gitConfig')
 
   const [roots, setRoots] = useState<string[]>([])
   const [depth, setDepth] = useState(4)
@@ -72,8 +73,8 @@ export function GitPage() {
   const [q, setQ] = usePersisted('git.q', '', (v) => typeof v === 'string')
   const [filter, setFilter] = usePersisted<Filter>('git.filter', 'all', (v) => ['all', 'dirty', 'sync', 'clean'].includes(v as string))
   const [sort, setSort] = usePersisted<Sort>('git.sort', 'name', (v) => ['name', 'recent', 'changes'].includes(v as string))
-  const [rootFilter, setRootFilter] = useState('')
-  const [tab, setTab] = useState<Tab>('changes')
+  const [rootFilter, setRootFilter] = usePersisted<string>('git.root', '', (v) => typeof v === 'string')
+  const [tab, setTab] = usePersisted<Tab>('git.tab', 'changes', (v) => ['changes', 'branches', 'commits', 'remotes'].includes(v as string))
   const [menu, setMenu] = useState<string | null>(null)
   const [mode, setMode] = usePersisted<'panel' | 'modal'>('git.detailMode', 'panel', (v) => v === 'panel' || v === 'modal')
   const [detailW, setDetailW] = usePersisted('git.detailW', 460, (v) => typeof v === 'number' && v >= MIN_W && v <= MAX_W)
@@ -208,7 +209,7 @@ export function GitPage() {
         <span className="sb-item"><span className={'dot ' + (scanning ? 'busy' : repos.error ? 'bad' : 'ok')} />{scanning ? 'Đang quét…' : <>Quét lúc <span className="mono fg-soft">{scannedAt ? clock(scannedAt) : '—'}</span>{scanMs ? ` · ${(scanMs / 1000).toFixed(1)}s` : ''}</>}</span>
         <span>{shown.length} / {list.length} repo</span>
         <span className="sb-end"><span className="mono">↑↓</span> chọn repo · <span className="mono">{MOD}Enter</span> commit</span>
-        <button className="sb-btn" aria-pressed={auto} onClick={() => setAuto(!auto)} title="Bật/tắt tự làm mới">{auto ? 'Tự làm mới 30s' : 'Tự làm mới: tắt'}</button>
+        <RefreshInfo at={repos.at} ms={repos.ms} loading={repos.loading} sec={sec} onSec={setSec} />
       </StatusSlot>
 
       {picking && <FolderPicker start={roots[roots.length - 1] ?? ''} selected={roots} recent={cfg.data?.recent ?? []}

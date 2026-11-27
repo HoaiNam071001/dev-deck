@@ -65,6 +65,21 @@ export function Segmented<T extends string>({ value, onChange, options, label }:
   )
 }
 
+/** Dropdown lọc có nhãn phía trước, thay cho nhóm nút khi có nhiều lựa chọn. */
+export function Select<T extends string>({ value, onChange, options, label, prefix }: {
+  value: T; onChange: (v: T) => void; label: string; prefix?: string
+  options: { id: T; label: string }[]
+}) {
+  return (
+    <label className="inline-flex items-center gap-1.5 whitespace-nowrap text-[12px] text-fg-mute">
+      {prefix}
+      <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value as T)}>
+        {options.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+      </select>
+    </label>
+  )
+}
+
 export function ShareBar({ pct, color = 'var(--ahead)' }: { pct: number; color?: string }) {
   return <span className="share"><span style={{ width: Math.max(0, Math.min(100, pct)) + '%', background: color }} /></span>
 }

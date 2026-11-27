@@ -4,6 +4,9 @@ const { execFile, spawn } = require('child_process')
 const fs = require('fs')
 const path = require('path')
 
+// Chạy từ mã nguồn (npm run desktop): userData riêng (không đụng khóa single-instance của bản đã cài đang mở).
+// Dữ liệu cũng tách riêng vì token được mã hóa bằng khóa gắn với userData, bản dev không giải mã được dữ liệu của bản cài.
+if (!app.isPackaged) app.setPath('userData', app.getPath('userData') + '-dev')
 // Dữ liệu (cấu hình, audit log) nằm ở thư mục người dùng, không mất khi cập nhật
 process.env.DEVDECK_DATA = path.join(app.getPath('userData'), 'data')
 
@@ -110,7 +113,8 @@ async function createWindow() {
   if (safeStorage.isEncryptionAvailable()) require('../server/remotes').setCrypto({ encrypt: (t) => safeStorage.encryptString(t), decrypt: (b) => safeStorage.decryptString(b) })
   // Chế độ dev: API cố định 4317 (Vite proxy /api về đó), giao diện lấy từ Vite để có hot reload
   const devUrl = process.env.DEVDECK_DEV_URL
-  const { server, port } = await start(devUrl ? 4317 : 0)
+  // Cổng cố định để origin (và localStorage: ghim, bộ lọc, cache) không đổi giữa các lần mở app; bận thì lùi về cổng ngẫu nhiên
+  const { server, port } = await (devUrl ? start(4317) : start(app.isPackaged ? 47317 : 47318).catch(() => start(0)))
   httpServer = server
   const origin = devUrl || `http://localhost:${port}`
 

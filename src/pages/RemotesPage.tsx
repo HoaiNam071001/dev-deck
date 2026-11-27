@@ -5,8 +5,9 @@ import { RemoteBranches } from '../components/RemoteBranches'
 import { RemotePipelines } from '../components/RemotePipelines'
 import { RemoteDetailModal } from '../components/RemoteDetail'
 import { ApprovalChip, CiChip, copyCrLink, CR_WORD, crRef, PROVIDER_LABEL, ProviderTag, ThreadChip, unresolved } from '../components/RemoteBits'
+import { RefreshInfo, useRefreshMs } from '../components/RefreshInfo'
 import { SideSlot, StatusSlot } from '../components/Shell'
-import { Chip, Icon, Kpi, KpiStrip, NavLabel, Segmented, Spinner } from '../components/ui'
+import { Chip, Icon, Kpi, KpiStrip, NavLabel, Segmented, Select, Spinner } from '../components/ui'
 import { relTime } from '../lib/format'
 import { usePersisted } from '../lib/persist'
 import { GROUP_BYS, groupChangeRequests, projectKey, projectsOf, type CrGroup, type GroupBy, type ProjectEntry } from '../lib/remoteGroups'
@@ -15,7 +16,6 @@ import type { ChangeRequest, CrScope, CrState } from '../types'
 
 const SCOPES: CrScope[] = ['mine', 'review', 'assigned', 'all']
 const STATES: CrState[] = ['opened', 'merged', 'closed']
-const REFRESH_MS = 60000
 const isStrArr = (v: unknown) => Array.isArray(v) && v.every((x) => typeof x === 'string')
 /** Số MR hiển thị tối đa của một nhóm trước khi bấm "Xem thêm". */
 const GROUP_LIMIT = 8
@@ -95,7 +95,8 @@ function GroupBlock({ g, by, collapsed, pinned, expanded, onToggle, onPin, onHid
 }
 
 export function RemotesPage() {
-  const accounts = useLoad(api.remoteAccounts, [])
+  const [rms, sec, setSec] = useRefreshMs('remotes', 60)
+  const accounts = useLoad(api.remoteAccounts, [], 0, 'remoteAccounts')
   const [account, setAccount] = usePersisted<string>('remotes.account', 'all', (v) => typeof v === 'string')
   const [scope, setScope] = usePersisted<CrScope>('remotes.scope', 'all', (v) => SCOPES.includes(v as CrScope))
   const [state, setState] = usePersisted<CrState>('remotes.state', 'opened', (v) => STATES.includes(v as CrState))
@@ -109,7 +110,7 @@ export function RemotesPage() {
   const [known, setKnown] = usePersisted<Record<string, Pick<ProjectEntry, 'name' | 'parent' | 'provider' | 'accountId'>>>('remotes.knownProjects', {}, (v) => !!v && typeof v === 'object' && !Array.isArray(v))
   const [hiddenOpen, setHiddenOpen] = useState(false)
   const [expandedGroups, setExpandedGroups] = useState<string[]>([])
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = usePersisted<string>('remotes.query', '', (v) => typeof v === 'string')
   const [adding, setAdding] = useState(false)
   const [openKey, setOpenKey] = useState<string | null>(null)
   const [confirmDel, setConfirmDel] = useState<string | null>(null)
@@ -123,7 +124,7 @@ export function RemotesPage() {
   const accs = accounts.data ?? []
   const effective = account === 'all' || accs.some((a) => a.id === account) ? account : 'all'
   const hasAccounts = accs.length > 0
-  const crs = useLoad(() => (hasAccounts ? api.changeRequests(effective, scope, state) : Promise.resolve({ items: [], errors: [], fetchedAt: '' })), [effective, scope, state, hasAccounts], REFRESH_MS)
+  const crs = useLoad(() => (hasAccounts ? api.changeRequests(effective, scope, state) : Promise.resolve({ items: [], errors: [], fetchedAt: '' })), [effective, scope, state, hasAccounts], rms, `crs:${effective}:${scope}:${state}`)
 
   const all = crs.data?.items ?? []
   // Project đã ẩn không có MR nào trong danh sách; bỏ ẩn ở nút "Đã ẩn" cuối panel trái
@@ -275,7 +276,7 @@ export function RemotesPage() {
         <span className="sb-item"><span className={'dot ' + (crs.loading ? 'busy' : 'ok')} />{crs.loading ? 'Đang tải…' : `${list.length} MR / PR`}</span>
         {groupBy === 'project' && groups.length > 0 && <span>{groups.length} project</span>}
         {stats.threads > 0 && <span>{stats.threads} thread chưa resolve</span>}
-        <span className="sb-end">{crs.data?.fetchedAt ? `Cập nhật ${relTime(crs.data.fetchedAt)} · ` : ''}tự làm mới mỗi {REFRESH_MS / 1000} giây</span>
+        <RefreshInfo at={crs.at} ms={crs.ms} loading={crs.loading} sec={sec} onSec={setSec} />
       </StatusSlot>
 
       <div className="page" style={{ padding: '24px 28px', gap: 16 }}>
@@ -319,10 +320,9 @@ export function RemotesPage() {
             </KpiStrip>
 
             <div className="flex flex-wrap items-center gap-2">
-              <Segmented<CrScope> label="Phạm vi" value={scope} onChange={setScope} options={[{ id: 'mine', label: 'Của tôi' }, { id: 'review', label: 'Cần tôi review' }, { id: 'assigned', label: 'Gán cho tôi' }, { id: 'all', label: 'Tất cả' }]} />
+              <Select<CrScope> label="Phạm vi" prefix="Phạm vi" value={scope} onChange={setScope} options={[{ id: 'mine', label: 'Của tôi' }, { id: 'review', label: 'Cần tôi review' }, { id: 'assigned', label: 'Gán cho tôi' }, { id: 'all', label: 'Tất cả' }]} />
               <Segmented<CrState> label="Trạng thái" value={state} onChange={setState} options={[{ id: 'opened', label: 'Open' }, { id: 'merged', label: 'Merged' }, { id: 'closed', label: 'Closed' }]} />
-              <span className="ml-1 text-[12px] text-fg-mute">Nhóm theo</span>
-              <Segmented<GroupBy> label="Nhóm theo" value={groupBy} onChange={setGroupBy} options={[{ id: 'project', label: 'Project' }, { id: 'target', label: 'Branch đích' }, { id: 'author', label: 'Tác giả' }, { id: 'none', label: 'Không' }]} />
+              <Select<GroupBy> label="Nhóm theo" prefix="Nhóm theo" value={groupBy} onChange={setGroupBy} options={[{ id: 'project', label: 'Project' }, { id: 'target', label: 'Branch đích' }, { id: 'author', label: 'Tác giả' }, { id: 'none', label: 'Không' }]} />
               <input type="search" className="ml-auto !h-[30px] min-w-[200px] flex-1 sm:max-w-[320px]" placeholder="Tìm theo tiêu đề, branch, số, tác giả…" aria-label="Tìm MR / PR" value={query} onChange={(e) => setQuery(e.target.value)} />
             </div>
 

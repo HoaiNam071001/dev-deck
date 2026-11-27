@@ -43,7 +43,7 @@ const SectionHead = ({ title, action }: { title: string; action: React.ReactNode
 export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCommit }: { mode?: 'panel' | 'modal'; onMode?: (m: 'panel' | 'modal') => void; repo: RepoSummary; tab: Tab; setTab: (t: Tab) => void; onClose?: () => void; onFocusCommit?: (focus: () => void) => void }) {
   const rev = useStore((s) => s.rev)
   const isPinned = useStore((s) => s.pinned.includes(repo.path))
-  const { data, error, reload } = useLoad(() => api.repo(repo.path), [repo.path, rev])
+  const { data, error, reload } = useLoad(() => api.repo(repo.path), [repo.path, rev], 0, 'repo:' + repo.path)
   const [busy, setBusy] = useState<string | null>(null)
   const [message, setMessage] = useState('')
   const [amend, setAmend] = useState(false)

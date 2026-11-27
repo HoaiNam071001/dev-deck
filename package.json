@@ -11,7 +11,7 @@
     "desktop": "npm run build && electron .",
     "dist": "npm run build && electron-builder --win --publish never",
     "release": "bash scripts/release.sh",
-    "desktop:dev": "concurrently -k -n web,app -c green,blue \"vite --strictPort\" \"wait-on tcp:5173 && cross-env DEVDECK_DEV_URL=http://localhost:5173 electron .\""
+    "desktop:dev": "concurrently -k -n web,app -c green,blue \"vite --strictPort\" \"wait-on tcp:5183 && cross-env DEVDECK_DEV_URL=http://localhost:5183 electron .\""
   },
   "engines": {
     "node": ">=18"

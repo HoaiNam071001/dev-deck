@@ -27,7 +27,7 @@ Tag `v*.*.*` kích hoạt workflow *Release Windows* (`.github/workflows/release
 App hỏi Release mới nhất sau 5 giây khi mở, tải xong thì hỏi khởi động lại để cài. Chỉ `git push` thì app không biết, phải có tag mới.
 Dữ liệu (`config.json`, `audit.log`) nằm ở `%APPDATA%/devdeck/data`. Bản build chưa ký số nên Windows SmartScreen sẽ cảnh báo.
 
-Phát triển (hot reload, giao diện ở http://localhost:5173):
+Phát triển (hot reload, giao diện ở http://localhost:5183):
 
 ```bash
 npm run dev

@@ -173,7 +173,7 @@ function AccountPicker({ profiles, value, onChange, reload }: { profiles: Claude
 export function UsageWindows({ rows: allRows }: { rows: UsageRow[] }) {
   const [open, setOpen] = usePersisted<boolean>('ai.usage.open', true, (v) => typeof v === 'boolean')
   const [acct, setAcct] = usePersisted<string>('ai.claude.account', '', (v) => typeof v === 'string')
-  const profilesLoad = useLoad(api.claudeAccounts, [])
+  const profilesLoad = useLoad(api.claudeAccounts, [], 0, 'claudeAccounts')
   const profiles = profilesLoad.data ?? []
   // Tài khoản đã chọn mà không còn trong danh sách thì quay về mặc định
   const account = profiles.length && !profiles.some((p) => p.dir === acct) ? '' : acct
@@ -182,7 +182,7 @@ export function UsageWindows({ rows: allRows }: { rows: UsageRow[] }) {
   const [limits, setLimits] = usePersisted<Limits>('ai.limits', {}, (v) => typeof v === 'object' && v !== null)
   const [agyResets, setAgyResets] = usePersisted<AntigravityResets>('ai.agy.resets', {}, (v) => typeof v === 'object' && v !== null)
   const now = useMemo(() => Date.now(), [rows])
-  const accLoad = useLoad(() => api.claudeAccount(account), [account], 60000)
+  const accLoad = useLoad(() => api.claudeAccount(account), [account], 60000, 'claudeAccount:' + account)
   const acc = accLoad.loading ? null : accLoad.data
   const wins = useMemo(() => providerWindows(rows, now), [rows, now])
   const agy = useMemo(() => antigravityWindows(rows, now, agyResets), [rows, now, agyResets])

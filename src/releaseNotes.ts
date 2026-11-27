@@ -7,6 +7,19 @@ export interface ReleaseNote { version: string; date: string; title: string; ite
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '2.3.0',
+    date: '2026-11-27',
+    title: 'Chuyển trang nhanh hơn, nhớ bộ lọc, chu kỳ làm mới',
+    items: [
+      { tag: 'new', text: 'Dữ liệu được cache: quay lại trang là hiện ngay, rồi làm mới ngầm nếu đã cũ (Git, Token AI, Jobs, Remotes…).' },
+      { tag: 'new', text: 'Thanh trạng thái hiện lúc tải gần nhất, thời gian tải và dropdown chọn chu kỳ tự làm mới (tắt, 10 giây đến 10 phút) cho từng trang.' },
+      { tag: 'improve', text: 'Bộ lọc nhiều lựa chọn (phạm vi, nhóm theo ở Remotes; nhà cung cấp, khoảng thời gian ở Token AI) chuyển sang dropdown.' },
+      { tag: 'improve', text: 'Nhớ thêm lựa chọn qua trang và lần mở app: khoảng thời gian / dự án Token AI, root và tab ở Git, thư mục lọc ở Jobs, ô tìm Remotes.' },
+      { tag: 'fix', text: 'Bản đóng gói dùng cổng cố định nên ghim và bộ lọc không còn mất sau khi đóng app.' },
+      { tag: 'fix', text: 'Chạy từ mã nguồn không còn đụng bản đã cài đang mở (userData, dữ liệu và cổng riêng).' },
+    ],
+  },
+  {
     version: '2.2.0',
     date: '2026-11-27',
     title: 'Remotes: pipeline, thông báo và thao tác ghi',
