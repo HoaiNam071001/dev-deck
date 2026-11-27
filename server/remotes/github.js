@@ -61,15 +61,15 @@ async function list(acc, { scope, state }) {
   if (!SAFE_LOGIN.test(me)) throw new Error('Tên đăng nhập GitHub không hợp lệ')
   let who
   if (scope === 'all') {
-    // Mọi PR trong 15 repo tôi có quyền, hoạt động gần nhất
-    const r = await gql(acc, 'query { viewer { repositories(first: 15, isArchived: false, orderBy: { field: PUSHED_AT, direction: DESC }, ownerAffiliations: [OWNER, COLLABORATOR, ORGANIZATION_MEMBER]) { nodes { nameWithOwner } } } }', {})
+    // Mọi PR trong 30 repo tôi có quyền, hoạt động gần nhất
+    const r = await gql(acc, 'query { viewer { repositories(first: 30, isArchived: false, orderBy: { field: PUSHED_AT, direction: DESC }, ownerAffiliations: [OWNER, COLLABORATOR, ORGANIZATION_MEMBER]) { nodes { nameWithOwner } } } }', {})
     const repos = (r?.viewer?.repositories?.nodes || []).map((n) => n.nameWithOwner).filter((n) => REPO_RE.test(n))
     if (!repos.length) return []
     who = repos.map((n) => 'repo:' + n).join(' ')
   } else who = scope === 'review' ? `review-requested:${me}` : scope === 'assigned' ? `assignee:${me}` : `author:${me}`
   const st = state === 'merged' ? 'is:merged' : state === 'closed' ? 'is:closed -is:merged' : 'is:open'
   const q = `is:pr ${st} ${who} archived:false sort:updated-desc`
-  const d = await gql(acc, `query($q: String!) { search(query: $q, type: ISSUE, first: 40) { nodes { ... on PullRequest { ${PR_FIELDS} } } } }`, { q })
+  const d = await gql(acc, `query($q: String!) { search(query: $q, type: ISSUE, first: 60) { nodes { ... on PullRequest { ${PR_FIELDS} } } } }`, { q })
   return (d?.search?.nodes || []).filter((p) => p && p.number).map((p) => toCR(acc, p, me))
 }
 

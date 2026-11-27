@@ -1,4 +1,4 @@
-import { useMemo, useState, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { api, useLoad } from '../api'
 import { RemoteAccountModal } from '../components/RemoteAccountModal'
 import { RemoteBranches } from '../components/RemoteBranches'
@@ -9,7 +9,7 @@ import { SideSlot, StatusSlot } from '../components/Shell'
 import { Chip, Icon, Kpi, KpiStrip, NavLabel, Segmented, Spinner } from '../components/ui'
 import { relTime } from '../lib/format'
 import { usePersisted } from '../lib/persist'
-import { GROUP_BYS, groupChangeRequests, projectKey, projectsOf, type CrGroup, type GroupBy } from '../lib/remoteGroups'
+import { GROUP_BYS, groupChangeRequests, projectKey, projectsOf, type CrGroup, type GroupBy, type ProjectEntry } from '../lib/remoteGroups'
 import { toast } from '../lib/store'
 import type { ChangeRequest, CrScope, CrState } from '../types'
 
@@ -76,7 +76,7 @@ function GroupBlock({ g, by, collapsed, pinned, expanded, onToggle, onPin, onHid
         {byProject && (
           <>
             <button type="button" className={'ghost flex size-6 items-center justify-center text-[14px] ' + (pinned ? 'text-behind' : 'text-fg-mute')} aria-pressed={pinned} aria-label={(pinned ? 'Bỏ ghim ' : 'Ghim ') + g.title} title={pinned ? 'Bỏ ghim' : 'Ghim lên đầu'} onClick={onPin}>{pinned ? '★' : '☆'}</button>
-            <button type="button" className="ghost flex size-6 items-center justify-center" aria-label={'Ẩn ' + g.title} title="Ẩn project này khỏi danh sách (xem lại ở mục Đã ẩn)" onClick={onHide}><Icon name="x" size={12} /></button>
+            <button type="button" className="ghost flex size-6 items-center justify-center" aria-label={'Ẩn ' + g.title} title="Ẩn project này khỏi danh sách (bỏ ẩn ở nút Project đã ẩn cuối panel trái)" onClick={onHide}><Icon name="x" size={12} /></button>
           </>
         )}
       </div>
@@ -97,15 +97,17 @@ function GroupBlock({ g, by, collapsed, pinned, expanded, onToggle, onPin, onHid
 export function RemotesPage() {
   const accounts = useLoad(api.remoteAccounts, [])
   const [account, setAccount] = usePersisted<string>('remotes.account', 'all', (v) => typeof v === 'string')
-  const [scope, setScope] = usePersisted<CrScope>('remotes.scope', 'mine', (v) => SCOPES.includes(v as CrScope))
+  const [scope, setScope] = usePersisted<CrScope>('remotes.scope', 'all', (v) => SCOPES.includes(v as CrScope))
   const [state, setState] = usePersisted<CrState>('remotes.state', 'opened', (v) => STATES.includes(v as CrState))
   const [groupBy, setGroupBy] = usePersisted<GroupBy>('remotes.groupBy', 'project', (v) => GROUP_BYS.includes(v as GroupBy))
   const [pinnedArr, setPinnedArr] = usePersisted<string[]>('remotes.pinned', [], isStrArr)
   const [hiddenArr, setHiddenArr] = usePersisted<string[]>('remotes.hidden', [], isStrArr)
   const [collapsedArr, setCollapsedArr] = usePersisted<string[]>('remotes.collapsed', [], isStrArr)
   const [tab, setTab] = usePersisted<'mr' | 'branches' | 'pipelines'>('remotes.tab', 'mr', (v) => v === 'mr' || v === 'branches' || v === 'pipelines')
-  const [project, setProject] = useState<string | null>(null)
-  const [showHidden, setShowHidden] = useState(false)
+  const [project, setProject] = usePersisted<string | null>('remotes.project', null, (v) => v === null || typeof v === 'string')
+  // Project đã từng thấy: giữ trong danh sách bên trái dù bộ lọc hiện tại không có MR nào, để đổi phạm vi không làm mất / đổi project đang chọn
+  const [known, setKnown] = usePersisted<Record<string, Pick<ProjectEntry, 'name' | 'parent' | 'provider' | 'accountId'>>>('remotes.knownProjects', {}, (v) => !!v && typeof v === 'object' && !Array.isArray(v))
+  const [hiddenOpen, setHiddenOpen] = useState(false)
   const [expandedGroups, setExpandedGroups] = useState<string[]>([])
   const [query, setQuery] = useState('')
   const [adding, setAdding] = useState(false)
@@ -123,11 +125,23 @@ export function RemotesPage() {
   const crs = useLoad(() => (hasAccounts ? api.changeRequests(effective, scope, state) : Promise.resolve({ items: [], errors: [], fetchedAt: '' })), [effective, scope, state, hasAccounts], REFRESH_MS)
 
   const all = crs.data?.items ?? []
-  const hiddenCount = useMemo(() => new Set(all.filter((c) => hidden.has(projectKey(c))).map(projectKey)).size, [all, hidden])
-  // Project đã ẩn bị loại trừ, trừ khi đang bật "Đã ẩn" hoặc đang lọc thẳng vào project đó
-  const visible = useMemo(() => all.filter((c) => showHidden || !hidden.has(projectKey(c)) || projectKey(c) === project), [all, hidden, showHidden, project])
-  const projects = useMemo(() => projectsOf(visible), [visible])
-  // Project đang lọc không còn trong dữ liệu (đổi account/phạm vi) thì coi như không lọc
+  // Project đã ẩn không có MR nào trong danh sách; bỏ ẩn ở nút "Đã ẩn" cuối panel trái
+  const visible = useMemo(() => all.filter((c) => !hidden.has(projectKey(c))), [all, hidden])
+  const present = useMemo(() => projectsOf(visible), [visible])
+  // Danh sách project cố định: chỉ thêm khi thấy project mới, không đổi thứ tự theo bộ lọc
+  useEffect(() => {
+    const fresh = projectsOf(all).filter((p) => !known[p.key])
+    if (fresh.length) setKnown({ ...known, ...Object.fromEntries(fresh.map((p) => [p.key, { name: p.name, parent: p.parent, provider: p.provider, accountId: p.accountId }])) })
+  }, [all, known, setKnown])
+  const projects = useMemo(() => {
+    const counts = new Map(present.map((p) => [p.key, p]))
+    return Object.entries(known)
+      .filter(([k, v]) => !hidden.has(k) && (effective === 'all' || v.accountId === effective))
+      .map(([key, v]): ProjectEntry => counts.get(key) ?? { key, ...v, count: 0, threads: 0, ciFail: 0 })
+      .sort((a, b) => a.name.localeCompare(b.name) || a.key.localeCompare(b.key))
+  }, [present, known, effective, hidden])
+  const hiddenEntries = useMemo(() => hiddenArr.map((k) => ({ key: k, name: known[k] ? (known[k].parent ? `${known[k].parent}/${known[k].name}` : known[k].name) : k.slice(k.indexOf('|') + 1) })).sort((a, b) => a.name.localeCompare(b.name)), [hiddenArr, known])
+  // Project chỉ bị bỏ lọc khi không còn thuộc account đang xem (hoặc đã bị xóa khỏi danh sách đã biết)
   const activeProject = project && projects.some((p) => p.key === project) ? project : null
 
   const q = query.trim().toLowerCase()
@@ -158,22 +172,33 @@ export function RemotesPage() {
   const hideProject = (k: string, name: string) => {
     setHiddenArr([...hidden, k].filter((x, i, a) => a.indexOf(x) === i))
     if (project === k) setProject(null)
-    toast({ kind: 'ok', title: 'Đã ẩn project', detail: `${name} · xem lại bằng mục "Đã ẩn" ở panel trái` })
+    toast({ kind: 'ok', title: 'Đã ẩn project', detail: `${name} · xem lại ở nút "Project đã ẩn" cuối panel trái` })
   }
 
-  const ProjectItem = ({ p }: { p: (typeof projects)[number] }) => (
-    <button className={'nav-item' + (activeProject === p.key ? ' on' : '')} aria-pressed={activeProject === p.key} title={p.parent ? `${p.parent}/${p.name}` : p.name} onClick={() => setProject(activeProject === p.key ? null : p.key)}>
-      <span className={'size-2 flex-none rounded-full ' + (p.provider === 'gitlab' ? 'bg-[#C9A8FF]' : 'bg-[#8FE0B0]')} />
-      <span className="truncate">{p.name}</span>
-      {p.ciFail > 0 && <span className="size-1.5 flex-none rounded-full bg-danger" title={`${p.ciFail} CI lỗi`} />}
-      {p.threads > 0 && <span className="size-1.5 flex-none rounded-full bg-behind" title={`${p.threads} thread chưa resolve`} />}
-      <span className="nav-n">{p.count}</span>
-    </button>
-  )
+  const ProjectItem = ({ p }: { p: (typeof projects)[number] }) => {
+    const full = p.parent ? `${p.parent}/${p.name}` : p.name
+    const isPinned = pinned.has(p.key)
+    return (
+      <div className="group relative">
+        <button className={'nav-item' + (activeProject === p.key ? ' on' : '')} aria-pressed={activeProject === p.key} title={full} onClick={() => setProject(activeProject === p.key ? null : p.key)}>
+          <span className={'size-2 flex-none rounded-full ' + (p.provider === 'gitlab' ? 'bg-[#C9A8FF]' : 'bg-[#8FE0B0]')} />
+          <span className="truncate">{p.name}</span>
+          {p.ciFail > 0 && <span className="size-1.5 flex-none rounded-full bg-danger" title={`${p.ciFail} CI lỗi`} />}
+          {p.threads > 0 && <span className="size-1.5 flex-none rounded-full bg-behind" title={`${p.threads} thread chưa resolve`} />}
+          <span className="nav-n group-hover:invisible">{p.count}</span>
+        </button>
+        <span className="invisible absolute right-1 top-0.5 flex items-center group-focus-within:visible group-hover:visible">
+          <button className={'ghost flex size-[22px] items-center justify-center text-[13px] ' + (isPinned ? 'text-behind' : 'text-fg-mute')} aria-pressed={isPinned} aria-label={(isPinned ? 'Bỏ ghim ' : 'Ghim ') + full} title={isPinned ? 'Bỏ ghim' : 'Ghim lên đầu'} onClick={() => toggleIn(pinnedArr, setPinnedArr, p.key)}>{isPinned ? '★' : '☆'}</button>
+          <button className="ghost flex size-[22px] items-center justify-center" aria-label={'Ẩn ' + full} title="Ẩn project (bỏ ẩn ở nút Project đã ẩn cuối panel)" onClick={() => hideProject(p.key, full)}><Icon name="x" size={12} /></button>
+        </span>
+      </div>
+    )
+  }
 
   return (
     <>
       <SideSlot>
+        <div className="flex min-h-0 flex-1 flex-col gap-[18px] overflow-y-auto">
         <div className="side-group">
           <NavLabel action={<button className="ghost flex size-[22px] items-center justify-center" aria-label="Thêm account" title="Thêm account GitLab / GitHub" onClick={() => setAdding(true)}><Icon name="plus" size={13} /></button>}>Account</NavLabel>
           <button className={'nav-item' + (effective === 'all' ? ' on' : '')} aria-pressed={effective === 'all'} onClick={() => setAccount('all')}>
@@ -207,15 +232,27 @@ export function RemotesPage() {
           </div>
         )}
 
-        <div className="side-group">
-          {(hiddenCount > 0 || showHidden) && (
-            <button className={'nav-item' + (showHidden ? ' on' : '')} aria-pressed={showHidden} onClick={() => setShowHidden(!showHidden)} title="Hiện các project đã ẩn (bấm ✕ trên nhóm để ẩn)">
-              <Icon name="x" size={13} />Đã ẩn<span className="nav-n">{hiddenArr.length}</span>
-            </button>
-          )}
-          {showHidden && hiddenArr.length > 0 && <button className="btn w-full !h-7 whitespace-nowrap" onClick={() => setHiddenArr([])}>Bỏ ẩn tất cả</button>}
-          <div className="px-2 pt-2 text-sm text-fg-mute">Chỉ đọc: xem MR / PR, CI, approve và thread review. Token lưu mã hóa trên máy.</div>
+        <div className="px-2 text-sm text-fg-mute">Chỉ đọc: xem MR / PR, CI, approve và thread review. Token lưu mã hóa trên máy.</div>
         </div>
+
+        {hiddenArr.length > 0 && (
+          <div className="flex-none border-t border-border bg-[var(--bg-chrome)] pt-1.5">
+            {hiddenOpen && (
+              <div className="mb-1 flex max-h-[40vh] flex-col gap-0.5 overflow-y-auto" role="list" aria-label="Project đã ẩn">
+                <button className="btn w-full !h-7 whitespace-nowrap" onClick={() => { setHiddenArr([]); setHiddenOpen(false) }}>Hiện tất cả ({hiddenArr.length})</button>
+                {hiddenEntries.map((h) => (
+                  <div role="listitem" key={h.key} className="flex items-center gap-1.5 rounded px-2 py-1 text-[12px] hover:bg-[#1F2124]">
+                    <span className="min-w-0 flex-1 truncate" title={h.name}>{h.name}</span>
+                    <button className="btn sm !h-6 whitespace-nowrap" aria-label={'Hiện lại ' + h.name} onClick={() => { const next = hiddenArr.filter((x) => x !== h.key); setHiddenArr(next); if (!next.length) setHiddenOpen(false) }}>Hiện</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button className={'nav-item w-full' + (hiddenOpen ? ' on' : '')} aria-expanded={hiddenOpen} onClick={() => setHiddenOpen(!hiddenOpen)} title="Danh sách project đã ẩn">
+              <Icon name="x" size={13} />Project đã ẩn<span className="nav-n">{hiddenArr.length}</span>
+            </button>
+          </div>
+        )}
       </SideSlot>
 
       {adding && <RemoteAccountModal onClose={() => setAdding(false)} onAdded={(a) => { accounts.reload(); setAccount(a.id) }} />}
@@ -269,7 +306,7 @@ export function RemotesPage() {
             </KpiStrip>
 
             <div className="flex flex-wrap items-center gap-2">
-              <Segmented<CrScope> label="Phạm vi" value={scope} onChange={setScope} options={[{ id: 'mine', label: 'Của tôi' }, { id: 'review', label: 'Cần tôi review' }, { id: 'assigned', label: 'Gán cho tôi' }, { id: 'all', label: 'Tất cả (cả của người khác)' }]} />
+              <Segmented<CrScope> label="Phạm vi" value={scope} onChange={setScope} options={[{ id: 'mine', label: 'Của tôi' }, { id: 'review', label: 'Cần tôi review' }, { id: 'assigned', label: 'Gán cho tôi' }, { id: 'all', label: 'Tất cả' }]} />
               <Segmented<CrState> label="Trạng thái" value={state} onChange={setState} options={[{ id: 'opened', label: 'Open' }, { id: 'merged', label: 'Merged' }, { id: 'closed', label: 'Closed' }]} />
               <span className="ml-1 text-[12px] text-fg-mute">Nhóm theo</span>
               <Segmented<GroupBy> label="Nhóm theo" value={groupBy} onChange={setGroupBy} options={[{ id: 'project', label: 'Project' }, { id: 'target', label: 'Branch đích' }, { id: 'author', label: 'Tác giả' }, { id: 'none', label: 'Không' }]} />
@@ -288,7 +325,7 @@ export function RemotesPage() {
             {crs.data?.errors.map((e) => <div key={e.accountId} className="banner err" role="alert">{e.name}: {e.error}</div>)}
             {crs.loading && <div className={list.length ? 'spinner-wrap compact' : undefined}>{list.length ? <><span className="spinner" aria-hidden="true" /><span className="muted">Đang cập nhật MR / PR…</span></> : <Spinner label="Đang lấy MR / PR từ remote…" />}</div>}
             {!crs.loading && crs.data && !list.length && !crs.data.errors.length && (
-              <div className="banner">{q ? 'Không có MR / PR nào khớp từ khóa.' : hiddenCount > 0 && !showHidden ? `Không có MR / PR nào trong mục này (${hiddenCount} project đang bị ẩn).` : 'Không có MR / PR nào trong mục này.'}</div>
+              <div className="banner">{q ? 'Không có MR / PR nào khớp từ khóa.' : 'Không có MR / PR nào trong mục này.'}</div>
             )}
 
             {groups.map((g) => (

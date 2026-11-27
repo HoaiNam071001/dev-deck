@@ -96,12 +96,12 @@ function enrich(acc, m, me) {
 
 const SCOPES = { mine: 'scope=created_by_me', assigned: 'scope=assigned_to_me' }
 
-/** Mọi MR (kể cả của người khác) trong các project tôi là thành viên: 15 project hoạt động gần nhất, mỗi project 15 MR. */
+/** Mọi MR (kể cả của người khác) trong các project tôi là thành viên: 40 project hoạt động gần nhất, mỗi project 20 MR, tối đa 100. */
 async function listAll(acc, state) {
   const me = acc.user
-  const { data: projs } = await get(acc, '/projects?membership=true&simple=true&archived=false&order_by=last_activity_at&sort=desc&per_page=15')
-  const parts = await pool(projs || [], 5, (p) => get(acc, `/projects/${p.id}/merge_requests?state=${state}&order_by=updated_at&sort=desc&per_page=15`).then((r) => r.data || []).catch(() => []))
-  const mrs = parts.flat().sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at))).slice(0, 40)
+  const { data: projs } = await get(acc, '/projects?membership=true&simple=true&archived=false&order_by=last_activity_at&sort=desc&per_page=40')
+  const parts = await pool(projs || [], 5, (p) => get(acc, `/projects/${p.id}/merge_requests?state=${state}&order_by=updated_at&sort=desc&per_page=20`).then((r) => r.data || []).catch(() => []))
+  const mrs = parts.flat().sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at))).slice(0, 100)
   return pool(mrs, 6, (m) => enrich(acc, m, me).catch(() => base(acc, m, me)))
 }
 
