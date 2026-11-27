@@ -7,6 +7,15 @@ export interface ReleaseNote { version: string; date: string; title: string; ite
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '2.3.1',
+    date: '2026-11-27',
+    title: 'Sửa giao diện modal "Có gì mới"',
+    items: [
+      { tag: 'fix', text: 'Nút "Đã hiểu" dính đáy modal, không còn khoảng trống bên dưới khi nội dung ngắn.' },
+      { tag: 'improve', text: 'Chữ mô tả từng mục dịu hơn, dễ phân biệt với tiêu đề phiên bản.' },
+    ],
+  },
+  {
     version: '2.3.0',
     date: '2026-11-27',
     title: 'Chuyển trang nhanh hơn, nhớ bộ lọc, chu kỳ làm mới',

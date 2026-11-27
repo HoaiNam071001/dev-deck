@@ -12,7 +12,7 @@ const writeSeen = (v: string) => { try { localStorage.setItem(SEEN_KEY, v) } cat
 
 function Notes({ list }: { list: ReleaseNote[] }) {
   return (
-    <div className="flex flex-col gap-5 p-5">
+    <div className="flex flex-1 flex-col gap-6 p-5">
       {list.map((n) => (
         <section key={n.version} aria-label={'Phiên bản ' + n.version}>
           <div className="flex items-baseline gap-2.5">
@@ -24,7 +24,7 @@ function Notes({ list }: { list: ReleaseNote[] }) {
             {n.items.map((it, i) => (
               <li key={i} className="flex items-start gap-2.5 text-[13px] leading-relaxed">
                 <span className="mt-0.5 w-[68px] flex-none"><Chip tone={TAG[it.tag].tone}>{TAG[it.tag].label}</Chip></span>
-                <span className="min-w-0 flex-1">{it.text}</span>
+                <span className="min-w-0 flex-1 font-normal text-fg-soft">{it.text}</span>
               </li>
             ))}
           </ul>
@@ -58,9 +58,12 @@ export function ReleaseNotesModal({ version, openSignal }: { version: string; op
   if (!list) return null
   return (
     <Modal onClose={() => setList(null)} titleId="rn-title" header={<h2 id="rn-title">Có gì mới trong DevDeck</h2>}>
-      <Notes list={list} />
-      <div className="flex items-center justify-end border-t border-border px-5 py-3">
-        <button className="btn primary" onClick={() => setList(null)}>Đã hiểu</button>
+      {/* Chân modal dính đáy: nội dung ngắn thì không để khoảng trống bên dưới nút */}
+      <div className="flex min-h-full flex-col">
+        <Notes list={list} />
+        <div className="sticky bottom-0 flex items-center justify-end border-t border-border bg-surface px-5 py-3">
+          <button className="btn primary" onClick={() => setList(null)}>Đã hiểu</button>
+        </div>
       </div>
     </Modal>
   )
