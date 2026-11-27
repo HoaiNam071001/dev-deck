@@ -59,6 +59,20 @@ Thêm provider mới = thêm một file cùng 3 hàm `whoami`, `list`, `detail` 
 - [x] Xác nhận hai bước cho thao tác khó hoàn tác (bật ghi, merge, chạy lại pipeline; trả lời có bước soạn rồi Gửi); mọi thao tác kể cả lỗi ghi `data/audit.log` (không ghi nội dung comment, chỉ độ dài); server kiểm tham số (khóa, mã thread, tên nhánh, độ dài)
 - [ ] Bỏ approve trên GitHub (dismiss review cần lý do và quyền riêng), Bitbucket / Gitea: chưa làm, làm khi có nhu cầu
 
+## Giai đoạn 9e — Hàng đợi review
+
+Mục tiêu: không để MR / PR người khác chờ mình quá lâu; biết nên review cái nào trước.
+
+- [ ] Chế độ xem "Hàng đợi review" ở tab MR / PR: MR cần tôi review (GitLab `reviewer_username`, GitHub `review-requested:@me`), sắp theo thời gian chờ
+- [ ] Thời gian chờ tính từ lúc tôi được yêu cầu review (GitHub: `ReviewRequestedEvent` trong timeline; GitLab không có mốc chính xác → dùng system note "requested review" nếu đọc được, không thì `created_at`), ghi rõ cách tính trong tooltip
+- [ ] Mức chờ có màu: < 4 giờ bình thường, 4–24 giờ vàng, > 24 giờ đỏ (ngưỡng sửa được trong cài đặt); chỉ tính giờ làm việc (tùy chọn)
+- [ ] Cột độ lớn (+/− dòng, số tệp) và trạng thái CI để chọn MR nhỏ / CI xanh review trước
+- [ ] Trạng thái riêng của tôi: "chưa xem" / "đang xem" / "đã review, chờ tác giả sửa" (MR có commit mới sau lần review cuối của tôi thì quay lại "cần xem lại")
+- [ ] Nhắc: thông báo hệ thống một lần khi MR vượt ngưỡng vàng / đỏ (dùng `remoteWatch.ts`, nhớ đã báo trong `remote.seen`)
+- [ ] Số MR đang chờ hiện ở Tổng quan, sidebar và biểu tượng khay
+- [ ] Phía tác giả: "MR của tôi đang chờ ai" — reviewer chưa phản hồi và đã chờ bao lâu
+- [ ] Test bằng fetch giả: tính thời gian chờ, chuyển trạng thái "cần xem lại" khi có commit mới
+
 ## Rủi ro
 
 - Rate limit: GitLab mỗi MR tốn 3 request (MR, approvals, discussions); đã giới hạn 40 MR, song song 6, cache 60 giây. GitHub dùng 1 truy vấn GraphQL cho cả danh sách.

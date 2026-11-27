@@ -16,7 +16,11 @@ Việc phát sinh: thêm vào [00-backlog.md](00-backlog.md) bất cứ lúc nà
 | 6 | Giao diện mới + chuyển thành desktop app | [06-redesign-desktop.md](06-redesign-desktop.md) | xong |
 | 7 | Mục "AI" đa nhà cung cấp (Claude, Codex, Gemini) | [07-ai-usage.md](07-ai-usage.md) | xong (Codex/Gemini chưa thử trên log thật) |
 | 8 | Đọc log token từ Antigravity (đa model: Gemini, Claude…) | [08-antigravity-usage.md](08-antigravity-usage.md) | xong |
-| 9 | Tab Remotes: MR / PR trên GitLab, GitHub | [09-remotes.md](09-remotes.md) | 9a xong code (chưa thử token thật); 9b-9d chưa |
+| 9 | Tab Remotes: MR / PR trên GitLab, GitHub | [09-remotes.md](09-remotes.md) | 9a xong code (chưa thử token thật); 9b-9d chưa; 9e hàng đợi review chưa |
+| 10 | Git: stash, worktree, diff theo hunk, thao tác hàng loạt | [10-git-workflow.md](10-git-workflow.md) | chưa |
+| 11 | Token AI theo nhánh git / theo MR | [11-token-by-branch.md](11-token-by-branch.md) | chưa |
+| 12 | Chạy script npm ngay trong app | [12-npm-scripts.md](12-npm-scripts.md) | chưa |
+| 13 | Tích hợp Jira: chip ticket, tạo nhánh từ ticket, chuyển trạng thái | [13-jira.md](13-jira.md) | chưa |
 
 ## Nguyên tắc xuyên suốt
 
