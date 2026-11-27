@@ -74,6 +74,8 @@ function base(acc, m, me) {
     reviewers: (m.reviewers || []).map(person),
     mine: m.author?.username === me,
     reviewMe: (m.reviewers || []).some((r) => r.username === me),
+    reviewRequestedAt: null, myReviewAt: null, lastCommitAt: null,
+    size: m.changes_count && Number.isFinite(Number(m.changes_count)) ? { additions: null, deletions: null, files: Number(m.changes_count) } : null,
   }
 }
 

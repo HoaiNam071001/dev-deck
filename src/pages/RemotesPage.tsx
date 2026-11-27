@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { api, useLoad } from '../api'
 import { RemoteAccountModal } from '../components/RemoteAccountModal'
 import { RemoteBranches } from '../components/RemoteBranches'
+import { RemoteQueue } from '../components/RemoteQueue'
 import { RemotePipelines } from '../components/RemotePipelines'
 import { RemoteDetailModal } from '../components/RemoteDetail'
 import { ApprovalChip, CiChip, copyCrLink, CR_WORD, crRef, PROVIDER_LABEL, ProviderTag, ThreadChip, unresolved } from '../components/RemoteBits'
@@ -16,6 +17,8 @@ import type { ChangeRequest, CrScope, CrState } from '../types'
 
 const SCOPES: CrScope[] = ['mine', 'review', 'assigned', 'all']
 const STATES: CrState[] = ['opened', 'merged', 'closed']
+type Tab = 'mr' | 'queue' | 'branches' | 'pipelines'
+const TABS: Tab[] = ['mr', 'queue', 'branches', 'pipelines']
 const isStrArr = (v: unknown) => Array.isArray(v) && v.every((x) => typeof x === 'string')
 /** Số MR hiển thị tối đa của một nhóm trước khi bấm "Xem thêm". */
 const GROUP_LIMIT = 8
@@ -104,7 +107,7 @@ export function RemotesPage() {
   const [pinnedArr, setPinnedArr] = usePersisted<string[]>('remotes.pinned', [], isStrArr)
   const [hiddenArr, setHiddenArr] = usePersisted<string[]>('remotes.hidden', [], isStrArr)
   const [collapsedArr, setCollapsedArr] = usePersisted<string[]>('remotes.collapsed', [], isStrArr)
-  const [tab, setTab] = usePersisted<'mr' | 'branches' | 'pipelines'>('remotes.tab', 'mr', (v) => v === 'mr' || v === 'branches' || v === 'pipelines')
+  const [tab, setTab] = usePersisted<Tab>('remotes.tab', 'mr', (v) => TABS.includes(v as Tab))
   const [project, setProject] = usePersisted<string | null>('remotes.project', null, (v) => v === null || typeof v === 'string')
   // Project đã từng thấy: giữ trong danh sách bên trái dù bộ lọc hiện tại không có MR nào, để đổi phạm vi không làm mất / đổi project đang chọn
   const [known, setKnown] = usePersisted<Record<string, Pick<ProjectEntry, 'name' | 'parent' | 'provider' | 'accountId'>>>('remotes.knownProjects', {}, (v) => !!v && typeof v === 'object' && !Array.isArray(v))
@@ -303,7 +306,9 @@ export function RemotesPage() {
           </div>
         )}
 
-        {hasAccounts && <Segmented<'mr' | 'branches' | 'pipelines'> label="Chế độ xem" value={tab} onChange={setTab} options={[{ id: 'mr', label: 'MR / PR' }, { id: 'branches', label: 'Branches' }, { id: 'pipelines', label: 'Pipelines' }]} />}
+        {hasAccounts && <Segmented<Tab> label="Chế độ xem" value={tab} onChange={setTab} options={[{ id: 'mr', label: 'MR / PR' }, { id: 'queue', label: 'Hàng đợi review' }, { id: 'branches', label: 'Branches' }, { id: 'pipelines', label: 'Pipelines' }]} />}
+
+        {hasAccounts && tab === 'queue' && <RemoteQueue account={effective} refreshMs={rms} />}
 
         {hasAccounts && tab === 'branches' && <RemoteBranches projects={projects} accounts={accs} />}
 

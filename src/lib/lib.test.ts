@@ -6,6 +6,7 @@ import type { RepoSummary, UsageRow } from '../types'
 import { csvCell, toCsv } from './csv'
 import { buckets, OTHER_KEY, topSeries } from './usage'
 import { unreadThreads } from './remoteWatch'
+import { reviewQueue, reviewState, sizeLines, waitHours, waitLevel, waitSince } from './reviewQueue'
 import type { ChangeRequest } from '../types'
 
 const repo = (o: Partial<RepoSummary> = {}): RepoSummary => ({
@@ -105,5 +106,49 @@ describe('unreadThreads (badge thread mới ở Remotes)', () => {
     const r = unreadThreads({ a: 4 }, [cr('a', 2)])
     expect(r).toEqual({ count: 0, read: { a: 2 } })
     expect(unreadThreads(r.read, [cr('a', 3)]).count).toBe(1)
+  })
+})
+
+describe('reviewQueue (hàng đợi review)', () => {
+  const NOW = Date.parse('2026-11-27T12:00:00Z')
+  const h = (n: number) => new Date(NOW - n * 3_600_000).toISOString()
+  const cr = (key: string, o: Partial<ChangeRequest> = {}) => ({ key, state: 'opened', reviewMe: true, mine: false, draft: false, createdAt: h(1), reviewRequestedAt: null, ...o } as ChangeRequest)
+  it('mốc chờ: ưu tiên lúc được yêu cầu review, không thì createdAt', () => {
+    expect(waitSince(cr('a', { reviewRequestedAt: h(3), createdAt: h(30) }))).toEqual({ at: h(3), exact: true })
+    expect(waitSince(cr('a', { createdAt: h(30) }))).toEqual({ at: h(30), exact: false })
+  })
+  it('giờ chờ không âm, ngày hỏng → 0', () => {
+    expect(waitHours(cr('a', { createdAt: h(5) }), NOW)).toBeCloseTo(5)
+    expect(waitHours(cr('a', { createdAt: h(-2) }), NOW)).toBe(0)
+    expect(waitHours(cr('a', { createdAt: 'xx' }), NOW)).toBe(0)
+  })
+  it('mức chờ theo ngưỡng 4h / 24h, ngưỡng sửa được', () => {
+    expect([0, 3.9, 4, 23.9, 24].map((x) => waitLevel(x))).toEqual(['ok', 'ok', 'warn', 'warn', 'late'])
+    expect(waitLevel(2, 1, 2)).toBe('late')
+  })
+  it('độ lớn: null khi thiếu số dòng', () => {
+    expect(sizeLines({ size: { additions: 10, deletions: 5, files: 2 } })).toBe(15)
+    expect(sizeLines({ size: { additions: null, deletions: null, files: 3 } })).toBeNull()
+    expect(sizeLines({})).toBeNull()
+  })
+  it('hàng đợi: chỉ MR mở của người khác tôi được yêu cầu; chờ lâu nhất trước, draft cuối', () => {
+    const q = reviewQueue([
+      cr('new', { createdAt: h(1) }), cr('old', { createdAt: h(40) }), cr('draft', { createdAt: h(90), draft: true }),
+      cr('mine', { mine: true, createdAt: h(99) }), cr('merged', { state: 'merged', createdAt: h(99) }), cr('notme', { reviewMe: false, createdAt: h(99) }),
+    ], NOW)
+    expect(q.map((c) => c.key)).toEqual(['old', 'new', 'draft'])
+  })
+})
+
+describe('reviewState (trạng thái riêng của tôi)', () => {
+  const T = (m: number) => new Date(Date.UTC(2026, 10, 27, 0, m)).toISOString()
+  it('chưa review: chưa xem / đang xem theo dấu của tôi', () => {
+    expect(reviewState({}, false)).toBe('new')
+    expect(reviewState({ myReviewAt: null }, true)).toBe('reviewing')
+  })
+  it('đã review: chờ tác giả sửa, có commit mới hơn thì cần xem lại', () => {
+    expect(reviewState({ myReviewAt: T(10), lastCommitAt: T(5) }, false)).toBe('waiting')
+    expect(reviewState({ myReviewAt: T(10), lastCommitAt: T(20) }, true)).toBe('again')
+    expect(reviewState({ myReviewAt: T(10), lastCommitAt: null }, false)).toBe('waiting')
   })
 })

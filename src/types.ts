@@ -170,6 +170,13 @@ export interface ChangeRequest {
   reviewers: RemotePerson[]
   mine: boolean
   reviewMe: boolean
+  /** Lúc tôi được yêu cầu review (GitHub: ReviewRequestedEvent; GitLab: chưa có mốc chính xác → null, dùng createdAt) */
+  reviewRequestedAt?: string | null
+  /** Lần review gần nhất của tôi (GitHub; GitLab chưa có → null) và commit mới nhất của MR / PR */
+  myReviewAt?: string | null
+  lastCommitAt?: string | null
+  /** Độ lớn thay đổi; null = remote không trả */
+  size?: { additions: number | null; deletions: number | null; files: number | null } | null
 }
 export interface ReviewComment { author: RemotePerson; body: string; createdAt: string; url: string | null }
 export interface ReviewThread { id: string; resolved: boolean; outdated: boolean; path: string | null; line: number | null; comments: ReviewComment[] }

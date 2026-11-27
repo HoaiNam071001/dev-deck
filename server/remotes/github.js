@@ -28,8 +28,11 @@ const PR_FIELDS = `
   author { login ... on User { name } }
   reviewRequests(first: 10) { nodes { requestedReviewer { ... on User { login name } ... on Team { name } } } }
   latestOpinionatedReviews(first: 30) { nodes { state author { login } } }
+  latestReviews(first: 30) { nodes { submittedAt author { login } } }
+  additions deletions changedFiles
+  timelineItems(itemTypes: [REVIEW_REQUESTED_EVENT], last: 20) { nodes { ... on ReviewRequestedEvent { createdAt requestedReviewer { ... on User { login } } } } }
   reviewThreads(first: 100) { nodes { isResolved } }
-  commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }`
+  commits(last: 1) { nodes { commit { committedDate statusCheckRollup { state } } } }`
 
 function toCR(acc, p, me) {
   const reviews = p.latestOpinionatedReviews?.nodes || []
@@ -51,6 +54,11 @@ function toCR(acc, p, me) {
     reviewers,
     mine: p.author?.login === me,
     reviewMe: reviewers.some((r) => r.username === me),
+    // Lần gần nhất tôi được yêu cầu review (nodes theo thứ tự cũ → mới)
+    reviewRequestedAt: [...(p.timelineItems?.nodes || [])].reverse().find((n) => n?.requestedReviewer?.login === me)?.createdAt || null,
+    myReviewAt: (p.latestReviews?.nodes || []).find((n) => n?.author?.login === me)?.submittedAt || null,
+    lastCommitAt: p.commits?.nodes?.[0]?.commit?.committedDate || null,
+    size: { additions: p.additions ?? null, deletions: p.deletions ?? null, files: p.changedFiles ?? null },
   }
 }
 

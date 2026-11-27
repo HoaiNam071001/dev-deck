@@ -63,15 +63,15 @@ Thêm provider mới = thêm một file cùng 3 hàm `whoami`, `list`, `detail` 
 
 Mục tiêu: không để MR / PR người khác chờ mình quá lâu; biết nên review cái nào trước.
 
-- [ ] Chế độ xem "Hàng đợi review" ở tab MR / PR: MR cần tôi review (GitLab `reviewer_username`, GitHub `review-requested:@me`), sắp theo thời gian chờ
-- [ ] Thời gian chờ tính từ lúc tôi được yêu cầu review (GitHub: `ReviewRequestedEvent` trong timeline; GitLab không có mốc chính xác → dùng system note "requested review" nếu đọc được, không thì `created_at`), ghi rõ cách tính trong tooltip
-- [ ] Mức chờ có màu: < 4 giờ bình thường, 4–24 giờ vàng, > 24 giờ đỏ (ngưỡng sửa được trong cài đặt); chỉ tính giờ làm việc (tùy chọn)
-- [ ] Cột độ lớn (+/− dòng, số tệp) và trạng thái CI để chọn MR nhỏ / CI xanh review trước
-- [ ] Trạng thái riêng của tôi: "chưa xem" / "đang xem" / "đã review, chờ tác giả sửa" (MR có commit mới sau lần review cuối của tôi thì quay lại "cần xem lại")
+- [x] Chế độ xem "Hàng đợi review" (`RemoteQueue.tsx`, tab riêng ở trang Remotes): MR / PR mở của người khác mà tôi được yêu cầu review, chờ lâu nhất trước, draft xuống cuối (`lib/reviewQueue.ts`); chưa thử token thật
+- [x] Thời gian chờ: GitHub lấy `ReviewRequestedEvent` gần nhất của tôi; GitLab chưa đọc system note nên dùng `created_at`, hiện dấu `*` và tooltip ghi rõ cách tính (đọc system note GitLab: làm sau)
+- [x] Mức chờ có màu: <4 giờ xanh, 4–24 giờ vàng, >24 giờ đỏ (hằng số trong `reviewQueue.ts`). Còn lại: ngưỡng sửa được trong cài đặt, chỉ tính giờ làm việc
+- [x] Cột độ lớn (GitHub: +/− dòng, số tệp; GitLab chỉ có số tệp) và chip CI / approve / thread. Còn lại: sắp xếp theo độ lớn / CI
+- [x] Trạng thái riêng của tôi (`reviewState` trong `reviewQueue.ts`): "chưa xem" / "đang xem" (nút đánh dấu, lưu `remotes.reviewing`) / "chờ tác giả sửa" / "cần xem lại" khi commit mới hơn review cuối của tôi. Chỉ GitHub có mốc review + commit; GitLab chỉ có chưa xem / đang xem (chưa thử token thật)
 - [ ] Nhắc: thông báo hệ thống một lần khi MR vượt ngưỡng vàng / đỏ (dùng `remoteWatch.ts`, nhớ đã báo trong `remote.seen`)
 - [ ] Số MR đang chờ hiện ở Tổng quan, sidebar và biểu tượng khay
 - [ ] Phía tác giả: "MR của tôi đang chờ ai" — reviewer chưa phản hồi và đã chờ bao lâu
-- [ ] Test bằng fetch giả: tính thời gian chờ, chuyển trạng thái "cần xem lại" khi có commit mới
+- [x] Test: thời gian chờ, thứ tự hàng đợi, chuyển trạng thái "cần xem lại" (`lib.test.ts`)
 
 ## Rủi ro
 
