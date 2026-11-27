@@ -4,11 +4,12 @@ import { RefreshInfo, useRefreshMs } from '../components/RefreshInfo'
 import { SideSlot, StatusSlot } from '../components/Shell'
 import { StackedChart } from '../components/StackedChart'
 import { UsageWindows } from '../components/UsageWindows'
-import { Icon, Kpi, KpiStrip, NavLabel, Segmented, Select, ShareBar, Spinner } from '../components/ui'
+import { ErrorBanner, Icon, Kpi, KpiStrip, NavLabel, Segmented, Select, ShareBar, Spinner } from '../components/ui'
 import { ShortNum } from '../components/ShortNum'
 import { dayKey, fmt } from '../lib/format'
+import { downloadCsv } from '../lib/csv'
 import { usePersisted } from '../lib/persist'
-import { buckets, filterRows, granOf, group, KEYS, PROVIDERS, providerOf, sum, totalOf, type Totals } from '../lib/usage'
+import { buckets, filterRows, granOf, group, KEYS, topSeries, PROVIDERS, providerOf, sum, totalOf, type Totals } from '../lib/usage'
 
 const RANGES = [
   { id: 'h1', label: '1h', name: '1 giờ qua' }, { id: 'h6', label: '6h', name: '6 giờ qua' }, { id: 'h24', label: '24h', name: '24 giờ qua' },
@@ -50,7 +51,7 @@ export function TokenPage() {
   const [range, setRange] = usePersisted<string>('ai.range', '1', (v) => typeof v === 'string' && RANGES.some((r) => r.id === v))
   const [gran, setGran] = usePersisted<number>('ai.gran', 0, (v) => typeof v === 'number')
   const [tab, setTab] = usePersisted<'chart' | 'detail'>('ai.tab', 'chart', (v) => v === 'chart' || v === 'detail')
-  const [stack, setStack] = usePersisted<'type' | 'provider'>('ai.stack', 'type', (v) => v === 'type' || v === 'provider')
+  const [stack, setStack] = usePersisted<'type' | 'provider' | 'project'>('ai.stack', 'type', (v) => v === 'type' || v === 'provider' || v === 'project')
   const [project, setProject] = usePersisted<string>('ai.project', '', (v) => typeof v === 'string')
   const [provider, setProvider] = usePersisted<string>('ai.provider', '', (v) => typeof v === 'string')
   const sources = useLoad(api.usageSources, [], ms, 'usageSources').data ?? []
@@ -65,7 +66,11 @@ export function TokenPage() {
   const rows = useMemo(() => (project ? inRange.filter((r) => r.project === project) : inRange), [inRange, project])
   const s = useMemo(() => sum(rows), [rows])
   const g = granOf(gran, range)
-  const series = useMemo(() => buckets(rows, g), [rows, g])
+  const projSeries = useMemo(() => (stack === 'project' ? topSeries(rows) : []), [rows, stack])
+  const series = useMemo(
+    () => (stack === 'project' ? buckets(rows, g, (r) => r.project, new Set(projSeries.map((s) => s.k))) : buckets(rows, g)),
+    [rows, g, stack, projSeries],
+  )
   const byTotal = (a: Totals, b: Totals) => totalOf(b) - totalOf(a)
   const byModel = useMemo(() => group(rows, (r) => r.model).sort(byTotal), [rows])
   const byProject = useMemo(() => group(rows, (r) => r.project).sort(byTotal), [rows])
@@ -89,12 +94,22 @@ export function TokenPage() {
   }, [all, range, project, provider, total])
 
   const exportCsv = () => {
-    const head = 'Thời điểm,Input,Output,Cache ghi,Cache đọc,Tin nhắn'
-    const lines = series.map((b) => `${dayKey(new Date(b.b))} ${b.time},${b.input},${b.output},${b.cacheWrite},${b.cacheRead},${b.msgs}`)
-    const url = URL.createObjectURL(new Blob([[head, ...lines].join('\n')], { type: 'text/csv' }))
-    const a = Object.assign(document.createElement('a'), { href: url, download: `ai-token-${dayKey(new Date())}.csv` })
-    a.click()
-    URL.revokeObjectURL(url)
+    const stamp = dayKey(new Date())
+    const num = (t: Totals) => [t.input, t.output, t.cacheWrite, t.cacheRead, totalOf(t), t.msgs]
+    if (tab === 'detail') {
+      const head = ['Nhóm', 'Tên', 'Input', 'Output', 'Cache ghi', 'Cache đọc', 'Tổng', 'Tin nhắn']
+      const body = [
+        ...byProvider.map((r) => ['Nhà cung cấp', providerOf(r.k)?.label ?? r.k, ...num(r)]),
+        ...byModel.map((r) => ['Model', r.k, ...num(r)]),
+        ...byProject.map((r) => ['Dự án', r.k, ...num(r)]),
+      ]
+      downloadCsv(`ai-token-chi-tiet-${stamp}.csv`, [head, ...body])
+      return
+    }
+    const cols = stack === 'project' ? projSeries : []
+    const head = ['Thời điểm', 'Input', 'Output', 'Cache ghi', 'Cache đọc', 'Tổng', 'Tin nhắn', ...cols.map((c) => 'Dự án: ' + c.label)]
+    const body = series.map((x) => [`${dayKey(new Date(x.b))} ${x.time}`, ...num(x), ...cols.map((c) => x.bySeries[c.k] ?? 0)])
+    downloadCsv(`ai-token-${stamp}.csv`, [head, ...body])
   }
 
   const rangeName = RANGES.find((r) => r.id === range)!.name
@@ -144,16 +159,16 @@ ${s.files} file · ${s.rows} tin` : `Chưa thấy log${s.root ? ' tại ' + s.ro
               <option value="0">Tự động</option><option value="1">1 phút</option><option value="5">5 phút</option>
               <option value="15">15 phút</option><option value="60">Theo giờ</option><option value="1440">Theo ngày</option>
             </select>
-            <select value={stack} onChange={(e) => setStack(e.target.value as 'type' | 'provider')} aria-label="Chia biểu đồ theo">
-              <option value="type">Theo loại token</option><option value="provider">Theo nhà cung cấp</option>
+            <select value={stack} onChange={(e) => setStack(e.target.value as 'type' | 'provider' | 'project')} aria-label="Chia biểu đồ theo">
+              <option value="type">Theo loại token</option><option value="provider">Theo nhà cung cấp</option><option value="project">So sánh dự án</option>
             </select>
             </>}
             <button className="icon-btn" aria-label="Tải lại" title="Tải lại" onClick={reload} disabled={loading}><Icon name="refresh" size={13} spin={loading} /></button>
-            <button className="icon-btn" aria-label="Xuất CSV" title="Xuất CSV" onClick={exportCsv} disabled={!series.length}><Icon name="download" size={13} /></button>
+            <button className="icon-btn" aria-label="Xuất CSV" title={tab === 'detail' ? 'Xuất CSV (bảng chi tiết)' : 'Xuất CSV (theo thời gian)'} onClick={exportCsv} disabled={!series.length}><Icon name="download" size={13} /></button>
           </div>
         </header>
 
-        {error && <div className="banner err" role="alert">Không đọc được dữ liệu: {error}</div>}
+        {error && <ErrorBanner onRetry={reload}>Không đọc được dữ liệu: {error}</ErrorBanner>}
 
         <UsageWindows rows={provider ? all.filter((r) => r.provider === provider) : all} />
 
@@ -175,9 +190,9 @@ ${s.files} file · ${s.rows} tin` : `Chưa thấy log${s.root ? ' tại ' + s.ro
         <section className="panel pad">
           <div className="panel-bar">
             <h2>Token theo {g >= 1440 ? 'ngày' : g === 60 ? 'giờ' : g + ' phút'}</h2>
-            <div className="legend">{(stack === 'provider' ? PROVIDERS.map((p) => ({ k: p.id, label: p.label, color: p.color })) : KEYS).map(({ k, label, color }) => <span key={k}><i style={{ background: color }} />{label}</span>)}</div>
+            <div className="legend">{(stack === 'project' ? projSeries : stack === 'provider' ? PROVIDERS.map((p) => ({ k: p.id, label: p.label, color: p.color })) : KEYS).map(({ k, label, color }) => <span key={k}><i style={{ background: color }} />{label}</span>)}</div>
           </div>
-          <StackedChart data={series} g={g} by={stack} />
+          <StackedChart data={series} g={g} by={stack} series={projSeries} />
         </section>
         </>}
 

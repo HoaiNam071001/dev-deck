@@ -6,7 +6,7 @@ import type { ChangeRequest, ReviewThread } from '../types'
 import { CollapsibleMarkdown, Markdown } from './Markdown'
 import { Modal } from './Modal'
 import { ApprovalChip, CiChip, ciTone, copyCrLink, CR_WORD, crRef, PROVIDER_LABEL, ProviderTag, safeUrl, ThreadChip } from './RemoteBits'
-import { Chip, Icon, Segmented, Spinner } from './ui'
+import { Chip, ErrorBanner, Icon, Segmented, Spinner } from './ui'
 
 type ThreadFilter = 'open' | 'resolved' | 'all'
 
@@ -174,7 +174,7 @@ export function RemoteDetailModal({ cr, onClose }: { cr: ChangeRequest; onClose:
               ]} />
             </div>
             {d.loading && !full && <Spinner label="Đang tải thread…" />}
-            {d.error && <div className="banner err" role="alert">Không tải được chi tiết: {d.error}</div>}
+            {d.error && <ErrorBanner onRetry={d.reload}>Không tải được chi tiết: {d.error}</ErrorBanner>}
             {full && !shown.length && <div className="banner">{filter === 'open' ? (threads.length ? 'Không còn thread nào chưa resolve.' : 'Chưa có thread review nào.') : 'Không có thread nào.'}</div>}
             {shown.map((t) => <Thread key={t.id} t={t} provider={cr.provider} onAct={canWrite ? act : undefined} />)}
           </section>

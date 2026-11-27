@@ -48,20 +48,42 @@ export function filterRows(rows: UsageRow[], range: string, project: string, pro
 const AUTO_GRAN: Record<string, number> = { h1: 1, h6: 5, h24: 60, '1': 60, '7': 360, '30': 1440, '0': 1440 }
 export const granOf = (gran: number, range: string) => gran || AUTO_GRAN[range] || 1440
 
-export interface Bucket extends Totals { b: number; date: string; time: string; byProvider: Record<Provider, number> }
+export interface Bucket extends Totals { b: number; date: string; time: string; byProvider: Record<Provider, number>; bySeries: Record<string, number> }
+
+/** Màu cho các dự án khi chia biểu đồ theo dự án; "Khác" dùng màu xám. */
+export const SERIES_COLORS = ['#5AA9F5', '#F2A65A', '#B18CF2', '#30CF43', '#F26BA8', '#4FD1C5']
+export const OTHER_KEY = '__other'
+export const OTHER_COLOR = '#6B7A90'
+
+/** Các dự án lớn nhất (theo tổng token) + "Khác" nếu còn dư, để vẽ biểu đồ chồng theo dự án. */
+export function topSeries(rows: UsageRow[], n = SERIES_COLORS.length): { k: string; label: string; color: string }[] {
+  const g = group(rows, (r) => r.project).sort((a, b) => totalOf(b) - totalOf(a))
+  const out = g.slice(0, n).map((x, i) => ({ k: x.k, label: x.k, color: SERIES_COLORS[i] }))
+  if (g.length > n) out.push({ k: OTHER_KEY, label: 'Khác', color: OTHER_COLOR })
+  return out
+}
 
 /** Gom theo mốc `g` phút (theo giờ địa phương), điền mốc trống để trục thời gian liền mạch. */
-export function buckets(rows: UsageRow[], g: number): Bucket[] {
+/** `seriesOf`: khóa chuỗi cho biểu đồ chồng tùy ý (vd. theo dự án); khóa không có trong `known` gộp vào OTHER_KEY. */
+export function buckets(rows: UsageRow[], g: number, seriesOf?: (r: UsageRow) => string, known?: Set<string>): Bucket[] {
   if (!rows.length) return []
   const tz = new Date().getTimezoneOffset() * 6e4
   const ms = g * 6e4
   const grouped = new Map(group(rows, (r) => Math.floor((new Date(r.t).getTime() - tz) / ms) * ms + tz).map((x) => [x.k, x]))
   const prov = new Map<number, Partial<Record<Provider, number>>>()
+  const ser = new Map<number, Record<string, number>>()
   for (const r of rows) {
     const b = Math.floor((new Date(r.t).getTime() - tz) / ms) * ms + tz
     const o = prov.get(b) ?? {}
     o[r.provider] = (o[r.provider] ?? 0) + r.input + r.output + r.cacheWrite + r.cacheRead
     prov.set(b, o)
+    if (seriesOf) {
+      let k = seriesOf(r)
+      if (known && !known.has(k)) k = OTHER_KEY
+      const s = ser.get(b) ?? {}
+      s[k] = (s[k] ?? 0) + r.input + r.output + r.cacheWrite + r.cacheRead
+      ser.set(b, s)
+    }
   }
   const ks = [...grouped.keys()]
   const lo = Math.min(...ks), hi = Math.max(...ks)
@@ -71,7 +93,7 @@ export function buckets(rows: UsageRow[], g: number): Bucket[] {
     const t = grouped.get(b)
     out.push({
       input: t?.input ?? 0, output: t?.output ?? 0, cacheWrite: t?.cacheWrite ?? 0, cacheRead: t?.cacheRead ?? 0, msgs: t?.msgs ?? 0,
-      byProvider: { claude: 0, codex: 0, gemini: 0, antigravity: 0, ...prov.get(b) },
+      byProvider: { claude: 0, codex: 0, gemini: 0, antigravity: 0, ...prov.get(b) }, bySeries: ser.get(b) ?? {},
       b, date: dayKey(d).slice(5), time: `${p2(d.getHours())}:${p2(d.getMinutes())}`,
     })
   }

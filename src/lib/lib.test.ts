@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { relTime } from './format'
 import { baseName, changeCount, isDirty, isOut, rootOf, shortPath, toneOf } from './repo'
 import { nameFromUrl } from '../components/RepoDialogs'
-import type { RepoSummary } from '../types'
+import type { RepoSummary, UsageRow } from '../types'
+import { csvCell, toCsv } from './csv'
+import { buckets, OTHER_KEY, topSeries } from './usage'
 
 const repo = (o: Partial<RepoSummary> = {}): RepoSummary => ({
   path: 'C:\\code\\a', name: 'a', branch: 'main', detached: false, head: 'abc1234', upstream: 'origin/main', ahead: 0, behind: 0,
@@ -49,4 +51,37 @@ describe('nameFromUrl (gợi ý tên thư mục khi clone)', () => {
   it.each([
     ['https://github.com/a/b.git', 'b'], ['https://gitlab.com/g/s/app/', 'app'], ['git@github.com:a/b-c.git', 'b-c'], ['ssh://git@h:22/x/y.git', 'y'], ['', ''],
   ])('%s → %s', (u, n) => expect(nameFromUrl(u)).toBe(n))
+})
+
+describe('csv', () => {
+  it('bọc ô có dấu phẩy / nháy kép / xuống dòng', () => {
+    expect(csvCell('a,b')).toBe('"a,b"')
+    expect(csvCell('nói "x"')).toBe('"nói ""x"""')
+    expect(csvCell('a\nb')).toBe('"a\nb"')
+    expect(csvCell(12)).toBe('12')
+  })
+  it('chặn công thức Excel ở ô chữ, không đụng số âm', () => {
+    expect(csvCell('=SUM(A1)')).toBe("'=SUM(A1)")
+    expect(csvCell('-cmd')).toBe("'-cmd")
+    expect(csvCell(-5)).toBe('-5')
+  })
+  it('toCsv nối dòng bằng CRLF', () => {
+    expect(toCsv([['a', 1], ['b', 2]])).toBe('a,1\r\nb,2\r\n')
+  })
+})
+
+describe('biểu đồ theo dự án', () => {
+  const row = (project: string, t: string, n: number): UsageRow => ({ provider: 'claude', t, project, model: 'm', input: n, output: 0, cacheWrite: 0, cacheRead: 0 } as UsageRow)
+  const rows = [row('a', '2026-06-15T01:00:00Z', 100), row('b', '2026-06-15T01:10:00Z', 50), row('c', '2026-06-15T01:20:00Z', 5), row('a', '2026-06-15T02:30:00Z', 10)]
+  it('topSeries lấy dự án lớn nhất, phần còn lại gộp vào "Khác"', () => {
+    expect(topSeries(rows, 2).map((s) => s.k)).toEqual(['a', 'b', OTHER_KEY])
+    expect(topSeries(rows, 5).map((s) => s.k)).toEqual(['a', 'b', 'c'])
+  })
+  it('buckets cộng theo dự án, khóa lạ vào "Khác"', () => {
+    const out = buckets(rows, 60, (r) => r.project, new Set(['a', 'b']))
+    const sumOf = (k: string) => out.reduce((s, b) => s + (b.bySeries[k] ?? 0), 0)
+    expect(sumOf('a')).toBe(110)
+    expect(sumOf('b')).toBe(50)
+    expect(sumOf(OTHER_KEY)).toBe(5)
+  })
 })

@@ -43,6 +43,16 @@ export function Spinner({ label, inline }: { label?: string; inline?: boolean })
   )
 }
 
+/** Banner lỗi dùng chung: đọc được bằng trình đọc màn hình, có nút "Thử lại" khi truyền `onRetry`. */
+export function ErrorBanner({ children, onRetry, className = '' }: { children: ReactNode; onRetry?: () => void; className?: string }) {
+  return (
+    <div className={'banner err flex items-center gap-3 ' + className} role="alert">
+      <span className="min-w-0 flex-1">{children}</span>
+      {onRetry && <button type="button" className="btn sm flex-none" onClick={onRetry}>Thử lại</button>}
+    </div>
+  )
+}
+
 export const Kbd = ({ children }: { children: ReactNode }) => <kbd className="kbd">{children}</kbd>
 
 export type Tone = 'ok' | 'ahead' | 'behind' | 'danger' | 'muted' | 'info' | 'purple'

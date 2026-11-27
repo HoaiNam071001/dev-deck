@@ -7,6 +7,17 @@ export interface ReleaseNote { version: string; date: string; title: string; ite
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '2.5.0',
+    date: '2026-11-27',
+    title: 'Hoàn thiện: biểu đồ so sánh dự án, xuất CSV, chạy nền',
+    items: [
+      { tag: 'new', text: 'Biểu đồ token có chế độ "So sánh dự án" (6 dự án lớn nhất + Khác); xuất CSV kèm cột theo dự án, hoặc cả bảng nhà cung cấp / model / dự án ở tab Chi tiết.' },
+      { tag: 'new', text: 'Chạy DevDeck nền không cần Electron: `npm run service:install` (Task Scheduler).' },
+      { tag: 'improve', text: 'Banner lỗi ở mọi trang có nút "Thử lại"; danh sách hơn 200 repo chỉ dựng các hàng đang xem nên cuộn mượt.' },
+      { tag: 'improve', text: 'Chữ phụ và màu lỗi sáng hơn để đạt tương phản 4.5:1 trên mọi nền khối; nút xóa dùng chữ tối cho dễ đọc.' },
+    ],
+  },
+  {
     version: '2.4.0',
     date: '2026-11-27',
     title: 'Git: quản lý nhánh và repo ngay trong app',

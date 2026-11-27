@@ -15,7 +15,7 @@ Làm trước, chạy được ngay trong trình duyệt, chưa cần vỏ deskt
 - [x] Component dùng chung: `Kpi`/`KpiStrip`, `Chip` trạng thái, `SegmentedControl`, `ShareBar`, `Kbd`, `Toast`, `ContextMenu`
 - [x] Trang Tổng quan nhẹ: không gọi `/api/git/repos` hay `/api/usage`; chỉ đọc config, danh sách ghim, `audit.log` và tóm tắt lần quét trước (giờ quét, số repo) lưu ở `data/`. Trạng thái repo chỉ tải khi mở tab Git
 - [x] Trang Claude: nút phân đoạn khoảng thời gian, 5 chỉ số, biểu đồ 4 series + tooltip, bảng có cột tổng kèm thanh tỉ lệ; danh sách dự án ở menu trái để lọc
-- [ ] Trang Git dạng 3 cột:
+- [x] Trang Git dạng 3 cột:
   - [x] Thư mục quét + độ sâu + "Quét lại" chuyển vào menu trái, bấm thư mục để lọc
   - [x] Danh sách repo 2 hàng mỗi dòng, bộ lọc phân đoạn có số đếm, menu "⋯"
   - [x] Khung chi tiết cố định bên phải, kéo đổi độ rộng (lưu vào `persist`), bỏ `Modal` cũ
@@ -47,6 +47,7 @@ Ghi chú 6b:
 - IPC (`electron/preload.cjs`): VS Code/Terminal/Explorer chỉ nhận đường dẫn có trong danh sách repo đã quét (`knownRepo`), dùng `execFile`/`spawn` không qua shell; trên Windows từ chối tên thư mục chứa ký tự `& | < > ^ % "` vì `code` là `.cmd`.
 - Chưa làm: thông báo khi có repo mới lệch remote (hiện chỉ báo Push/Pull lỗi), macOS `.dmg` (chưa thử), token phiên giữa app và server, đóng cửa sổ vẫn thoát app (chưa thu về khay).
 - Chưa chạy thử Electron thật, cần `npm run desktop` kiểm tra bằng mắt.
+- Tương phản: `--fg-mute` #A3B1C6 (4.5–6.7:1 trên các nền khối), `--danger` #F78C8C; nút `.btn.danger` dùng chữ tối #1A0808 (7:1).
 
 ## Tiêu chí xong
 

@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { copyText, bridge, MOD, revealLabel } from '../lib/platform'
 import { isDirty } from '../lib/repo'
 import { relTime } from '../lib/format'
@@ -47,15 +48,22 @@ interface RowProps {
   pinned: boolean
   menuOpen: boolean
   menuUp: boolean
+  /** Chỉ có khi danh sách được ảo hóa: hàng cao cố định, đặt theo tọa độ */
+  top?: number
   onPick: () => void
   onMenu: () => void
   onCloseMenu: () => void
   onDelete?: (r: RepoSummary) => void
 }
 
-function RepoRow({ r, active, pinned, menuOpen, menuUp, onPick, onMenu, onCloseMenu, onDelete }: RowProps) {
+/** Từ ngưỡng này danh sách chỉ dựng các hàng đang nhìn thấy. */
+export const VIRTUAL_MIN = 200
+const ROW_H = 56
+const OVERSCAN = 6
+
+function RepoRow({ r, active, pinned, menuOpen, menuUp, top, onPick, onMenu, onCloseMenu, onDelete }: RowProps) {
   return (
-    <div style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 54px' }} className={'group relative flex items-stretch border-b border-raised ' + (active ? 'bg-selected shadow-[inset_2px_0_0_var(--accent)]' : 'hover:bg-[#1F2124]')}>
+    <div style={top === undefined ? { contentVisibility: 'auto', containIntrinsicSize: `auto ${ROW_H - 2}px` } : { position: 'absolute', top, left: 0, right: 0, height: ROW_H, boxSizing: 'border-box' }} className={'group relative flex items-stretch border-b border-raised ' + (active ? 'bg-selected shadow-[inset_2px_0_0_var(--accent)]' : 'hover:bg-[#1F2124]')}>
       <button onClick={onPick} aria-current={active} className="flex min-w-0 flex-1 flex-col gap-[3px] border-0 bg-transparent py-[9px] pr-1 pl-3.5 text-left text-inherit">
         <span className="flex w-full items-center gap-2">
           <span className="truncate font-medium">{r.name}</span>
@@ -90,13 +98,45 @@ export function RepoList({ repos, selected, pinned, menu, setMenu, onPick, empty
   menu: string | null; setMenu: (p: string | null) => void
   onPick: (p: string) => void; empty: React.ReactNode
 }) {
+  const box = useRef<HTMLDivElement>(null)
+  const [view, setView] = useState({ top: 0, h: 800 })
+  const virtual = repos.length > VIRTUAL_MIN
+
+  useEffect(() => {
+    const el = box.current
+    if (!el || !virtual) return
+    const read = () => setView({ top: el.scrollTop, h: el.clientHeight || 800 })
+    read()
+    el.addEventListener('scroll', read, { passive: true })
+    const ro = new ResizeObserver(read)
+    ro.observe(el)
+    return () => { el.removeEventListener('scroll', read); ro.disconnect() }
+  }, [virtual])
+
+  // Chọn bằng phím ↑↓: hàng đích có thể chưa được dựng, nên cuộn theo chỉ số
+  useEffect(() => {
+    const el = box.current
+    if (!el || !virtual || !selected) return
+    const i = repos.findIndex((r) => r.path === selected)
+    if (i < 0) return
+    const y = i * ROW_H
+    if (y < el.scrollTop) el.scrollTop = y
+    else if (y + ROW_H > el.scrollTop + el.clientHeight) el.scrollTop = y + ROW_H - el.clientHeight
+  }, [selected, virtual]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const from = virtual ? Math.max(0, Math.floor(view.top / ROW_H) - OVERSCAN) : 0
+  const to = virtual ? Math.min(repos.length, Math.ceil((view.top + view.h) / ROW_H) + OVERSCAN) : repos.length
+  const row = (r: RepoSummary, i: number) => (
+    <RepoRow key={r.path} r={r} active={selected === r.path} pinned={pinned.includes(r.path)}
+      menuOpen={menu === r.path} menuUp={i >= repos.length - 3 && repos.length > 4} top={virtual ? i * ROW_H : undefined}
+      onPick={() => { setMenu(null); onPick(r.path) }} onMenu={() => setMenu(menu === r.path ? null : r.path)} onCloseMenu={() => setMenu(null)} onDelete={onDelete} />
+  )
+
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto" role="list" aria-label="Danh sách repo">
-      {repos.map((r, i) => (
-        <RepoRow key={r.path} r={r} active={selected === r.path} pinned={pinned.includes(r.path)}
-          menuOpen={menu === r.path} menuUp={i >= repos.length - 3 && repos.length > 4}
-          onPick={() => { setMenu(null); onPick(r.path) }} onMenu={() => setMenu(menu === r.path ? null : r.path)} onCloseMenu={() => setMenu(null)} onDelete={onDelete} />
-      ))}
+    <div ref={box} className="min-h-0 flex-1 overflow-y-auto" role="list" aria-label="Danh sách repo">
+      {virtual
+        ? <div style={{ position: 'relative', height: repos.length * ROW_H }}>{repos.slice(from, to).map((r, k) => row(r, from + k))}</div>
+        : repos.map(row)}
       {!repos.length && (typeof empty === 'string' ? <p className="empty">{empty}</p> : empty)}
     </div>
   )

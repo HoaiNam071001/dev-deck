@@ -27,6 +27,19 @@ Tag `v*.*.*` kích hoạt workflow *Release Windows* (`.github/workflows/release
 App hỏi Release mới nhất sau 5 giây khi mở, tải xong thì hỏi khởi động lại để cài. Chỉ `git push` thì app không biết, phải có tag mới.
 Dữ liệu (`config.json`, `audit.log`) nằm ở `%APPDATA%/devdeck/data`. Bản build chưa ký số nên Windows SmartScreen sẽ cảnh báo.
 
+### Chạy nền không cần Electron
+
+Muốn server luôn sẵn ở `http://localhost:4317` mà không mở cửa sổ app (cần `npm run build` trước):
+
+```bash
+npm run service:install     # Task Scheduler: tự chạy node server/index.js mỗi lần đăng nhập, ẩn cửa sổ
+npm run service:status
+npm run service:uninstall
+```
+
+Dùng `pm2` cũng được: `npx pm2 start server/index.js --name devdeck && npx pm2 save` (tự chạy lúc khởi động cần `pm2-windows-startup` hoặc dùng Task Scheduler ở trên).
+Task chạy dưới tài khoản hiện tại, không cần quyền admin; dữ liệu ở `data/` trong thư mục dự án.
+
 Phát triển (hot reload, giao diện ở http://localhost:5183):
 
 ```bash
@@ -36,7 +49,7 @@ npm run dev
 Kiểm thử:
 
 ```bash
-npm test              # vitest: hàm thuần ở src/ (relTime, rootOf, nameFromUrl…)
+npm test              # vitest: hàm thuần ở src/ (relTime, rootOf, nameFromUrl, CSV, gom biểu đồ…)
 npm run test:server   # node: parseStatus, kiểm tra tên, thao tác nhánh / repo trên repo tạm, parser log AI
 npm run typecheck
 ```

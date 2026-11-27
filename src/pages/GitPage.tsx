@@ -6,7 +6,7 @@ import { RepoList } from '../components/RepoList'
 import { CloneDialog, DeleteRepoDialog, NewRepoDialog } from '../components/RepoDialogs'
 import { RefreshInfo, useRefreshMs } from '../components/RefreshInfo'
 import { SideSlot, StatusSlot } from '../components/Shell'
-import { Icon, NavLabel, Segmented, Spinner } from '../components/ui'
+import { ErrorBanner, Icon, NavLabel, Segmented, Spinner } from '../components/ui'
 import { runAction } from '../lib/actions'
 import { copyText, bridge, MOD } from '../lib/platform'
 import { usePersisted } from '../lib/persist'
@@ -238,7 +238,7 @@ export function GitPage() {
             <button className="icon-btn sm" style={{ border: '1px solid var(--border-strong)' }} aria-label="Tạo repo mới" title="Tạo repo mới" disabled={!roots.length} onClick={() => setDialog('new')}><Icon name="plus" size={13} /></button>
             <button className="icon-btn sm" style={{ border: '1px solid var(--border-strong)' }} aria-label="Clone từ URL" title="Clone từ URL" disabled={!roots.length} onClick={() => setDialog('clone')}><Icon name="download" size={13} /></button>
           </div>
-          {repos.error && <div className="banner err m-3" role="alert">Lỗi: {repos.error}</div>}
+          {repos.error && <ErrorBanner className="m-3" onRetry={repos.reload}>Lỗi: {repos.error}</ErrorBanner>}
           <RepoList repos={shown} selected={selected} pinned={pinned} menu={menu} setMenu={setMenu} empty={empty} onDelete={setDeleting}
             onPick={(p) => { setState({ selected: p }) }} />
         </section>

@@ -19,7 +19,7 @@
   /* Chữ */
   --fg: #E8EEF7;
   --fg-soft: #C3CEDD;
-  --fg-mute: #8C9BB2;     /* ≥ 4.5:1 trên --surface */
+  --fg-mute: #A3B1C6;     /* ≥ 4.5:1 trên mọi nền khối, kể cả --selected và --active */
 
   /* Điểm nhấn và trạng thái */
   --accent: #30CF43;      /* nút chính, mục chọn, "sạch", "đã stage" */
@@ -27,8 +27,8 @@
   --on-accent: #0C1A0E;
   --ahead: #5AA9F5;       /* ↑ cần push */
   --behind: #F2A65A;      /* ↓ cần pull, "đã sửa" */
-  --danger: #F26B6B;      /* xung đột, lỗi, dòng bị xóa */
-  --untracked: #A0AEC4;
+  --danger: #F78C8C;      /* xung đột, lỗi, dòng bị xóa */
+  --untracked: #A3B1C6;
 
   /* Biểu đồ token */
   --series-input: #5AA9F5;

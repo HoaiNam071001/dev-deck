@@ -27,7 +27,7 @@
   --on-accent: #0C1A0E;
   --ahead: #5AA9F5;       /* ↑ cần push */
   --behind: #F2A65A;      /* ↓ cần pull, "đã sửa" */
-  --danger: #F26B6B;      /* xung đột, lỗi, dòng bị xóa */
+  --danger: #F78C8C;      /* xung đột, lỗi, dòng bị xóa */
   --untracked: #A3ADB8;
 
   /* Biểu đồ token */

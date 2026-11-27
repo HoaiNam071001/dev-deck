@@ -2,13 +2,15 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { axisParts, fmt } from '../lib/format'
 import { KEYS, PROVIDERS, totalOf, type Bucket } from '../lib/usage'
 
+export interface Series { k: string; label: string; color: string }
+
 const H = 220
 const PAD = { l: 48, r: 8, t: 8, b: 42 }
 
-export function StackedChart({ data, g, by = 'type' }: { data: Bucket[]; g: number; by?: 'type' | 'provider' }) {
-  const keys: { k: string; label: string; color: string }[] =
-    by === 'provider' ? PROVIDERS.map((p) => ({ k: p.id, label: p.label, color: p.color })) : [...KEYS]
-  const val = (d: Bucket, k: string) => (k in d.byProvider ? d.byProvider[k as keyof Bucket['byProvider']] : (d as unknown as Record<string, number>)[k])
+export function StackedChart({ data, g, by = 'type', series }: { data: Bucket[]; g: number; by?: 'type' | 'provider' | 'project'; series?: Series[] }) {
+  const keys: Series[] =
+    by === 'project' && series ? series : by === 'provider' ? PROVIDERS.map((p) => ({ k: p.id, label: p.label, color: p.color })) : [...KEYS]
+  const val = (d: Bucket, k: string) => by === 'project' ? (d.bySeries[k] ?? 0) : (k in d.byProvider ? d.byProvider[k as keyof Bucket['byProvider']] : (d as unknown as Record<string, number>)[k])
   const wrap = useRef<HTMLDivElement>(null)
   const [W, setW] = useState(800)
   const [hover, setHover] = useState<{ i: number; x: number; y: number } | null>(null)
@@ -33,7 +35,7 @@ export function StackedChart({ data, g, by = 'type' }: { data: Bucket[]; g: numb
 
   return (
     <div ref={wrap} className="chart-wrap">
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} role="img" aria-label="Biểu đồ token theo thời gian" onMouseLeave={() => setHover(null)}>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} role="img" aria-label={`Biểu đồ token theo thời gian, ${data.length} mốc, cao nhất ${fmt(max)} token`} onMouseLeave={() => setHover(null)}>
         {[0, 1, 2, 3, 4].map((i) => {
           const v = (max * i) / 4
           return (

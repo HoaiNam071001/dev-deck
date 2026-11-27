@@ -7,7 +7,7 @@ import { RemoteDetailModal } from '../components/RemoteDetail'
 import { ApprovalChip, CiChip, copyCrLink, CR_WORD, crRef, PROVIDER_LABEL, ProviderTag, ThreadChip, unresolved } from '../components/RemoteBits'
 import { RefreshInfo, useRefreshMs } from '../components/RefreshInfo'
 import { SideSlot, StatusSlot } from '../components/Shell'
-import { Chip, Icon, Kpi, KpiStrip, NavLabel, Segmented, Select, Spinner } from '../components/ui'
+import { Chip, ErrorBanner, Icon, Kpi, KpiStrip, NavLabel, Segmented, Select, Spinner } from '../components/ui'
 import { relTime } from '../lib/format'
 import { usePersisted } from '../lib/persist'
 import { GROUP_BYS, groupChangeRequests, projectKey, projectsOf, type CrGroup, type GroupBy, type ProjectEntry } from '../lib/remoteGroups'
@@ -291,7 +291,7 @@ export function RemotesPage() {
           </div>
         </header>
 
-        {accounts.error && <div className="banner err" role="alert">Không đọc được danh sách account: {accounts.error}</div>}
+        {accounts.error && <ErrorBanner onRetry={accounts.reload}>Không đọc được danh sách account: {accounts.error}</ErrorBanner>}
         {accounts.loading && !accounts.data && <Spinner label="Đang tải…" />}
 
         {accounts.data && !hasAccounts && (
@@ -334,7 +334,7 @@ export function RemotesPage() {
               </div>
             )}
 
-            {crs.error && <div className="banner err" role="alert">Không tải được danh sách: {crs.error}</div>}
+            {crs.error && <ErrorBanner onRetry={crs.reload}>Không tải được danh sách: {crs.error}</ErrorBanner>}
             {crs.data?.errors.map((e) => <div key={e.accountId} className="banner err" role="alert">{e.name}: {e.error}</div>)}
             {crs.loading && <div className={list.length ? 'spinner-wrap compact' : undefined}>{list.length ? <><span className="spinner" aria-hidden="true" /><span className="muted">Đang cập nhật MR / PR…</span></> : <Spinner label="Đang lấy MR / PR từ remote…" />}</div>}
             {!crs.loading && crs.data && !list.length && !crs.data.errors.length && (

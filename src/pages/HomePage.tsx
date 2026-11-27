@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { api, useLoad } from '../api'
 import { FolderPicker } from '../components/FolderPicker'
 import { SideSlot, StatusSlot } from '../components/Shell'
-import { Chip, Icon, Kbd, NavLabel, Spinner, type Tone } from '../components/ui'
+import { Chip, ErrorBanner, Icon, Kbd, NavLabel, Spinner, type Tone } from '../components/ui'
 import { relTime } from '../lib/format'
 import { bridge, MOD, notifyEnabled } from '../lib/platform'
 import { baseName } from '../lib/repo'
@@ -102,7 +102,7 @@ export function HomePage() {
           <button className="btn" onClick={() => openPalette()}>Bảng lệnh <span className="font-mono text-xs text-fg-mute">{MOD}K</span></button>
         </header>
 
-        {ov.error && <div className="banner err" role="alert">Không đọc được dữ liệu: {ov.error}</div>}
+        {ov.error && <ErrorBanner onRetry={ov.reload}>Không đọc được dữ liệu: {ov.error}</ErrorBanner>}
 
         <section aria-label="Mở nhanh" className="grid grid-cols-2 gap-3">
           <QuickCard to="/git" icon="git" tint="bg-accent/12 text-accent" title="Git" keyHint={MOD + '3'} desc="Quản lý repo, nhánh, commit, push / pull"

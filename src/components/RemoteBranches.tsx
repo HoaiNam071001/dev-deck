@@ -8,7 +8,7 @@ import { toast } from '../lib/store'
 import type { RemoteAccount, RemoteBranch } from '../types'
 import { CR_WORD, crRef, safeUrl } from './RemoteBits'
 import { RemoteDetailModal } from './RemoteDetail'
-import { Chip, Icon, Spinner } from './ui'
+import { Chip, ErrorBanner, Icon, Spinner } from './ui'
 import { Modal } from './Modal'
 
 const fullPath = (p: ProjectEntry) => (p.parent ? `${p.parent}/${p.name}` : p.name)
@@ -112,7 +112,7 @@ export function RemoteBranches({ projects, accounts }: { projects: ProjectEntry[
       </div>
 
       {!cur && <div className="banner">Chưa có project nào. Gõ <span className="mono">group/project</span> ở ô trên để xem nhánh.</div>}
-      {data.error && <div className="banner err" role="alert">Không tải được nhánh: {data.error}</div>}
+      {data.error && <ErrorBanner onRetry={data.reload}>Không tải được nhánh: {data.error}</ErrorBanner>}
       {d?.crsError && <div className="banner">Không lấy được MR / PR của project này, chỉ hiện nhánh.</div>}
       {data.loading && <Spinner label="Đang lấy nhánh từ remote…" />}
 

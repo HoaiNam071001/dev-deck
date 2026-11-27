@@ -6,7 +6,7 @@ import { ReporterSetup } from '../components/ReporterSetup'
 import { usePersisted } from '../lib/persist'
 import { RefreshInfo, useRefreshMs } from '../components/RefreshInfo'
 import { SideSlot, StatusSlot } from '../components/Shell'
-import { Chip, Icon, NavLabel, Spinner } from '../components/ui'
+import { Chip, ErrorBanner, Icon, NavLabel, Spinner } from '../components/ui'
 import { bridge } from '../lib/platform'
 import { baseName } from '../lib/repo'
 import { toast } from '../lib/store'
@@ -182,7 +182,7 @@ export function JobsPage() {
           </div>
         </header>
 
-        {jobs.error && <div className="banner err" role="alert">Không đọc được danh sách job: {jobs.error}</div>}
+        {jobs.error && <ErrorBanner onRetry={jobs.reload}>Không đọc được danh sách job: {jobs.error}</ErrorBanner>}
         {jobs.data && !jobs.data.supported && <div className="banner">Theo dõi job hiện chỉ hỗ trợ Windows.</div>}
         {jobs.loading && !jobs.data && <Spinner label="Đang quét tiến trình…" />}
         {jobs.data?.supported && !list.length && <div className="banner">Không có job nào đang chạy trong {filter ? 'thư mục đã chọn' : 'các thư mục theo dõi'}.</div>}

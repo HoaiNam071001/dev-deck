@@ -6,7 +6,7 @@ import { toast } from '../lib/store'
 import type { ProjectEntry } from '../lib/remoteGroups'
 import type { CiState, PipelineJob, PipelineRun, RemoteAccount } from '../types'
 import { ciTone, safeUrl } from './RemoteBits'
-import { Chip, Spinner } from './ui'
+import { Chip, ErrorBanner, Spinner } from './ui'
 
 const fullPath = (p: ProjectEntry) => (p.parent ? `${p.parent}/${p.name}` : p.name)
 const LABEL: Record<CiState, string> = { success: 'Pass', failed: 'Lỗi', running: 'Đang chạy', pending: 'Chờ', canceled: 'Hủy', none: 'Bỏ qua' }
@@ -22,7 +22,7 @@ function Jobs({ accountId, project, run }: { accountId: string; project: string;
     for (const j of jobs.data ?? []) m.set(j.stage, [...(m.get(j.stage) ?? []), j])
     return [...m]
   }, [jobs.data])
-  if (jobs.error) return <div className="banner err m-3" role="alert">Không tải được job: {jobs.error}</div>
+  if (jobs.error) return <ErrorBanner className="m-3" onRetry={jobs.reload}>Không tải được job: {jobs.error}</ErrorBanner>
   if (!jobs.data) return <div className="p-3"><Spinner label="Đang lấy job…" /></div>
   if (!stages.length) return <div className="p-3 text-[12px] text-fg-mute">Pipeline chưa có job nào.</div>
   return (
@@ -87,7 +87,7 @@ export function RemotePipelines({ projects, accounts }: { projects: ProjectEntry
       </div>
 
       {!cur && <div className="banner">Chưa có project nào. Chọn project ở tab Branches (gõ <span className="mono">group/project</span>) rồi quay lại đây.</div>}
-      {data.error && <div className="banner err" role="alert">Không tải được pipeline: {data.error}</div>}
+      {data.error && <ErrorBanner onRetry={data.reload}>Không tải được pipeline: {data.error}</ErrorBanner>}
       {data.loading && !data.data && <Spinner label="Đang lấy pipeline từ remote…" />}
 
       {data.data && runs.length > 0 && (

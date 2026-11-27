@@ -12,7 +12,7 @@ Việc phát sinh: thêm vào [00-backlog.md](00-backlog.md) bất cứ lúc nà
 | 2 | Trang Git chỉ-đọc: repo, nhánh, trạng thái | [02-git-readonly.md](02-git-readonly.md) | xong (chưa test UI trên trình duyệt) |
 | 3 | Thao tác nhánh: tạo, checkout, xóa, đổi tên | [03-git-branch-actions.md](03-git-branch-actions.md) | xong (chưa test UI trên trình duyệt) |
 | 4 | Thao tác repo: tạo mới, clone, xóa, fetch/pull | [04-git-repo-actions.md](04-git-repo-actions.md) | xong (chưa test UI trên trình duyệt) |
-| 5 | Hoàn thiện: test, a11y, hiệu năng, đóng gói | [05-polish.md](05-polish.md) | phần Git xong; còn mục token (so sánh, CSV) và đóng gói chạy nền |
+| 5 | Hoàn thiện: test, a11y, hiệu năng, đóng gói | [05-polish.md](05-polish.md) | xong (chưa kiểm bằng mắt trên trình duyệt: ảo hóa danh sách, biểu đồ so sánh dự án) |
 | 6 | Giao diện mới + chuyển thành desktop app | [06-redesign-desktop.md](06-redesign-desktop.md) | xong |
 | 7 | Mục "AI" đa nhà cung cấp (Claude, Codex, Gemini) | [07-ai-usage.md](07-ai-usage.md) | xong (Codex/Gemini chưa thử trên log thật) |
 | 8 | Đọc log token từ Antigravity (đa model: Gemini, Claude…) | [08-antigravity-usage.md](08-antigravity-usage.md) | xong |

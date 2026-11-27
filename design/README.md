@@ -24,7 +24,7 @@ Mọi số liệu trong design là dữ liệu mẫu.
 
 - ↑ cần push: xanh dương `#5AA9F5`
 - ↓ cần pull, tệp đã sửa: cam `#F2A65A`
-- Xung đột, lỗi: đỏ `#F26B6B`
+- Xung đột, lỗi: đỏ `#F78C8C`
 - Sạch, đã stage, nút chính: xanh lá `#30CF43`
 
 ## Nguyên tắc
