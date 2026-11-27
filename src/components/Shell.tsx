@@ -4,6 +4,7 @@ import { Link, navigate, useRoute, type Route } from '../lib/router'
 import { usePersisted } from '../lib/persist'
 import { bridge, MOD, type UpdateStatus } from '../lib/platform'
 import { getState, openPalette, setState, useStore } from '../lib/store'
+import { markRemotesRead } from '../lib/remoteWatch'
 import { CommandPalette } from './CommandPalette'
 import { ReleaseNotesModal } from './ReleaseNotesModal'
 import { Toasts } from './Toasts'
@@ -104,6 +105,8 @@ const clampW = (w: number) => Math.min(SIDE_MAX, Math.max(SIDE_MIN, Math.round(w
 function Sidebar({ slotRef }: { slotRef: (el: HTMLElement | null) => void }) {
   const route = useRoute()
   const attention = useStore((s) => s.attention)
+  const remoteUnread = useStore((s) => s.remoteUnread)
+  useEffect(() => { if (route === '/remotes') markRemotesRead() }, [route])
   const cur = NAV.find((n) => n.to === route) ?? NAV[0]
   // Độ rộng panel trái: kéo thanh tách để đổi, nhớ cho lần mở sau; bấm đúp để về mặc định
   const [saved, setSaved] = usePersisted<number>('devdeck.sidebar.w', SIDE_DEFAULT, (v) => typeof v === 'number' && v >= SIDE_MIN && v <= SIDE_MAX)
@@ -139,6 +142,7 @@ function Sidebar({ slotRef }: { slotRef: (el: HTMLElement | null) => void }) {
             aria-label={n.label} title={`${n.label} (${MOD}${n.n})`}>
             <Icon name={n.icon} size={19} />
             {n.to === '/git' && attention > 0 && <span className="rail-badge" title="Repo có thay đổi hoặc lệch remote">{attention}</span>}
+            {n.to === '/remotes' && route !== '/remotes' && remoteUnread > 0 && <span className="rail-badge" title="Thread review mới chưa xem">{remoteUnread > 99 ? '99+' : remoteUnread}</span>}
           </Link>
         ))}
       </nav>

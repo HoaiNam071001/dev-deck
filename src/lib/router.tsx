@@ -4,6 +4,7 @@ export type Route = '/' | '/ai' | '/git' | '/jobs' | '/remotes'
 const ROUTES: Route[] = ['/', '/ai', '/git', '/jobs', '/remotes']
 const LEGACY: Record<string, Route> = { '#/git': '/git', '#/tokens': '/ai', '#/claude': '/ai', '#/ai': '/ai' }
 
+export const currentRoute = (): Route => current()
 const current = (): Route => {
   let p = location.pathname.replace(/\/+$/, '') || '/'
   if (p === '/claude') p = '/ai'

@@ -3,9 +3,11 @@ import { api } from '../api'
 import { unresolved } from '../components/RemoteBits'
 import type { ChangeRequest } from '../types'
 import { systemNotify } from './platform'
-import { toast } from './store'
+import { currentRoute } from './router'
+import { setState, toast } from './store'
 
 const SEEN_KEY = 'remote.seen'
+const READ_KEY = 'remote.read'
 const WATCH_MS = 120000
 
 /** Phần trạng thái của một MR / PR đủ để nhận ra thay đổi đáng báo. */
@@ -39,6 +41,43 @@ export function diffCrs(prev: Seen | null, items: ChangeRequest[]): { next: Seen
   return { next, events }
 }
 
+/** Số thread của từng MR / PR (đang mở) tại lần mở tab Remotes gần nhất. */
+export type ReadMark = Record<string, number>
+
+/**
+ * Đếm thread mới chưa xem: số thread tăng thêm so với mốc đã xem. MR chưa có trong mốc (mới xuất hiện) tính cả thread đang có.
+ * Chưa có mốc (lần đầu) thì lấy hiện tại làm mốc, đếm 0. Thread bị xóa thì hạ mốc theo để thread mới sau đó vẫn được đếm.
+ */
+export function unreadThreads(read: ReadMark | null, items: ChangeRequest[]): { count: number; read: ReadMark } {
+  const next: ReadMark = {}
+  let count = 0
+  for (const c of items) {
+    if (c.state !== 'opened') continue
+    const cur = c.threads?.total ?? 0
+    const base = read ? (read[c.key] ?? 0) : cur
+    count += Math.max(0, cur - base)
+    next[c.key] = Math.min(base, cur)
+  }
+  return { count, read: next }
+}
+
+const readMark = (): ReadMark | null => {
+  try { const v = JSON.parse(localStorage.getItem(READ_KEY) || 'null'); return v && typeof v === 'object' ? (v as ReadMark) : null } catch { return null }
+}
+const writeMark = (m: ReadMark) => { try { localStorage.setItem(READ_KEY, JSON.stringify(m)) } catch { /* bỏ qua */ } }
+
+/** Danh sách lần poll gần nhất, để đánh dấu đã xem khi mở tab Remotes mà không phải gọi API lại. */
+let latest: ChangeRequest[] | null = null
+
+/** Mở tab Remotes: mọi thread hiện có coi như đã xem, badge về 0. */
+export function markRemotesRead() {
+  setState({ remoteUnread: 0 })
+  if (!latest) return
+  const cur: ReadMark = {}
+  for (const c of latest) if (c.state === 'opened') cur[c.key] = c.threads?.total ?? 0
+  writeMark(cur)
+}
+
 const readSeen = (): Seen | null => {
   try { const v = JSON.parse(localStorage.getItem(SEEN_KEY) || 'null'); return v && typeof v === 'object' ? (v as Seen) : null } catch { return null }
 }
@@ -52,7 +91,15 @@ async function poll() {
   if (mine.errors.length || review.errors.length) return
   const byKey = new Map<string, ChangeRequest>()
   for (const c of [...mine.items, ...review.items]) byKey.set(c.key, byKey.get(c.key) ? { ...c, mine: c.mine || byKey.get(c.key)!.mine, reviewMe: c.reviewMe || byKey.get(c.key)!.reviewMe } : c)
-  const { next, events } = diffCrs(readSeen(), [...byKey.values()])
+  const all = [...byKey.values()]
+  latest = all
+  if (currentRoute() === '/remotes') markRemotesRead()
+  else {
+    const u = unreadThreads(readMark(), all)
+    writeMark(u.read)
+    setState({ remoteUnread: u.count })
+  }
+  const { next, events } = diffCrs(readSeen(), all)
   writeSeen(next)
   if (!events.length) return
   const first = events[0]

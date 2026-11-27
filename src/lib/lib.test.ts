@@ -5,6 +5,8 @@ import { nameFromUrl } from '../components/RepoDialogs'
 import type { RepoSummary, UsageRow } from '../types'
 import { csvCell, toCsv } from './csv'
 import { buckets, OTHER_KEY, topSeries } from './usage'
+import { unreadThreads } from './remoteWatch'
+import type { ChangeRequest } from '../types'
 
 const repo = (o: Partial<RepoSummary> = {}): RepoSummary => ({
   path: 'C:\\code\\a', name: 'a', branch: 'main', detached: false, head: 'abc1234', upstream: 'origin/main', ahead: 0, behind: 0,
@@ -83,5 +85,25 @@ describe('biểu đồ theo dự án', () => {
     expect(sumOf('a')).toBe(110)
     expect(sumOf('b')).toBe(50)
     expect(sumOf(OTHER_KEY)).toBe(5)
+  })
+})
+
+describe('unreadThreads (badge thread mới ở Remotes)', () => {
+  const cr = (key: string, total: number, state: ChangeRequest['state'] = 'opened') => ({ key, state, threads: { resolved: 0, total } } as ChangeRequest)
+  it('lần đầu chỉ lấy mốc, không đếm', () => {
+    expect(unreadThreads(null, [cr('a', 3)])).toEqual({ count: 0, read: { a: 3 } })
+  })
+  it('đếm thread tăng thêm, giữ mốc cho tới khi mở tab', () => {
+    const r = unreadThreads({ a: 3, b: 1 }, [cr('a', 5), cr('b', 1)])
+    expect(r.count).toBe(2)
+    expect(r.read).toEqual({ a: 3, b: 1 })
+  })
+  it('MR mới xuất hiện tính cả thread đang có; MR đã đóng bỏ qua', () => {
+    expect(unreadThreads({ a: 1 }, [cr('a', 1), cr('n', 2), cr('m', 4, 'merged')]).count).toBe(2)
+  })
+  it('thread bị xóa thì hạ mốc', () => {
+    const r = unreadThreads({ a: 4 }, [cr('a', 2)])
+    expect(r).toEqual({ count: 0, read: { a: 2 } })
+    expect(unreadThreads(r.read, [cr('a', 3)]).count).toBe(1)
   })
 })
