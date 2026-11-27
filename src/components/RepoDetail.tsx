@@ -106,12 +106,12 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
         <RepoJobs repoPath={data.path} />
 
         <div className="flex gap-1.5">
-          <button className="btn flex-1" disabled={!!busy || !data.remotes.length} onClick={() => act('fetch', 'fetch')}>{busy === 'fetch' ? 'Đang fetch…' : 'Fetch'}</button>
+          <button className="btn flex-1" disabled={!!busy || !data.remotes.length} onClick={() => act('fetch', 'fetch')}>{busy === 'fetch' ? <><Spinner inline />Đang fetch…</> : 'Fetch'}</button>
           <button className="btn flex-1" disabled={!!busy || !data.upstream} title={data.upstream ? 'git pull --ff-only' : 'Nhánh chưa có upstream'} onClick={() => act('pull', 'pull')}>
-            {busy === 'pull' ? 'Đang pull…' : <>Pull {data.behind > 0 && <span className="font-mono text-behind">↓{data.behind}</span>}</>}
+            {busy === 'pull' ? <><Spinner inline />Đang pull…</> : <>Pull {data.behind > 0 && <span className="font-mono text-behind">↓{data.behind}</span>}</>}
           </button>
           <button className="btn primary flex-1" disabled={!!busy || data.detached || !data.remotes.length} onClick={() => act('push', 'push')}>
-            {busy === 'push' ? 'Đang push…' : <>Push {data.ahead > 0 && <span className="font-mono">↑{data.ahead}</span>}</>}
+            {busy === 'push' ? <><Spinner inline />Đang push…</> : <>Push {data.ahead > 0 && <span className="font-mono">↑{data.ahead}</span>}</>}
           </button>
         </div>
       </div>
@@ -187,7 +187,7 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
           <div className="flex items-center justify-between gap-2">
             <label className="flex items-center gap-1.5 text-sm text-fg-mute"><input type="checkbox" checked={amend} onChange={(e) => setAmend(e.target.checked)} /> Amend commit cuối</label>
             <button type="submit" className="btn primary" disabled={!canCommit}>
-              {busy === 'commit' ? 'Đang commit…' : amend ? 'Amend commit' : `Commit ${staged.length} tệp`}
+              {busy === 'commit' ? <><Spinner inline />Đang commit…</> : amend ? 'Amend commit' : `Commit ${staged.length} tệp`}
             </button>
           </div>
         </form>

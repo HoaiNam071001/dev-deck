@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { api, useLoad } from '../api'
 import { FolderPicker } from '../components/FolderPicker'
 import { SideSlot, StatusSlot } from '../components/Shell'
-import { Chip, Icon, Kbd, NavLabel, type Tone } from '../components/ui'
+import { Chip, Icon, Kbd, NavLabel, Spinner, type Tone } from '../components/ui'
 import { relTime } from '../lib/format'
 import { bridge, MOD, notifyEnabled } from '../lib/platform'
 import { baseName } from '../lib/repo'
@@ -140,7 +140,7 @@ export function HomePage() {
                 </div>
               )
             })}
-            {!activity.length && <p className="empty border-t border-line">Chưa có thao tác nào.</p>}
+            {!activity.length && (ov.loading && !ov.data ? <div className="border-t border-line"><div className="spinner-wrap compact"><span className="spinner" aria-hidden="true" /></div></div> : <p className="empty border-t border-line">Chưa có thao tác nào.</p>)}
           </Panel>
 
           <Panel title="Thư mục làm việc" action={<button className="btn sm !border !border-border-strong" onClick={addFolder}>+ Thêm thư mục</button>}>
@@ -152,7 +152,7 @@ export function HomePage() {
                   <span className="text-sm text-fg-mute">{cfg!.roots.includes(r) ? (scan?.byRoot[r] !== undefined ? `${scan.byRoot[r]} repo lần trước` : 'chưa quét') : 'gần đây, không quét'}</span>
                 </label>
               ))}
-              {!known.length && <span className="text-sm text-fg-mute">{ov.loading ? 'Đang tải…' : 'Chưa chọn thư mục nào'}</span>}
+              {!known.length && <span className="text-sm text-fg-mute">{ov.loading ? <span className="flex items-center gap-2"><Spinner inline />Đang tải…</span> : 'Chưa chọn thư mục nào'}</span>}
             </div>
           </Panel>
 

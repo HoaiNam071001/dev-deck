@@ -6,7 +6,7 @@ import { bridge, MOD, type UpdateStatus } from '../lib/platform'
 import { getState, openPalette, setState, useStore } from '../lib/store'
 import { CommandPalette } from './CommandPalette'
 import { Toasts } from './Toasts'
-import { Icon } from './ui'
+import { Icon, Spinner } from './ui'
 
 /** Đồng bộ số repo cần chú ý lên khay hệ thống và nhận lệnh từ khay. */
 function useDesktopSync() {
@@ -48,7 +48,7 @@ function UpdateButton() {
   }
   return (
     <button className="sb-btn" style={s.state === 'ready' ? { color: 'var(--accent, #30cf43)', fontWeight: 600 } : undefined}
-      disabled={busy} title={title} onClick={onClick}>{label}</button>
+      disabled={busy} title={title} onClick={onClick}>{busy && <Spinner inline />}{busy ? ' ' : ''}{label}</button>
   )
 }
 

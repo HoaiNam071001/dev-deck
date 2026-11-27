@@ -3,7 +3,7 @@ import { api, useLoad } from '../api'
 import { SideSlot, StatusSlot } from '../components/Shell'
 import { StackedChart } from '../components/StackedChart'
 import { UsageWindows } from '../components/UsageWindows'
-import { Icon, Kpi, KpiStrip, NavLabel, Segmented, ShareBar } from '../components/ui'
+import { Icon, Kpi, KpiStrip, NavLabel, Segmented, ShareBar, Spinner } from '../components/ui'
 import { ShortNum } from '../components/ShortNum'
 import { dayKey, fmt } from '../lib/format'
 import { usePersisted } from '../lib/persist'
@@ -126,7 +126,7 @@ ${s.files} file · ${s.rows} tin` : `Chưa thấy log${s.root ? ' tại ' + s.ro
         </div>
       </SideSlot>
       <StatusSlot>
-        <span className="sb-item"><span className={'dot ' + (error ? 'bad' : 'ok')} />Đọc log lúc <span className="mono fg-soft">{readAt ? clock(readAt) : '—'}</span></span>
+        <span className="sb-item"><span className={'dot ' + (error ? 'bad' : loading ? 'busy' : 'ok')} />Đọc log lúc <span className="mono fg-soft">{readAt ? clock(readAt) : '—'}</span></span>
         <span>{fmt(all.length)} tin · {projects.length} dự án</span>
         <span className="sb-end">Tự làm mới 30s</span>
       </StatusSlot>
@@ -150,7 +150,7 @@ ${s.files} file · ${s.rows} tin` : `Chưa thấy log${s.root ? ' tại ' + s.ro
               <option value="type">Theo loại token</option><option value="provider">Theo nhà cung cấp</option>
             </select>
             </>}
-            <button className="icon-btn" aria-label="Tải lại" title="Tải lại" onClick={reload} disabled={loading}><Icon name="refresh" size={13} /></button>
+            <button className="icon-btn" aria-label="Tải lại" title="Tải lại" onClick={reload} disabled={loading}><Icon name="refresh" size={13} spin={loading} /></button>
             <button className="icon-btn" aria-label="Xuất CSV" title="Xuất CSV" onClick={exportCsv} disabled={!series.length}><Icon name="download" size={13} /></button>
           </div>
         </header>
@@ -162,7 +162,9 @@ ${s.files} file · ${s.rows} tin` : `Chưa thấy log${s.root ? ' tại ' + s.ro
         <Segmented label="Mục xem" value={tab} onChange={setTab}
           options={[{ id: 'chart', label: 'Tổng quan' }, { id: 'detail', label: 'Chi tiết', count: byProvider.length + byModel.length + byProject.length }]} />
 
-        {tab === 'chart' && <>
+        {loading && !data && <Spinner label="Đang đọc log token…" />}
+
+        {data && tab === 'chart' && <>
         <KpiStrip label="Chỉ số">
           <Kpi label="Tổng token" value={<ShortNum n={total} />}
             sub={delta === null ? `${fmt(total)} token` : <><span style={{ color: delta > 0 ? 'var(--behind)' : 'var(--accent)' }}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta * 100).toFixed(0)}%</span> so với hôm qua</>} />
@@ -181,7 +183,7 @@ ${s.files} file · ${s.rows} tin` : `Chưa thấy log${s.root ? ' tại ' + s.ro
         </section>
         </>}
 
-        {tab === 'detail' && <>
+        {data && tab === 'detail' && <>
         <div className="two">
           <GroupTable title="Theo nhà cung cấp" label="Nhà cung cấp" rows={byProvider} render={(k) => providerOf(k)?.label ?? k} dot={(k) => providerOf(k)?.color} />
           <GroupTable title="Theo model" label="Model" rows={byModel} render={(k) => k} dot={(k) => providerOf(modelProvider.get(k) ?? '')?.color} />

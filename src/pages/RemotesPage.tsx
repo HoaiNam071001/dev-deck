@@ -233,7 +233,7 @@ export function RemotesPage() {
           </div>
           <div className="flex flex-none items-center gap-2">
             <button className="btn whitespace-nowrap" onClick={() => setAdding(true)}><Icon name="plus" size={13} />Thêm account</button>
-            <button className="btn whitespace-nowrap" onClick={crs.reload} disabled={crs.loading || !hasAccounts}><Icon name="refresh" size={13} />Làm mới</button>
+            <button className="btn whitespace-nowrap" onClick={crs.reload} disabled={crs.loading || !hasAccounts}><Icon name="refresh" size={13} spin={crs.loading} />Làm mới</button>
           </div>
         </header>
 
@@ -277,8 +277,8 @@ export function RemotesPage() {
 
             {crs.error && <div className="banner err" role="alert">Không tải được danh sách: {crs.error}</div>}
             {crs.data?.errors.map((e) => <div key={e.accountId} className="banner err" role="alert">{e.name}: {e.error}</div>)}
-            {crs.loading && !crs.data && <Spinner label="Đang lấy MR / PR từ remote…" />}
-            {crs.data && !list.length && !crs.data.errors.length && (
+            {crs.loading && <div className={list.length ? 'spinner-wrap compact' : undefined}>{list.length ? <><span className="spinner" aria-hidden="true" /><span className="muted">Đang cập nhật MR / PR…</span></> : <Spinner label="Đang lấy MR / PR từ remote…" />}</div>}
+            {!crs.loading && crs.data && !list.length && !crs.data.errors.length && (
               <div className="banner">{q ? 'Không có MR / PR nào khớp từ khóa.' : hiddenCount > 0 && !showHidden ? `Không có MR / PR nào trong mục này (${hiddenCount} project đang bị ẩn).` : 'Không có MR / PR nào trong mục này.'}</div>
             )}
 

@@ -85,7 +85,7 @@ function RepoRow({ r, active, pinned, menuOpen, menuUp, onPick, onMenu, onCloseM
 export function RepoList({ repos, selected, pinned, menu, setMenu, onPick, empty }: {
   repos: RepoSummary[]; selected: string | null; pinned: string[]
   menu: string | null; setMenu: (p: string | null) => void
-  onPick: (p: string) => void; empty: string
+  onPick: (p: string) => void; empty: React.ReactNode
 }) {
   return (
     <div className="min-h-0 flex-1 overflow-y-auto" role="list" aria-label="Danh sách repo">
@@ -94,7 +94,7 @@ export function RepoList({ repos, selected, pinned, menu, setMenu, onPick, empty
           menuOpen={menu === r.path} menuUp={i >= repos.length - 3 && repos.length > 4}
           onPick={() => { setMenu(null); onPick(r.path) }} onMenu={() => setMenu(menu === r.path ? null : r.path)} onCloseMenu={() => setMenu(null)} />
       ))}
-      {!repos.length && <p className="empty">{empty}</p>}
+      {!repos.length && (typeof empty === 'string' ? <p className="empty">{empty}</p> : empty)}
     </div>
   )
 }

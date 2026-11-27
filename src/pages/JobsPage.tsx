@@ -175,7 +175,7 @@ export function JobsPage() {
           {/* flex-none + nowrap: nút không bị bóp làm chữ xuống dòng khi cửa sổ hẹp; chỉ phần mô tả bên trái co lại */}
           <div className="flex flex-none items-center gap-2">
             <button className="btn whitespace-nowrap" onClick={() => setSetupOpen(true)} title="Cài reporter để xem tiến độ file test vitest (vd. 3/10 file) cho nhiều project"><Icon name="download" size={13} />Cài tiến độ test…</button>
-            <button className="btn whitespace-nowrap" onClick={jobs.reload} disabled={jobs.loading}><Icon name="refresh" size={13} />Làm mới</button>
+            <button className="btn whitespace-nowrap" onClick={jobs.reload} disabled={jobs.loading}><Icon name="refresh" size={13} spin={jobs.loading} />Làm mới</button>
           </div>
         </header>
 

@@ -3,7 +3,7 @@ import { PROVIDERS, providerOf } from '../lib/usage'
 import { antigravityWindows, dayRank, parseResetOffset, providerWindows, tierOf, type AntigravityResets, type WindowStat } from '../lib/limits'
 import { usePersisted } from '../lib/persist'
 import { fmt, short } from '../lib/format'
-import { ShareBar } from './ui'
+import { ShareBar, Spinner } from './ui'
 import { api, useLoad } from '../api'
 import type { AccountWindow, ClaudeProfile, Provider, UsageRow } from '../types'
 
@@ -155,6 +155,7 @@ function AccountPicker({ profiles, value, onChange, reload }: { profiles: Claude
           {profiles.map((p) => <option key={p.dir} value={p.dir}>{label(p)}</option>)}
         </select>
         <button className="link-btn" onClick={() => setAdding((a) => !a)}>{adding ? 'Đóng' : '+ Thêm'}</button>
+        {busy && <Spinner inline />}
         {value && <button className="link-btn" style={{ color: 'var(--danger)' }} disabled={busy} onClick={() => run('remove', value)} title="Chỉ bỏ khỏi danh sách, không xoá dữ liệu hay đăng xuất">Bỏ</button>}
       </div>
       {adding && (
@@ -253,6 +254,7 @@ export function UsageWindows({ rows: allRows }: { rows: UsageRow[] }) {
             <div key={w.provider} className="usage-card">
               <div className="usage-h"><i className="pdot" style={{ background: p?.color }} />{p?.label ?? w.provider}{real && <span className="chip chip-ok" style={{ marginLeft: 'auto' }}>Tài khoản{real.plan ? ' · ' + real.plan : ''}</span>}</div>
               {w.provider === 'claude' && <AccountPicker profiles={profiles} value={account} onChange={setAcct} reload={profilesLoad.reload} />}
+              {w.provider === 'claude' && accLoad.loading && <div className="muted" style={{ fontSize: 'var(--text-sm)', display: 'flex', alignItems: 'center', gap: 8 }}><Spinner inline />Đang lấy hạn mức tài khoản…</div>}
               {acc?.org && <div className="muted" style={{ fontSize: 'var(--text-sm)' }}>{acc.org}</div>}
               {w.provider === 'claude' && acc?.error && <div className="muted" style={{ fontSize: 'var(--text-sm)' }}>Chưa lấy được hạn mức thật ({ERR[acc.error] ?? acc.error}); đang hiện số ước lượng từ log.</div>}
               {real?.five && <RealMeter label="Phiên 5h" w={real.five} />}

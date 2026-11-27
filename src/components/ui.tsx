@@ -23,15 +23,17 @@ const PATHS: Record<string, ReactNode> = {
   refresh: <path d="M20 11a8 8 0 0 0-14.9-3M4 4v4h4M4 13a8 8 0 0 0 14.9 3M20 20v-4h-4" />,
 }
 
-export function Icon({ name, size = 14, fill }: { name: keyof typeof PATHS | string; size?: number; fill?: boolean }) {
+export function Icon({ name, size = 14, fill, spin }: { name: keyof typeof PATHS | string; size?: number; fill?: boolean; spin?: boolean }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke={fill ? 'none' : 'currentColor'} strokeWidth={name === 'check' ? 3 : 1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg className={spin ? 'spin' : undefined} width={size} height={size} viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke={fill ? 'none' : 'currentColor'} strokeWidth={name === 'check' ? 3 : 1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       {PATHS[name]}
     </svg>
   )
 }
 
-export function Spinner({ label }: { label?: string }) {
+/** `inline`: vòng xoay nhỏ đặt cạnh chữ / trong nút; mặc định là khối căn giữa cho vùng đang tải. */
+export function Spinner({ label, inline }: { label?: string; inline?: boolean }) {
+  if (inline) return <span className="spinner sm" role="status" aria-label={label ?? 'Đang tải'} />
   return (
     <div className="spinner-wrap" role="status" aria-live="polite">
       <span className="spinner" aria-hidden="true" />

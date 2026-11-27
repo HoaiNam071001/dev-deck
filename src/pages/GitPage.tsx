@@ -4,7 +4,7 @@ import { FolderPicker } from '../components/FolderPicker'
 import { RepoDetail } from '../components/RepoDetail'
 import { RepoList } from '../components/RepoList'
 import { SideSlot, StatusSlot } from '../components/Shell'
-import { Icon, NavLabel, Segmented } from '../components/ui'
+import { Icon, NavLabel, Segmented, Spinner } from '../components/ui'
 import { runAction } from '../lib/actions'
 import { copyText, bridge, MOD } from '../lib/platform'
 import { usePersisted } from '../lib/persist'
@@ -161,7 +161,7 @@ export function GitPage() {
     else if (e.key === 'ArrowRight') setDetailW(Math.max(MIN_W, detailW - 20))
   }
 
-  const empty = !list.length && (repos.loading || scanning) ? 'Đang quét…' : list.length ? 'Không có repo khớp bộ lọc.' : 'Không tìm thấy repo nào. Thử thư mục khác hoặc tăng độ sâu.'
+  const empty = !list.length && (repos.loading || scanning) ? <Spinner label="Đang quét…" /> : list.length ? 'Không có repo khớp bộ lọc.' : 'Không tìm thấy repo nào. Thử thư mục khác hoặc tăng độ sâu.'
   const sortLabel = SORTS.find((s) => s.id === sort)!.label
   const pinnedRepos = pinned.map((p) => list.find((r) => r.path === p)).filter((r): r is RepoSummary => !!r)
 
@@ -189,7 +189,7 @@ export function GitPage() {
               <input type="number" min={1} max={8} value={depth} onChange={(e) => setDepth(Number(e.target.value))} aria-label="Độ sâu quét" className="!h-[22px] w-12 !px-1.5 font-mono !text-sm" />
             </label>
             <button className="btn primary w-full !h-7 whitespace-nowrap" disabled={scanning || !roots.length} onClick={() => rescan()}>
-              <Icon name="refresh" size={12} />{scanning ? 'Đang quét…' : 'Quét lại'}
+              <Icon name="refresh" size={12} spin={scanning} />{scanning ? 'Đang quét…' : 'Quét lại'}
             </button>
           </div>
         </div>
