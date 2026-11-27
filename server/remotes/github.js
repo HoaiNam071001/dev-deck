@@ -59,7 +59,14 @@ const SAFE_LOGIN = /^[A-Za-z0-9][A-Za-z0-9-]*(\[bot\])?$/
 async function list(acc, { scope, state }) {
   const me = acc.user
   if (!SAFE_LOGIN.test(me)) throw new Error('Tên đăng nhập GitHub không hợp lệ')
-  const who = scope === 'review' ? `review-requested:${me}` : scope === 'assigned' ? `assignee:${me}` : `author:${me}`
+  let who
+  if (scope === 'all') {
+    // Mọi PR trong 15 repo tôi có quyền, hoạt động gần nhất
+    const r = await gql(acc, 'query { viewer { repositories(first: 15, isArchived: false, orderBy: { field: PUSHED_AT, direction: DESC }, ownerAffiliations: [OWNER, COLLABORATOR, ORGANIZATION_MEMBER]) { nodes { nameWithOwner } } } }', {})
+    const repos = (r?.viewer?.repositories?.nodes || []).map((n) => n.nameWithOwner).filter((n) => REPO_RE.test(n))
+    if (!repos.length) return []
+    who = repos.map((n) => 'repo:' + n).join(' ')
+  } else who = scope === 'review' ? `review-requested:${me}` : scope === 'assigned' ? `assignee:${me}` : `author:${me}`
   const st = state === 'merged' ? 'is:merged' : state === 'closed' ? 'is:closed -is:merged' : 'is:open'
   const q = `is:pr ${st} ${who} archived:false sort:updated-desc`
   const d = await gql(acc, `query($q: String!) { search(query: $q, type: ISSUE, first: 40) { nodes { ... on PullRequest { ${PR_FIELDS} } } } }`, { q })
@@ -135,6 +142,39 @@ async function detail(acc, ref) {
   }
 }
 
+const restBase = (acc) => acc.baseUrl === 'https://github.com' ? 'https://api.github.com' : acc.baseUrl + '/api/v3'
+const rest = (acc, p) => request(restBase(acc) + p, { headers: { authorization: 'Bearer ' + acc.token, accept: 'application/vnd.github+json' } })
+function runStatus(status, conclusion) {
+  if (status === 'completed') return RUN[String(conclusion || '').toUpperCase()] || 'none'
+  return status === 'in_progress' ? 'running' : 'pending'
+}
+const secs = (a, b) => { const d = (Date.parse(b) - Date.parse(a)) / 1000; return Number.isFinite(d) && d >= 0 ? Math.round(d) : null }
+const REPO_RE = /^([\w.-]+)\/([\w.-]+)$/
+
+/** 30 workflow run mới nhất của repo "owner/name". */
+async function pipelines(acc, projectPath) {
+  const m = REPO_RE.exec(projectPath)
+  if (!m) throw new Error('Tên repo không hợp lệ')
+  const { data } = await rest(acc, `/repos/${m[1]}/${m[2]}/actions/runs?per_page=30`)
+  return (data?.workflow_runs || []).map((r) => ({
+    id: String(r.id), title: r.display_title || r.name || '', status: runStatus(r.status, r.conclusion), ref: r.head_branch || '', sha: String(r.head_sha || '').slice(0, 8),
+    source: r.event || '', url: r.html_url || null, createdAt: r.created_at,
+    durationSec: r.status === 'completed' ? secs(r.run_started_at || r.created_at, r.updated_at) : null,
+  }))
+}
+
+/** Job của một workflow run (nhóm theo tên workflow). API này không trả log: mở link để xem. */
+async function pipelineJobs(acc, projectPath, id) {
+  const m = REPO_RE.exec(projectPath)
+  if (!m) throw new Error('Tên repo không hợp lệ')
+  const { data } = await rest(acc, `/repos/${m[1]}/${m[2]}/actions/runs/${id}/jobs?per_page=100`)
+  return (data?.jobs || []).map((j) => ({
+    id: String(j.id), name: j.name, stage: j.workflow_name || '', status: runStatus(j.status, j.conclusion),
+    durationSec: j.status === 'completed' ? secs(j.started_at, j.completed_at) : null, url: j.html_url || null, allowFailure: false,
+    reason: j.conclusion === 'failure' ? (j.steps || []).find((s) => s.conclusion === 'failure')?.name || '' : '', log: null,
+  }))
+}
+
 /** Khóa "accountId|owner/repo|number" → [owner, repo, number]; từ chối giá trị lạ. */
 function parseKey(key) {
   const [, repo, num] = key.split('|')
@@ -143,4 +183,4 @@ function parseKey(key) {
   return [m[1], m[2], Number(num)]
 }
 
-module.exports = { whoami, list, byBranch, byProject, branches, detail, parseKey }
+module.exports = { whoami, list, byBranch, byProject, branches, pipelines, pipelineJobs, detail, parseKey }

@@ -27,7 +27,7 @@ async function testAccount(id) {
   return { ok: true, user }
 }
 
-const SCOPES = new Set(['mine', 'review', 'assigned'])
+const SCOPES = new Set(['mine', 'review', 'assigned', 'all'])
 const STATES = new Set(['opened', 'merged', 'closed'])
 
 /** MR / PR của các account (hoặc một account) theo phạm vi và trạng thái. Lỗi của một account không làm hỏng account khác. */
@@ -94,6 +94,22 @@ async function forBranch({ remotes, branch }) {
   return items.sort((a, b) => rank(a) - rank(b) || String(b.updatedAt).localeCompare(String(a.updatedAt)))
 }
 
+/** Pipeline (GitLab) / workflow run (GitHub) gần nhất của một project. */
+async function pipelines({ account, project }) {
+  const proj = String(project || '')
+  if (!PROJECT_RE.test(proj)) throw new Error('Tên project không hợp lệ')
+  const acc = store.get(String(account || ''))
+  return cached(`pl:${acc.id}:${proj}`, 30000, () => providerOf(acc).pipelines(acc, proj))
+}
+
+/** Job của một pipeline / run; id chỉ nhận số. */
+async function pipelineJobs({ account, project, id }) {
+  const proj = String(project || '')
+  if (!PROJECT_RE.test(proj) || !/^\d{1,15}$/.test(String(id || ''))) throw new Error('Tham số không hợp lệ')
+  const acc = store.get(String(account || ''))
+  return cached(`plj:${acc.id}:${proj}:${id}`, 30000, () => providerOf(acc).pipelineJobs(acc, proj, String(id)))
+}
+
 async function changeRequest(key) {
   const accountId = String(key || '').split('|')[0]
   const acc = store.get(accountId)
@@ -101,4 +117,4 @@ async function changeRequest(key) {
   return p.detail(acc, p.parseKey(key))
 }
 
-module.exports = { accounts, addAccount, testAccount, listChangeRequests, forBranch, branches, changeRequest, removeAccount: (id) => { dropCache(`gl:${id}:`); return store.remove(id) }, setCrypto: store.setCrypto }
+module.exports = { accounts, addAccount, testAccount, listChangeRequests, forBranch, branches, pipelines, pipelineJobs, changeRequest, removeAccount: (id) => { dropCache(`gl:${id}:`); return store.remove(id) }, setCrypto: store.setCrypto }

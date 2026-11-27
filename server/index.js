@@ -85,6 +85,8 @@ async function api(req, res, url) {
     }
     if (url.pathname === '/api/remotes/for-branch') return json(res, 200, await remotes.forBranch({ remotes: url.searchParams.getAll('remote'), branch: url.searchParams.get('branch') || '' }))
     if (url.pathname === '/api/remotes/branches') return json(res, 200, await remotes.branches({ account: url.searchParams.get('account') || '', project: url.searchParams.get('project') || '' }))
+    if (url.pathname === '/api/remotes/pipelines') return json(res, 200, await remotes.pipelines({ account: url.searchParams.get('account') || '', project: url.searchParams.get('project') || '' }))
+    if (url.pathname === '/api/remotes/pipeline-jobs') return json(res, 200, await remotes.pipelineJobs({ account: url.searchParams.get('account') || '', project: url.searchParams.get('project') || '', id: url.searchParams.get('id') || '' }))
     if (url.pathname === '/api/remotes/cr') return json(res, 200, await remotes.changeRequest(url.searchParams.get('key') || ''))
     // Trang Tổng quan: chỉ đọc file nhỏ, không quét repo, không đọc log token
     if (url.pathname === '/api/overview') return json(res, 200, { config: git.loadConfig(), scan: git.lastScan(), activity: gitActions.recentActivity(8) })

@@ -1,4 +1,5 @@
 import { Shell } from './components/Shell'
+import { useRemoteWatch } from './lib/remoteWatch'
 import { useRoute } from './lib/router'
 import { GitPage } from './pages/GitPage'
 import { HomePage } from './pages/HomePage'
@@ -8,5 +9,6 @@ import { TokenPage } from './pages/TokenPage'
 
 export function App() {
   const route = useRoute()
+  useRemoteWatch()
   return <Shell>{route === '/git' ? <GitPage /> : route === '/jobs' ? <JobsPage /> : route === '/remotes' ? <RemotesPage /> : route === '/ai' ? <TokenPage /> : <HomePage />}</Shell>
 }

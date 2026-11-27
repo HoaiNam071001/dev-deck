@@ -2,6 +2,7 @@ import { useMemo, useState, type KeyboardEvent } from 'react'
 import { api, useLoad } from '../api'
 import { RemoteAccountModal } from '../components/RemoteAccountModal'
 import { RemoteBranches } from '../components/RemoteBranches'
+import { RemotePipelines } from '../components/RemotePipelines'
 import { RemoteDetailModal } from '../components/RemoteDetail'
 import { ApprovalChip, CiChip, copyCrLink, CR_WORD, crRef, PROVIDER_LABEL, ProviderTag, ThreadChip, unresolved } from '../components/RemoteBits'
 import { SideSlot, StatusSlot } from '../components/Shell'
@@ -12,7 +13,7 @@ import { GROUP_BYS, groupChangeRequests, projectKey, projectsOf, type CrGroup, t
 import { toast } from '../lib/store'
 import type { ChangeRequest, CrScope, CrState } from '../types'
 
-const SCOPES: CrScope[] = ['mine', 'review', 'assigned']
+const SCOPES: CrScope[] = ['mine', 'review', 'assigned', 'all']
 const STATES: CrState[] = ['opened', 'merged', 'closed']
 const REFRESH_MS = 60000
 const isStrArr = (v: unknown) => Array.isArray(v) && v.every((x) => typeof x === 'string')
@@ -102,7 +103,7 @@ export function RemotesPage() {
   const [pinnedArr, setPinnedArr] = usePersisted<string[]>('remotes.pinned', [], isStrArr)
   const [hiddenArr, setHiddenArr] = usePersisted<string[]>('remotes.hidden', [], isStrArr)
   const [collapsedArr, setCollapsedArr] = usePersisted<string[]>('remotes.collapsed', [], isStrArr)
-  const [tab, setTab] = usePersisted<'mr' | 'branches'>('remotes.tab', 'mr', (v) => v === 'mr' || v === 'branches')
+  const [tab, setTab] = usePersisted<'mr' | 'branches' | 'pipelines'>('remotes.tab', 'mr', (v) => v === 'mr' || v === 'branches' || v === 'pipelines')
   const [project, setProject] = useState<string | null>(null)
   const [showHidden, setShowHidden] = useState(false)
   const [expandedGroups, setExpandedGroups] = useState<string[]>([])
@@ -251,9 +252,11 @@ export function RemotesPage() {
           </div>
         )}
 
-        {hasAccounts && <Segmented<'mr' | 'branches'> label="Chế độ xem" value={tab} onChange={setTab} options={[{ id: 'mr', label: 'MR / PR' }, { id: 'branches', label: 'Branches' }]} />}
+        {hasAccounts && <Segmented<'mr' | 'branches' | 'pipelines'> label="Chế độ xem" value={tab} onChange={setTab} options={[{ id: 'mr', label: 'MR / PR' }, { id: 'branches', label: 'Branches' }, { id: 'pipelines', label: 'Pipelines' }]} />}
 
         {hasAccounts && tab === 'branches' && <RemoteBranches projects={projects} accounts={accs} />}
+
+        {hasAccounts && tab === 'pipelines' && <RemotePipelines projects={projects} accounts={accs} />}
 
         {hasAccounts && tab === 'mr' && (
           <>
@@ -266,7 +269,7 @@ export function RemotesPage() {
             </KpiStrip>
 
             <div className="flex flex-wrap items-center gap-2">
-              <Segmented<CrScope> label="Phạm vi" value={scope} onChange={setScope} options={[{ id: 'mine', label: 'Của tôi' }, { id: 'review', label: 'Cần tôi review' }, { id: 'assigned', label: 'Gán cho tôi' }]} />
+              <Segmented<CrScope> label="Phạm vi" value={scope} onChange={setScope} options={[{ id: 'mine', label: 'Của tôi' }, { id: 'review', label: 'Cần tôi review' }, { id: 'assigned', label: 'Gán cho tôi' }, { id: 'all', label: 'Tất cả (cả của người khác)' }]} />
               <Segmented<CrState> label="Trạng thái" value={state} onChange={setState} options={[{ id: 'opened', label: 'Open' }, { id: 'merged', label: 'Merged' }, { id: 'closed', label: 'Closed' }]} />
               <span className="ml-1 text-[12px] text-fg-mute">Nhóm theo</span>
               <Segmented<GroupBy> label="Nhóm theo" value={groupBy} onChange={setGroupBy} options={[{ id: 'project', label: 'Project' }, { id: 'target', label: 'Branch đích' }, { id: 'author', label: 'Tác giả' }, { id: 'none', label: 'Không' }]} />

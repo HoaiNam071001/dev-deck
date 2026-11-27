@@ -96,8 +96,18 @@ function enrich(acc, m, me) {
 
 const SCOPES = { mine: 'scope=created_by_me', assigned: 'scope=assigned_to_me' }
 
+/** Mọi MR (kể cả của người khác) trong các project tôi là thành viên: 15 project hoạt động gần nhất, mỗi project 15 MR. */
+async function listAll(acc, state) {
+  const me = acc.user
+  const { data: projs } = await get(acc, '/projects?membership=true&simple=true&archived=false&order_by=last_activity_at&sort=desc&per_page=15')
+  const parts = await pool(projs || [], 5, (p) => get(acc, `/projects/${p.id}/merge_requests?state=${state}&order_by=updated_at&sort=desc&per_page=15`).then((r) => r.data || []).catch(() => []))
+  const mrs = parts.flat().sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at))).slice(0, 40)
+  return pool(mrs, 6, (m) => enrich(acc, m, me).catch(() => base(acc, m, me)))
+}
+
 async function list(acc, { scope, state }) {
   const me = acc.user
+  if (scope === 'all') return listAll(acc, state === 'merged' || state === 'closed' ? state : 'opened')
   const q = scope === 'review' ? `scope=all&reviewer_username=${encodeURIComponent(me)}` : (SCOPES[scope] || SCOPES.mine)
   const s = state === 'merged' || state === 'closed' ? state : 'opened'
   const { data } = await get(acc, `/merge_requests?${q}&state=${s}&order_by=updated_at&sort=desc&per_page=40`)
@@ -141,7 +151,31 @@ function jobLogTail(acc, project, jobId) {
   })
 }
 
-const STAGE_RANK = { failed: 4, running: 3, pending: 2, canceled: 1, success: 0, none: -1 }
+const secs = (a, b) => { const d = (Date.parse(b) - Date.parse(a)) / 1000; return Number.isFinite(d) && d >= 0 ? Math.round(d) : null }
+const DONE = new Set(['success', 'failed', 'canceled', 'skipped'])
+
+/** 30 pipeline mới nhất của project (đường dẫn "group/proj"). Thời gian chạy ước từ created → updated khi đã kết thúc. */
+async function pipelines(acc, projectPath) {
+  const { data } = await get(acc, `/projects/${encodeURIComponent(projectPath)}/pipelines?per_page=30&order_by=id&sort=desc`)
+  return (data || []).map((p) => ({
+    id: String(p.id), title: '', status: ci(p.status), ref: p.ref || '', sha: String(p.sha || '').slice(0, 8), source: p.source || '',
+    url: p.web_url || null, createdAt: p.created_at, durationSec: DONE.has(p.status) ? secs(p.created_at, p.updated_at) : null,
+  }))
+}
+
+/** Job của một pipeline; job lỗi (không allow_failure) kèm đoạn cuối log, tối đa 3 job. */
+async function pipelineJobs(acc, projectPath, id) {
+  const p = encodeURIComponent(projectPath)
+  const { data } = await get(acc, `/projects/${p}/pipelines/${id}/jobs?per_page=100`)
+  const jobs = data || []
+  const bad = new Set(jobs.filter((j) => j.status === 'failed' && !j.allow_failure).slice(0, 3).map((j) => j.id))
+  return pool(jobs, 4, async (j) => ({
+    id: String(j.id), name: j.name, stage: j.stage || '', status: ci(j.status), durationSec: typeof j.duration === 'number' ? Math.round(j.duration) : null,
+    url: j.web_url || null, allowFailure: !!j.allow_failure, reason: j.failure_reason || '', log: bad.has(j.id) ? await jobLogTail(acc, p, j.id) : null,
+  }))
+}
+
+const STAGE_RANK ={ failed: 4, running: 3, pending: 2, canceled: 1, success: 0, none: -1 }
 
 async function detail(acc, ref) {
   const [project, iid] = ref
@@ -186,4 +220,4 @@ function parseKey(key) {
   return [project, iid]
 }
 
-module.exports = { whoami, list, byBranch, byProject, branches, detail, parseKey }
+module.exports = { whoami, list, byBranch, byProject, branches, pipelines, pipelineJobs, detail, parseKey }

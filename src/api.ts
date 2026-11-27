@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ChangeRequest, ChangeRequestDetail, RemoteBranchesResponse, CrListResponse, CrScope, CrState, RemoteAccount, ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource } from './types'
+import type { ChangeRequest, ChangeRequestDetail, RemoteBranchesResponse, PipelineRun, PipelineJob, CrListResponse, CrScope, CrState, RemoteAccount, ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource } from './types'
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
@@ -43,6 +43,10 @@ export const api = {
     request<ChangeRequest[]>('/api/remotes/for-branch?' + new URLSearchParams([...remotes.map((r) => ['remote', r]), ['branch', branch]])),
   remoteBranches: (account: string, project: string) =>
     request<RemoteBranchesResponse>('/api/remotes/branches?' + new URLSearchParams({ account, project })),
+  pipelines: (account: string, project: string) =>
+    request<PipelineRun[]>('/api/remotes/pipelines?' + new URLSearchParams({ account, project })),
+  pipelineJobs: (account: string, project: string, id: string) =>
+    request<PipelineJob[]>('/api/remotes/pipeline-jobs?' + new URLSearchParams({ account, project, id })),
   changeRequest: (key: string) => request<ChangeRequestDetail>('/api/remotes/cr?key=' + encodeURIComponent(key)),
   config: () => request<GitConfig>('/api/git/config'),
   overview: () => request<Overview>('/api/overview'),

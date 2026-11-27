@@ -43,14 +43,15 @@ Thêm provider mới = thêm một file cùng 3 hàm `whoami`, `list`, `detail` 
 ## Giai đoạn 9b — Branches và Pipelines
 
 - [x] Tab Branches theo project trên remote (`RemoteBranches.tsx`, `/api/remotes/branches`): nhánh từ API GitLab/GitHub, commit cuối, mặc định/bảo vệ, MR/PR theo nhánh, cột "có ở local" (ghép clone qua URL remote), gợi ý nhánh đã merge để dọn (chỉ chép lệnh `git push origin --delete`, không tự xóa); chưa thử token thật
-- [ ] Tab Pipelines: danh sách pipeline, stage (đã có: job lỗi + 40 dòng log cuối trong chi tiết MR GitLab, `failedJobs`; GitHub chưa có log; chưa có tab riêng)
+- [x] Tab Pipelines (`RemotePipelines.tsx`, `/api/remotes/pipelines`, `/api/remotes/pipeline-jobs`): 30 pipeline (GitLab) / workflow run (GitHub Actions) gần nhất của project, lọc "chỉ lỗi", bấm một dòng để xem job theo stage, job lỗi GitLab kèm 40 dòng log cuối; GitHub chưa có log (mở link); dùng chung lựa chọn project với tab Branches; kiểm bằng fetch giả, chưa thử token thật
+- [x] Phạm vi "Tất cả" ở tab MR / PR: MR / PR của cả người khác trong project / repo tôi là thành viên (GitLab: 15 project hoạt động gần nhất × 15 MR; GitHub: 15 repo pushed gần nhất, tối đa 40 PR); chưa thử token thật
 - [x] Liên kết MR ↔ repo local qua URL remote (`server/remotes/match.js`); hiện MR của branch hiện tại trong chi tiết repo (`RepoMr.tsx`; chưa thử token thật)
 - [ ] Đối chiếu test chạy local (tab Job) với CI cùng branch
 
 ## Giai đoạn 9c — Thông báo
 
-- [ ] Thông báo hệ thống khi MR của tôi có thread/comment mới, pipeline lỗi, hoặc được gán review (dùng `systemNotify`)
-- [ ] Nhớ trạng thái đã xem trong `data/` để không báo lặp
+- [x] Thông báo hệ thống + toast khi MR của tôi có thread/comment mới, pipeline lỗi, conflict, hoặc có MR mới cần tôi review (`src/lib/remoteWatch.ts`, poll 2 phút ở App, theo công tắc thông báo; chưa thử token thật)
+- [x] Nhớ trạng thái đã xem trong localStorage (`remote.seen`) để không báo lặp; lần đầu chỉ ghi mốc, không báo; account lỗi thì bỏ qua lượt đó
 
 ## Giai đoạn 9d — Thao tác ghi (cần bật riêng trong cài đặt)
 

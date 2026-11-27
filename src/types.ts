@@ -194,5 +194,29 @@ export interface RemoteBranchesResponse {
   crsError: boolean
   local: { path: string; name: string; branches: string[] } | null
 }
-export type CrScope = 'mine' | 'review' | 'assigned'
+export type CrScope = 'mine' | 'review' | 'assigned' | 'all'
 export type CrState = 'opened' | 'merged' | 'closed'
+export interface PipelineRun {
+  id: string
+  /** Tiêu đề run (GitHub); GitLab để trống */
+  title: string
+  status: CiState
+  ref: string
+  sha: string
+  source: string
+  url: string | null
+  createdAt: string
+  durationSec: number | null
+}
+export interface PipelineJob {
+  id: string
+  name: string
+  stage: string
+  status: CiState
+  durationSec: number | null
+  url: string | null
+  allowFailure: boolean
+  reason: string
+  /** Đoạn cuối log của job lỗi (chỉ GitLab) */
+  log: string | null
+}
