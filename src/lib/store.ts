@@ -13,6 +13,8 @@ interface State {
   attention: number
   /** Số thread review mới trên MR / PR từ lần mở tab Remotes gần nhất, hiện ở thanh bên */
   remoteUnread: number
+  /** MR / PR đang chờ tôi review (không tính draft) và số đã quá ngưỡng đỏ */
+  reviewQueue: { waiting: number; late: number }
   selected: string | null
   /** Tăng sau mỗi thao tác ghi để danh sách và khung chi tiết tải lại */
   rev: number
@@ -27,7 +29,7 @@ const loadPinned = (): string[] => {
   try { const v = JSON.parse(localStorage.getItem('git.pinned') || '[]'); return Array.isArray(v) ? v.filter((x) => typeof x === 'string') : [] } catch { return [] }
 }
 
-let state: State = { repos: [], scannedAt: null, scanMs: null, scanning: false, attention: 0, remoteUnread: 0, selected: null, rev: 0, palette: false, toasts: [], pinned: loadPinned(), pending: null }
+let state: State = { repos: [], scannedAt: null, scanMs: null, scanning: false, attention: 0, remoteUnread: 0, reviewQueue: { waiting: 0, late: 0 }, selected: null, rev: 0, palette: false, toasts: [], pinned: loadPinned(), pending: null }
 const subs = new Set<() => void>()
 
 export const getState = () => state

@@ -6,7 +6,7 @@ import type { RepoSummary, UsageRow } from '../types'
 import { csvCell, toCsv } from './csv'
 import { buckets, OTHER_KEY, topSeries } from './usage'
 import { unreadThreads } from './remoteWatch'
-import { reviewQueue, reviewState, sizeLines, waitHours, waitLevel, waitSince } from './reviewQueue'
+import { queueCounts, reviewQueue, reviewState, sizeLines, waitAlerts, waitHours, waitLevel, waitSince } from './reviewQueue'
 import type { ChangeRequest } from '../types'
 
 const repo = (o: Partial<RepoSummary> = {}): RepoSummary => ({
@@ -150,5 +150,32 @@ describe('reviewState (trạng thái riêng của tôi)', () => {
     expect(reviewState({ myReviewAt: T(10), lastCommitAt: T(5) }, false)).toBe('waiting')
     expect(reviewState({ myReviewAt: T(10), lastCommitAt: T(20) }, true)).toBe('again')
     expect(reviewState({ myReviewAt: T(10), lastCommitAt: null }, false)).toBe('waiting')
+  })
+})
+
+describe('waitAlerts / queueCounts (nhắc review trễ)', () => {
+  const NOW = Date.parse('2026-11-27T12:00:00Z')
+  const h = (n: number) => new Date(NOW - n * 3_600_000).toISOString()
+  const cr = (key: string, hours: number, o: Partial<ChangeRequest> = {}) => ({ key, project: 'g/p', number: 1, provider: 'github', title: 't', state: 'opened', reviewMe: true, mine: false, draft: false, createdAt: h(hours), ...o } as ChangeRequest)
+  it('lần đầu chỉ ghi mốc', () => {
+    const r = waitAlerts(null, [cr('a', 30)], NOW)
+    expect(r.alerts).toEqual([])
+    expect(r.next).toEqual({ a: 'late' })
+  })
+  it('báo một lần khi vượt vàng rồi đỏ, không báo lặp', () => {
+    const s1 = waitAlerts({ a: 'ok' }, [cr('a', 5)], NOW)
+    expect(s1.alerts.map((x) => x.level)).toEqual(['warn'])
+    expect(waitAlerts(s1.next, [cr('a', 6)], NOW).alerts).toEqual([])
+    const s2 = waitAlerts(s1.next, [cr('a', 30)], NOW)
+    expect(s2.alerts.map((x) => x.level)).toEqual(['late'])
+    expect(waitAlerts(s2.next, [cr('a', 31)], NOW).alerts).toEqual([])
+  })
+  it('MR mới đã trễ được báo; draft không báo; MR rời hàng đợi bị bỏ khỏi mốc', () => {
+    const r = waitAlerts({ gone: 'late' }, [cr('n', 30), cr('d', 30, { draft: true })], NOW)
+    expect(r.alerts.map((x) => x.key)).toEqual(['n'])
+    expect(Object.keys(r.next).sort()).toEqual(['d', 'n'])
+  })
+  it('đếm chờ và trễ, bỏ draft', () => {
+    expect(queueCounts([cr('a', 1), cr('b', 30), cr('c', 99, { draft: true })], NOW)).toEqual({ waiting: 2, late: 1 })
   })
 })

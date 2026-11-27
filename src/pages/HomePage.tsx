@@ -43,6 +43,7 @@ const Panel = ({ title, action, children }: { title: string; action?: React.Reac
 export function HomePage() {
   const ov = useLoad(api.overview, [], 30000, 'overview')
   const pinned = useStore((s) => s.pinned)
+  const rq = useStore((s) => s.reviewQueue)
   const [picking, setPicking] = useState(false)
   const b = bridge()
   const cfg = ov.data?.config
@@ -103,6 +104,15 @@ export function HomePage() {
         </header>
 
         {ov.error && <ErrorBanner onRetry={ov.reload}>Không đọc được dữ liệu: {ov.error}</ErrorBanner>}
+
+        {rq.waiting > 0 && (
+          <Link to="/remotes" className="flex items-center gap-2 rounded-[10px] border border-border bg-surface px-4 py-2.5 text-[12.5px] !text-fg hover:bg-[#1F2124]">
+            <Icon name="merge" size={14} />
+            <span><b>{rq.waiting}</b> MR / PR đang chờ bạn review</span>
+            {rq.late > 0 && <Chip tone="danger">{rq.late} trễ hơn 24 giờ</Chip>}
+            <span className="ml-auto text-fg-mute">Mở hàng đợi →</span>
+          </Link>
+        )}
 
         <section aria-label="Mở nhanh" className="grid grid-cols-2 gap-3">
           <QuickCard to="/git" icon="git" tint="bg-accent/12 text-accent" title="Git" keyHint={MOD + '3'} desc="Quản lý repo, nhánh, commit, push / pull"

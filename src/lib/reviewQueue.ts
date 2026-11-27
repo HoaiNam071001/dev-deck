@@ -48,3 +48,32 @@ export function reviewState(c: Pick<ChangeRequest, 'myReviewAt' | 'lastCommitAt'
   }
   return marked ? 'reviewing' : 'new'
 }
+
+const RANK: Record<WaitLevel, number> = { ok: 0, warn: 1, late: 2 }
+export type WaitSeen = Record<string, WaitLevel>
+export interface WaitAlert { key: string; level: WaitLevel; title: string; body: string }
+
+/**
+ * Báo một lần khi MR / PR trong hàng đợi vượt ngưỡng vàng / đỏ. `prev` = mức đã ghi nhận lần trước.
+ * Lần đầu (prev null) chỉ ghi mốc, không báo; draft không báo. MR rời hàng đợi thì bỏ khỏi mốc.
+ */
+export function waitAlerts(prev: WaitSeen | null, queue: ChangeRequest[], now = Date.now()): { next: WaitSeen; alerts: WaitAlert[] } {
+  const next: WaitSeen = {}
+  const alerts: WaitAlert[] = []
+  for (const c of queue) {
+    const level = waitLevel(waitHours(c, now))
+    // Giữ mức cao nhất đã báo để giờ chờ dao động không báo lặp
+    const old = prev?.[c.key] ?? 'ok'
+    next[c.key] = RANK[old] > RANK[level] ? old : level
+    if (!prev || c.draft || RANK[level] <= RANK[old] || level === 'ok') continue
+    const ref = `${c.project} ${c.provider === 'gitlab' ? '!' : '#'}${c.number}`
+    alerts.push({ key: c.key, level, title: level === 'late' ? 'Review trễ hạn' : 'MR chờ review lâu', body: `${ref} · ${c.title} · chờ ${Math.floor(waitHours(c, now))} giờ` })
+  }
+  return { next, alerts }
+}
+
+/** Số MR / PR đang chờ tôi (không tính draft) và số đã quá ngưỡng đỏ. */
+export function queueCounts(queue: ChangeRequest[], now = Date.now()): { waiting: number; late: number } {
+  const live = queue.filter((c) => !c.draft)
+  return { waiting: live.length, late: live.filter((c) => waitLevel(waitHours(c, now)) === 'late').length }
+}

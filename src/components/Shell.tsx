@@ -14,6 +14,8 @@ import { Icon, Spinner } from './ui'
 function useDesktopSync() {
   const attention = useStore((s) => s.attention)
   useEffect(() => { bridge()?.setAttention?.(attention) }, [attention])
+  const waiting = useStore((s) => s.reviewQueue.waiting)
+  useEffect(() => { bridge()?.setReviewWaiting?.(waiting) }, [waiting])
   useEffect(() => bridge()?.onCommand?.((cmd) => { if (cmd === 'rescan') { setState({ pending: 'rescan' }); navigate('/git') } }), [])
 }
 
@@ -106,6 +108,7 @@ function Sidebar({ slotRef }: { slotRef: (el: HTMLElement | null) => void }) {
   const route = useRoute()
   const attention = useStore((s) => s.attention)
   const remoteUnread = useStore((s) => s.remoteUnread)
+  const waiting = useStore((s) => s.reviewQueue.waiting)
   useEffect(() => { if (route === '/remotes') markRemotesRead() }, [route])
   const cur = NAV.find((n) => n.to === route) ?? NAV[0]
   // Độ rộng panel trái: kéo thanh tách để đổi, nhớ cho lần mở sau; bấm đúp để về mặc định
@@ -143,6 +146,7 @@ function Sidebar({ slotRef }: { slotRef: (el: HTMLElement | null) => void }) {
             <Icon name={n.icon} size={19} />
             {n.to === '/git' && attention > 0 && <span className="rail-badge" title="Repo có thay đổi hoặc lệch remote">{attention}</span>}
             {n.to === '/remotes' && route !== '/remotes' && remoteUnread > 0 && <span className="rail-badge" title="Thread review mới chưa xem">{remoteUnread > 99 ? '99+' : remoteUnread}</span>}
+            {n.to === '/remotes' && route !== '/remotes' && remoteUnread === 0 && waiting > 0 && <span className="rail-badge" title="MR / PR đang chờ bạn review">{waiting > 99 ? '99+' : waiting}</span>}
           </Link>
         ))}
       </nav>

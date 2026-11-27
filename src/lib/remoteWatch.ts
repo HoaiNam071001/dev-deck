@@ -4,10 +4,12 @@ import { unresolved } from '../components/RemoteBits'
 import type { ChangeRequest } from '../types'
 import { systemNotify } from './platform'
 import { currentRoute } from './router'
+import { queueCounts, reviewQueue, waitAlerts, type WaitSeen } from './reviewQueue'
 import { setState, toast } from './store'
 
 const SEEN_KEY = 'remote.seen'
 const READ_KEY = 'remote.read'
+const WAIT_KEY = 'remote.waitSeen'
 const WATCH_MS = 120000
 
 /** Phần trạng thái của một MR / PR đủ để nhận ra thay đổi đáng báo. */
@@ -83,6 +85,11 @@ const readSeen = (): Seen | null => {
 }
 const writeSeen = (s: Seen) => { try { localStorage.setItem(SEEN_KEY, JSON.stringify(s)) } catch { /* bỏ qua */ } }
 
+const readWait = (): WaitSeen | null => {
+  try { const v = JSON.parse(localStorage.getItem(WAIT_KEY) || 'null'); return v && typeof v === 'object' ? (v as WaitSeen) : null } catch { return null }
+}
+const writeWait = (s: WaitSeen) => { try { localStorage.setItem(WAIT_KEY, JSON.stringify(s)) } catch { /* bỏ qua */ } }
+
 async function poll() {
   const accounts = await api.remoteAccounts()
   if (!accounts.length) return
@@ -99,14 +106,20 @@ async function poll() {
     writeMark(u.read)
     setState({ remoteUnread: u.count })
   }
-  const { next, events } = diffCrs(readSeen(), all)
-  writeSeen(next)
+  // Hàng đợi review: đếm cho badge / khay và nhắc một lần khi vượt ngưỡng chờ
+  const queue = reviewQueue(all)
+  setState({ reviewQueue: queueCounts(queue) })
+  const w = waitAlerts(readWait(), queue)
+  writeWait(w.next)
+  const ev = diffCrs(readSeen(), all)
+  writeSeen(ev.next)
+  const events = [...ev.events, ...w.alerts]
   if (!events.length) return
   const first = events[0]
   const title = events.length === 1 ? first.title : `${events.length} cập nhật MR / PR`
   const body = events.length === 1 ? first.body : events.slice(0, 3).map((e) => `${e.title}: ${e.body}`).join('\n')
   systemNotify(title, body)
-  toast({ kind: events.some((e) => e.title === 'Pipeline lỗi' || e.title === 'MR bị conflict') ? 'err' : 'ok', title, detail: body })
+  toast({ kind: events.some((e) => e.title === 'Pipeline lỗi' || e.title === 'MR bị conflict' || e.title === 'Review trễ hạn') ? 'err' : 'ok', title, detail: body })
 }
 
 /** Poll nền MR / PR của tôi và cần tôi review, báo khi có thay đổi (mount một lần ở App). */

@@ -68,8 +68,8 @@ Mục tiêu: không để MR / PR người khác chờ mình quá lâu; biết n
 - [x] Mức chờ có màu: <4 giờ xanh, 4–24 giờ vàng, >24 giờ đỏ (hằng số trong `reviewQueue.ts`). Còn lại: ngưỡng sửa được trong cài đặt, chỉ tính giờ làm việc
 - [x] Cột độ lớn (GitHub: +/− dòng, số tệp; GitLab chỉ có số tệp) và chip CI / approve / thread. Còn lại: sắp xếp theo độ lớn / CI
 - [x] Trạng thái riêng của tôi (`reviewState` trong `reviewQueue.ts`): "chưa xem" / "đang xem" (nút đánh dấu, lưu `remotes.reviewing`) / "chờ tác giả sửa" / "cần xem lại" khi commit mới hơn review cuối của tôi. Chỉ GitHub có mốc review + commit; GitLab chỉ có chưa xem / đang xem (chưa thử token thật)
-- [ ] Nhắc: thông báo hệ thống một lần khi MR vượt ngưỡng vàng / đỏ (dùng `remoteWatch.ts`, nhớ đã báo trong `remote.seen`)
-- [ ] Số MR đang chờ hiện ở Tổng quan, sidebar và biểu tượng khay
+- [x] Nhắc: thông báo hệ thống + toast một lần khi MR / PR vượt ngưỡng vàng / đỏ (`waitAlerts` trong `reviewQueue.ts`, poll ở `remoteWatch.ts`, mốc đã báo ở `remote.waitSeen`; draft không báo)
+- [x] Số MR đang chờ: banner ở Tổng quan, badge Remotes ở thanh bên (khi không có thread mới), tooltip + menu khay (`setReviewWaiting`); chưa kiểm bằng mắt / chưa thử khay thật
 - [ ] Phía tác giả: "MR của tôi đang chờ ai" — reviewer chưa phản hồi và đã chờ bao lâu
 - [x] Test: thời gian chờ, thứ tự hàng đợi, chuyển trạng thái "cần xem lại" (`lib.test.ts`)
 

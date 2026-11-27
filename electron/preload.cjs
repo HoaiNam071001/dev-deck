@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('devdeck', {
   pickFolder: () => ipcRenderer.invoke('devdeck:pickFolder'),
   notify: (title, body) => ipcRenderer.send('devdeck:notify', String(title), String(body || '')),
   setAttention: (n) => ipcRenderer.send('devdeck:attention', Number(n) || 0),
+  setReviewWaiting: (n) => ipcRenderer.send('devdeck:reviewWaiting', Number(n) || 0),
   minimize: () => ipcRenderer.send('devdeck:win', 'minimize'),
   maximize: () => ipcRenderer.send('devdeck:win', 'maximize'),
   close: () => ipcRenderer.send('devdeck:win', 'close'),

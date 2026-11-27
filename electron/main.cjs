@@ -14,6 +14,7 @@ let win = null
 let tray = null
 let httpServer = null
 let attention = 0
+let reviewWaiting = 0
 const STATE_FILE = path.join(app.getPath('userData'), 'window-state.json')
 
 if (!app.requestSingleInstanceLock()) app.quit()
@@ -87,6 +88,7 @@ function setupIpc() {
     if (Notification.isSupported()) new Notification({ title: String(title).slice(0, 120), body: String(body).slice(0, 300) }).show()
   })
   ipcMain.on('devdeck:attention', (_e, n) => { attention = Math.max(0, n | 0); updateTray() })
+  ipcMain.on('devdeck:reviewWaiting', (_e, n) => { reviewWaiting = Math.max(0, n | 0); updateTray() })
 }
 
 // ---- Khay hệ thống ----
@@ -97,10 +99,12 @@ function trayIcon() {
 }
 function updateTray() {
   if (!tray) return
-  tray.setToolTip(attention ? `DevDeck · ${attention} repo cần chú ý` : 'DevDeck')
+  const tip = [attention ? `${attention} repo cần chú ý` : '', reviewWaiting ? `${reviewWaiting} MR / PR chờ review` : ''].filter(Boolean)
+  tray.setToolTip(tip.length ? 'DevDeck · ' + tip.join(' · ') : 'DevDeck')
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Mở DevDeck', click: showWindow },
     { label: `Repo cần chú ý: ${attention}`, enabled: false },
+    { label: `MR / PR chờ review: ${reviewWaiting}`, enabled: false },
     { label: 'Quét lại', click: () => { showWindow(); win?.webContents.send('devdeck:command', 'rescan') } },
     { type: 'separator' },
     { label: 'Thoát', click: () => app.quit() },

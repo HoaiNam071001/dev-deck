@@ -20,6 +20,7 @@ export interface DesktopBridge {
   pickFolder?: () => Promise<string[]>
   notify?: (title: string, body: string) => void
   setAttention?: (n: number) => void
+  setReviewWaiting?: (n: number) => void
   onCommand?: (fn: (cmd: string) => void) => () => void
   openVSCode?: (path: string) => void
   openTerminal?: (path: string) => void
