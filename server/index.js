@@ -76,8 +76,15 @@ async function api(req, res, url) {
       if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
       const body = await readBody(req)
       if (body.action === 'remove') return json(res, 200, remotes.removeAccount(String(body.id || '')))
+      if (body.action === 'setWrite') return json(res, 200, remotes.setWrite(String(body.id || ''), body.on === true))
       if (body.action === 'test') return json(res, 200, await remotes.testAccount(String(body.id || '')))
       return json(res, 200, await remotes.addAccount(body))
+    }
+    if (url.pathname === '/api/remotes/local-jobs') return json(res, 200, await remotes.localJobs({ account: url.searchParams.get('account') || '', project: url.searchParams.get('project') || '', branch: url.searchParams.get('branch') || '' }))
+    if (url.pathname === '/api/remotes/act') {
+      if (req.method !== 'POST') return json(res, 405, { error: 'Chỉ nhận POST' })
+      if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
+      return json(res, 200, await remotes.act(await readBody(req)))
     }
     if (url.pathname === '/api/remotes/crs') {
       const q = url.searchParams

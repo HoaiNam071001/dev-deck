@@ -24,7 +24,7 @@ Thêm provider mới = thêm một file cùng 3 hàm `whoami`, `list`, `detail` 
 ## Nguyên tắc an toàn (bổ sung cho README)
 
 - Token **không bao giờ** gửi xuống giao diện (chỉ trả 4 ký tự cuối); chỉ gọi tới chính base URL của account.
-- Giai đoạn này **chỉ đọc**: scope `read_api` (GitLab) hoặc quyền đọc PR (GitHub).
+- Mặc định **chỉ đọc** (`read_api` / quyền đọc PR). Thao tác ghi tắt theo từng account, bật bằng nút ✎ (bấm hai lần), cần token có `api` / quyền ghi; server chặn mọi `act` khi account chưa bật.
 - Khóa MR/PR từ giao diện được kiểm tra chặt (`parseKey`) trước khi ghép vào URL.
 - Nội dung comment/mô tả hiển thị dạng chữ thuần, không render markdown/HTML.
 - Link mở ra chỉ nhận `http(s)`.
@@ -46,7 +46,7 @@ Thêm provider mới = thêm một file cùng 3 hàm `whoami`, `list`, `detail` 
 - [x] Tab Pipelines (`RemotePipelines.tsx`, `/api/remotes/pipelines`, `/api/remotes/pipeline-jobs`): 30 pipeline (GitLab) / workflow run (GitHub Actions) gần nhất của project, lọc "chỉ lỗi", bấm một dòng để xem job theo stage, job lỗi GitLab kèm 40 dòng log cuối; GitHub chưa có log (mở link); dùng chung lựa chọn project với tab Branches; kiểm bằng fetch giả, chưa thử token thật
 - [x] Phạm vi "Tất cả" ở tab MR / PR: MR / PR của cả người khác trong project / repo tôi là thành viên (GitLab: 15 project hoạt động gần nhất × 15 MR; GitHub: 15 repo pushed gần nhất, tối đa 40 PR); chưa thử token thật
 - [x] Liên kết MR ↔ repo local qua URL remote (`server/remotes/match.js`); hiện MR của branch hiện tại trong chi tiết repo (`RepoMr.tsx`; chưa thử token thật)
-- [ ] Đối chiếu test chạy local (tab Job) với CI cùng branch
+- [x] Đối chiếu test chạy local (tab Job) với CI cùng branch: card "Chạy ở máy này" trong chi tiết MR / PR (job trên clone local, đúng nhánh nguồn, tiến độ test) kèm cảnh báo khi local và CI lệch nhau (`/api/remotes/local-jobs`)
 
 ## Giai đoạn 9c — Thông báo
 
@@ -55,9 +55,9 @@ Thêm provider mới = thêm một file cùng 3 hàm `whoami`, `list`, `detail` 
 
 ## Giai đoạn 9d — Thao tác ghi (cần bật riêng trong cài đặt)
 
-- [ ] Resolve thread, trả lời, approve, retry pipeline, tạo MR; cần scope `api` / quyền ghi
-- [ ] Xác nhận hai bước cho thao tác khó hoàn tác; ghi `data/audit.log` như thao tác git
-- [ ] Bitbucket / Gitea nếu cần
+- [x] Resolve / mở lại thread, trả lời thread, approve, bỏ approve (chỉ GitLab), merge, chạy lại job lỗi của pipeline, tạo MR / PR từ nhánh chưa có (tab Branches); GitLab dùng scope `api`, GitHub dùng GraphQL mutation + REST rerun-failed-jobs; kiểm bằng fetch giả, chưa thử token thật
+- [x] Xác nhận hai bước cho thao tác khó hoàn tác (bật ghi, merge, chạy lại pipeline; trả lời có bước soạn rồi Gửi); mọi thao tác kể cả lỗi ghi `data/audit.log` (không ghi nội dung comment, chỉ độ dài); server kiểm tham số (khóa, mã thread, tên nhánh, độ dài)
+- [ ] Bỏ approve trên GitHub (dismiss review cần lý do và quyền riêng), Bitbucket / Gitea: chưa làm, làm khi có nhu cầu
 
 ## Rủi ro
 

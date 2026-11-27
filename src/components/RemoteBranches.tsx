@@ -9,9 +9,43 @@ import type { RemoteAccount, RemoteBranch } from '../types'
 import { CR_WORD, crRef, safeUrl } from './RemoteBits'
 import { RemoteDetailModal } from './RemoteDetail'
 import { Chip, Icon, Spinner } from './ui'
+import { Modal } from './Modal'
 
 const fullPath = (p: ProjectEntry) => (p.parent ? `${p.parent}/${p.name}` : p.name)
 const PATH_RE = /^[\w.-]+(\/[\w.-]+)+$/
+
+/** Tạo MR / PR từ một nhánh (cần account bật ghi). */
+function CreateCrModal({ accountId, project, source, defaultTarget, provider, onClose, onDone }: { accountId: string; project: string; source: string; defaultTarget: string; provider: 'gitlab' | 'github'; onClose: () => void; onDone: () => void }) {
+  const [target, setTarget] = useState(defaultTarget)
+  const [title, setTitle] = useState(source.replace(/^[\w-]+\//, '').replace(/[-_]+/g, ' '))
+  const [desc, setDesc] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const word = provider === 'gitlab' ? 'MR' : 'PR'
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault(); setBusy(true); setErr(null)
+    try {
+      const r = await api.remoteAct({ action: 'create', account: accountId, project, source, target: target.trim(), title: title.trim(), description: desc })
+      toast({ kind: 'ok', title: `Đã tạo ${word}${r.number ? ' ' + (provider === 'gitlab' ? '!' : '#') + r.number : ''}`, detail: r.url ?? undefined })
+      onDone(); onClose()
+    } catch (e2) { setErr((e2 as Error).message); setBusy(false) }
+  }
+  return (
+    <Modal onClose={onClose} titleId="mk-title" header={<h2 id="mk-title">Tạo {word} từ <span className="mono">{source}</span></h2>}>
+      <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-3 p-4">
+        <label className="flex flex-col gap-1.5 text-[12px]"><span className="text-fg-mute">Nhánh đích</span><input className="mono" value={target} onChange={(e) => setTarget(e.target.value)} required spellCheck={false} /></label>
+        <label className="flex flex-col gap-1.5 text-[12px]"><span className="text-fg-mute">Tiêu đề</span><input value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={300} /></label>
+        <label className="flex flex-col gap-1.5 text-[12px]"><span className="text-fg-mute">Mô tả (tùy chọn)</span><textarea className="min-h-[96px]" value={desc} onChange={(e) => setDesc(e.target.value)} /></label>
+        {err && <div className="banner err" role="alert">{err}</div>}
+        <div className="flex items-center justify-end gap-2">
+          {busy && <Spinner label={'Đang tạo ' + word + '…'} />}
+          <button type="button" className="btn" onClick={onClose}>Hủy</button>
+          <button type="submit" className="btn primary" disabled={busy || !title.trim() || !target.trim()}>Tạo {word}</button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
 
 function BranchChips({ b }: { b: RemoteBranch }) {
   return <>{b.isDefault && <Chip tone="info">Mặc định</Chip>}{b.protected && <Chip tone="muted" title="Nhánh được bảo vệ">Bảo vệ</Chip>}</>
@@ -29,6 +63,9 @@ export function RemoteBranches({ projects, accounts }: { projects: ProjectEntry[
   const project = cur ? cur.value.slice(cur.value.indexOf('|') + 1) : ''
   const data = useLoad(() => (cur ? api.remoteBranches(accountId, project) : Promise.resolve(null)), [cur?.value])
   const [open, setOpen] = useState<string | null>(null)
+  const [creating, setCreating] = useState<string | null>(null)
+  const canWrite = !!accounts.find((a) => a.id === accountId)?.write
+  const provider = accounts.find((a) => a.id === accountId)?.provider
   const [q, setQ] = useState('')
 
   const addCustom = () => {
@@ -108,13 +145,14 @@ export function RemoteBranches({ projects, accounts }: { projects: ProjectEntry[
                   <button className="btn sm" onClick={() => setOpen(mr.key)} title={mr.title}>
                     {CR_WORD[mr.provider]} {crRef(mr)}{mr.state === 'merged' ? ' · merged' : mr.state === 'closed' ? ' · closed' : ''}
                   </button>
-                ) : <span className="text-[12px] text-fg-mute">{b.isDefault ? '' : 'Chưa có MR / PR'}</span>}
+                ) : b.isDefault ? null : canWrite && provider ? <button className="btn sm" onClick={() => setCreating(b.name)}>Tạo {provider === 'gitlab' ? 'MR' : 'PR'}</button> : <span className="text-[12px] text-fg-mute">Chưa có MR / PR</span>}
               </div>
             </div>
           ))}
         </div>
       )}
       {d && !shown.length && <div className="banner">{needle ? 'Không có nhánh nào khớp.' : 'Project chưa có nhánh nào.'}</div>}
+      {creating && provider && <CreateCrModal accountId={accountId} project={project} source={creating} defaultTarget={d?.defaultBranch || 'main'} provider={provider} onClose={() => setCreating(null)} onDone={data.reload} />}
       {picked && <RemoteDetailModal key={picked.key} cr={picked} onClose={() => setOpen(null)} />}
     </div>
   )

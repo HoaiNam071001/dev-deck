@@ -143,7 +143,7 @@ async function detail(acc, ref) {
 }
 
 const restBase = (acc) => acc.baseUrl === 'https://github.com' ? 'https://api.github.com' : acc.baseUrl + '/api/v3'
-const rest = (acc, p) => request(restBase(acc) + p, { headers: { authorization: 'Bearer ' + acc.token, accept: 'application/vnd.github+json' } })
+const rest = (acc, p, method = 'GET') => request(restBase(acc) + p, { method, headers: { authorization: 'Bearer ' + acc.token, accept: 'application/vnd.github+json' } })
 function runStatus(status, conclusion) {
   if (status === 'completed') return RUN[String(conclusion || '').toUpperCase()] || 'none'
   return status === 'in_progress' ? 'running' : 'pending'
@@ -175,6 +175,46 @@ async function pipelineJobs(acc, projectPath, id) {
   }))
 }
 
+/** Resolve / mở lại một review thread (id dạng node GraphQL). Cần quyền ghi PR. */
+async function resolveThread(acc, ref, threadId, resolved) {
+  const m = resolved ? 'resolveReviewThread' : 'unresolveReviewThread'
+  await gql(acc, `mutation($id: ID!) { ${m}(input: { threadId: $id }) { thread { id } } }`, { id: threadId })
+}
+async function replyThread(acc, ref, threadId, body) {
+  await gql(acc, 'mutation($id: ID!, $body: String!) { addPullRequestReviewThreadReply(input: { pullRequestReviewThreadId: $id, body: $body }) { comment { id } } }', { id: threadId, body })
+}
+async function prNodeId(acc, ref) {
+  const [owner, name, number] = ref
+  const d = await gql(acc, 'query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { id } } }', { owner, name, number })
+  const id = d?.repository?.pullRequest?.id
+  if (!id) throw new Error('Không tìm thấy PR')
+  return id
+}
+/** Approve PR. Bỏ approve (dismiss review) cần lý do và quyền riêng, chưa hỗ trợ: dùng web. */
+async function approve(acc, ref, on) {
+  if (!on) throw new Error('GitHub: bỏ approve (dismiss review) chưa hỗ trợ trong app, dùng trang web')
+  await gql(acc, 'mutation($id: ID!) { addPullRequestReview(input: { pullRequestId: $id, event: APPROVE }) { pullRequestReview { id } } }', { id: await prNodeId(acc, ref) })
+}
+/** Merge PR bằng merge commit (GitHub từ chối nếu nhánh bị bảo vệ chưa đủ điều kiện). */
+async function merge(acc, ref) {
+  await gql(acc, 'mutation($id: ID!) { mergePullRequest(input: { pullRequestId: $id, mergeMethod: MERGE }) { pullRequest { id } } }', { id: await prNodeId(acc, ref) })
+}
+async function createChangeRequest(acc, projectPath, { source, target, title, description }) {
+  const m = REPO_RE.exec(projectPath)
+  if (!m) throw new Error('Tên repo không hợp lệ')
+  const r = await gql(acc, 'query($owner: String!, $name: String!) { repository(owner: $owner, name: $name) { id } }', { owner: m[1], name: m[2] })
+  if (!r?.repository?.id) throw new Error('Không tìm thấy repo')
+  const d = await gql(acc, 'mutation($repo: ID!, $base: String!, $head: String!, $title: String!, $body: String) { createPullRequest(input: { repositoryId: $repo, baseRefName: $base, headRefName: $head, title: $title, body: $body }) { pullRequest { url number } } }',
+    { repo: r.repository.id, base: target, head: source, title, body: description })
+  return { url: d?.createPullRequest?.pullRequest?.url || null, number: d?.createPullRequest?.pullRequest?.number ?? null }
+}
+/** Chạy lại các job lỗi của một workflow run. */
+async function retryPipeline(acc, projectPath, id) {
+  const m = REPO_RE.exec(projectPath)
+  if (!m) throw new Error('Tên repo không hợp lệ')
+  await rest(acc, `/repos/${m[1]}/${m[2]}/actions/runs/${id}/rerun-failed-jobs`, 'POST')
+}
+
 /** Khóa "accountId|owner/repo|number" → [owner, repo, number]; từ chối giá trị lạ. */
 function parseKey(key) {
   const [, repo, num] = key.split('|')
@@ -183,4 +223,4 @@ function parseKey(key) {
   return [m[1], m[2], Number(num)]
 }
 
-module.exports = { whoami, list, byBranch, byProject, branches, pipelines, pipelineJobs, detail, parseKey }
+module.exports = { whoami, list, byBranch, byProject, branches, pipelines, pipelineJobs, detail, parseKey, resolveThread, replyThread, retryPipeline, approve, merge, createChangeRequest }

@@ -113,6 +113,7 @@ export function RemotesPage() {
   const [adding, setAdding] = useState(false)
   const [openKey, setOpenKey] = useState<string | null>(null)
   const [confirmDel, setConfirmDel] = useState<string | null>(null)
+  const [confirmWrite, setConfirmWrite] = useState<string | null>(null)
 
   const pinned = useMemo(() => new Set(pinnedArr), [pinnedArr])
   const hidden = useMemo(() => new Set(hiddenArr), [hiddenArr])
@@ -169,6 +170,13 @@ export function RemotesPage() {
     try { await api.removeRemoteAccount(id); if (account === id) setAccount('all'); accounts.reload(); toast({ kind: 'ok', title: 'Đã xóa account', detail: 'Token đã bị xóa khỏi máy.' }) }
     catch (e) { toast({ kind: 'err', title: 'Không xóa được', detail: (e as Error).message }) }
   }
+  const toggleWrite = async (a: { id: string; name: string; write: boolean }) => {
+    // Bật ghi cần bấm hai lần; tắt thì một lần
+    if (!a.write && confirmWrite !== a.id) { setConfirmWrite(a.id); return }
+    setConfirmWrite(null)
+    try { await api.setRemoteWrite(a.id, !a.write); accounts.reload(); toast({ kind: 'ok', title: a.write ? 'Đã tắt thao tác ghi' : 'Đã bật thao tác ghi', detail: a.write ? a.name + ' quay về chỉ đọc' : a.name + ': resolve, trả lời, chạy lại pipeline. Token cần quyền ghi (scope api / quyền ghi PR).' }) }
+    catch (e) { toast({ kind: 'err', title: 'Không đổi được', detail: (e as Error).message }) }
+  }
   const hideProject = (k: string, name: string) => {
     setHiddenArr([...hidden, k].filter((x, i, a) => a.indexOf(x) === i))
     if (project === k) setProject(null)
@@ -209,7 +217,12 @@ export function RemotesPage() {
               <button className={'nav-item' + (effective === a.id ? ' on' : '')} aria-pressed={effective === a.id} title={`${a.name}\n${a.baseUrl} · ${a.user}`} onClick={() => setAccount(a.id)}>
                 <span className={'size-2 flex-none rounded-full ' + (a.provider === 'gitlab' ? 'bg-[#C9A8FF]' : 'bg-[#8FE0B0]')} />
                 <span className="truncate">{a.name}</span>
+                {a.write && <span className="flex-none text-[11px] text-behind" title="Đang cho phép thao tác ghi">✎</span>}
                 {effective === 'all' || effective === a.id ? <span className="nav-n group-hover:invisible">{all.filter((c) => c.accountId === a.id).length}</span> : null}
+              </button>
+              <button className={'ghost absolute right-7 top-0.5 flex h-[22px] items-center justify-center px-1 text-[11px] focus-visible:visible group-hover:visible ' + (confirmWrite === a.id ? 'visible text-behind' : 'invisible')}
+                aria-pressed={a.write} aria-label={(a.write ? 'Tắt' : 'Bật') + ' thao tác ghi cho ' + a.name} title={a.write ? 'Đang cho phép ghi. Bấm để về chỉ đọc' : 'Cho phép thao tác ghi (resolve, trả lời, chạy lại pipeline)'} onClick={() => void toggleWrite(a)} onBlur={() => setConfirmWrite(null)}>
+                {confirmWrite === a.id ? 'Bật ghi?' : '✎'}
               </button>
               <button className={'ghost absolute right-1 top-0.5 flex h-[22px] items-center justify-center px-1 text-[11px] focus-visible:visible group-hover:visible ' + (confirmDel === a.id ? 'visible text-danger' : 'invisible')}
                 aria-label={'Xóa account ' + a.name} title="Xóa account và token khỏi máy" onClick={() => void removeAccount(a.id)} onBlur={() => setConfirmDel(null)}>
@@ -232,7 +245,7 @@ export function RemotesPage() {
           </div>
         )}
 
-        <div className="px-2 text-sm text-fg-mute">Chỉ đọc: xem MR / PR, CI, approve và thread review. Token lưu mã hóa trên máy.</div>
+        <div className="px-2 text-sm text-fg-mute">Mặc định chỉ đọc. Bấm ✎ ở account để bật thao tác ghi (resolve, trả lời, approve, merge, tạo MR, chạy lại pipeline). Token lưu mã hóa trên máy.</div>
         </div>
 
         {hiddenArr.length > 0 && (

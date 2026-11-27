@@ -49,7 +49,7 @@ export function RemoteAccountModal({ onClose, onAdded }: { onClose: () => void; 
           <input className="mono" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder={h.url} spellCheck={false} required={needUrl} /></label>
         <label className="flex flex-col gap-1.5 text-[12px]"><span className="text-fg-mute">Personal Access Token · scope {h.scope}</span>
           <input type="password" className="mono" value={token} onChange={(e) => setToken(e.target.value)} placeholder="glpat-… / ghp_…" autoComplete="off" spellCheck={false} required /></label>
-        <p className="text-[11.5px] leading-relaxed text-fg-mute">{h.link} Token chỉ cần quyền đọc; được mã hóa bằng khóa của hệ điều hành và chỉ gửi tới chính máy chủ trên.</p>
+        <p className="text-[11.5px] leading-relaxed text-fg-mute">{h.link} Mặc định chỉ đọc (read_api); muốn resolve, trả lời, approve, merge, tạo MR thì dùng token có scope api / quyền ghi rồi bật ✎ ở account; được mã hóa bằng khóa của hệ điều hành và chỉ gửi tới chính máy chủ trên.</p>
         {err && <div className="banner err" role="alert">{err}</div>}
         <div className="flex items-center justify-end gap-2">
           {busy && <Spinner label="Đang kiểm tra token…" />}

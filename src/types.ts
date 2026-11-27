@@ -138,7 +138,7 @@ export interface Overview { config: GitConfig; scan: ScanSummary | null; activit
 
 // ---- Remotes (GitLab / GitHub): MR / PR ----
 export type RemoteProvider = 'gitlab' | 'github'
-export interface RemoteAccount { id: string; provider: RemoteProvider; name: string; baseUrl: string; user: string; tokenHint: string }
+export interface RemoteAccount { id: string; provider: RemoteProvider; name: string; baseUrl: string; user: string; tokenHint: string; write: boolean }
 export type CiState = 'success' | 'failed' | 'running' | 'pending' | 'canceled' | 'none'
 export interface RemotePerson { name: string; username: string }
 export interface ChangeRequest {
@@ -219,4 +219,9 @@ export interface PipelineJob {
   reason: string
   /** Đoạn cuối log của job lỗi (chỉ GitLab) */
   log: string | null
+}
+/** Job chạy ở máy này (tab Job) trên bản clone local của project, đúng nhánh nguồn của MR / PR. */
+export interface RemoteLocalJobs {
+  local: { path: string; name: string } | null
+  jobs: { pid: number; name: string; kind: JobKind; cmd: string; start: string; progress: { total: number; done: number; pass: number; fail: number; finished: boolean } | null }[]
 }

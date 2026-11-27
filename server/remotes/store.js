@@ -26,7 +26,7 @@ function writeAll(accounts) {
   fs.writeFileSync(FILE, JSON.stringify({ accounts }, null, 2))
 }
 
-const pub = (a) => ({ id: a.id, provider: a.provider, name: a.name, baseUrl: a.baseUrl, user: a.user || '', tokenHint: a.hint || '' })
+const pub = (a) => ({ id: a.id, provider: a.provider, name: a.name, baseUrl: a.baseUrl, user: a.user || '', tokenHint: a.hint || '', write: !!a.write })
 
 /** Danh sách account cho giao diện (không có token). */
 const list = () => readAll().map(pub)
@@ -43,6 +43,15 @@ function add({ provider, name, baseUrl, token, user }) {
   writeAll([...readAll(), a])
   return pub(a)
 }
+/** Bật / tắt thao tác ghi (resolve, trả lời, chạy lại pipeline) cho account. Mặc định tắt. */
+function setWrite(id, on) {
+  const all = readAll()
+  const a = all.find((x) => x.id === id)
+  if (!a) throw new Error('Không có account này')
+  a.write = !!on
+  writeAll(all)
+  return pub(a)
+}
 function remove(id) { writeAll(readAll().filter((a) => a.id !== id)); return list() }
 
-module.exports = { setCrypto, list, get, add, remove }
+module.exports = { setCrypto, list, get, add, remove, setWrite }

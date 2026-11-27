@@ -175,6 +175,38 @@ async function pipelineJobs(acc, projectPath, id) {
   }))
 }
 
+const send = (acc, method, p, body) => request(api(acc, p), { method, headers: { 'private-token': acc.token, 'content-type': 'application/json' }, body: JSON.stringify(body || {}) })
+
+/** Resolve / mở lại một thread (discussion) của MR. Cần scope api. */
+async function resolveThread(acc, ref, threadId, resolved) {
+  const [project, iid] = ref
+  await send(acc, 'PUT', `/projects/${project}/merge_requests/${iid}/discussions/${threadId}`, { resolved: !!resolved })
+}
+/** Trả lời một thread. */
+async function replyThread(acc, ref, threadId, body) {
+  const [project, iid] = ref
+  await send(acc, 'POST', `/projects/${project}/merge_requests/${iid}/discussions/${threadId}/notes`, { body })
+}
+/** Approve / bỏ approve MR. */
+async function approve(acc, ref, on) {
+  const [project, iid] = ref
+  await send(acc, 'POST', `/projects/${project}/merge_requests/${iid}/${on ? 'approve' : 'unapprove'}`)
+}
+/** Merge MR (GitLab tự từ chối nếu CI / approve / conflict chưa đạt). */
+async function merge(acc, ref) {
+  const [project, iid] = ref
+  await send(acc, 'PUT', `/projects/${project}/merge_requests/${iid}/merge`)
+}
+/** Tạo MR mới; trả về link. */
+async function createChangeRequest(acc, projectPath, { source, target, title, description }) {
+  const { data } = await send(acc, 'POST', `/projects/${encodeURIComponent(projectPath)}/merge_requests`, { source_branch: source, target_branch: target, title, description })
+  return { url: data?.web_url || null, number: data?.iid ?? null }
+}
+/** Chạy lại các job lỗi của pipeline. */
+async function retryPipeline(acc, projectPath, id) {
+  await send(acc, 'POST', `/projects/${encodeURIComponent(projectPath)}/pipelines/${id}/retry`)
+}
+
 const STAGE_RANK ={ failed: 4, running: 3, pending: 2, canceled: 1, success: 0, none: -1 }
 
 async function detail(acc, ref) {
@@ -220,4 +252,4 @@ function parseKey(key) {
   return [project, iid]
 }
 
-module.exports = { whoami, list, byBranch, byProject, branches, pipelines, pipelineJobs, detail, parseKey }
+module.exports = { whoami, list, byBranch, byProject, branches, pipelines, pipelineJobs, detail, parseKey, resolveThread, replyThread, retryPipeline, approve, merge, createChangeRequest }

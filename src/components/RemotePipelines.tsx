@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { api, useLoad } from '../api'
 import { relTime } from '../lib/format'
 import { usePersisted } from '../lib/persist'
+import { toast } from '../lib/store'
 import type { ProjectEntry } from '../lib/remoteGroups'
 import type { CiState, PipelineJob, PipelineRun, RemoteAccount } from '../types'
 import { ciTone, safeUrl } from './RemoteBits'
@@ -51,17 +52,27 @@ function Jobs({ accountId, project, run }: { accountId: string; project: string;
 }
 
 /** Pipeline (GitLab) / workflow run (GitHub) gần nhất của một project; bấm một dòng để xem job và log job lỗi. */
-export function RemotePipelines({ projects }: { projects: ProjectEntry[]; accounts: RemoteAccount[] }) {
+export function RemotePipelines({ projects, accounts }: { projects: ProjectEntry[]; accounts: RemoteAccount[] }) {
   // Dùng chung lựa chọn project với tab Branches
   const [sel, setSel] = usePersisted<string>('remotes.branchProject', '', (v) => typeof v === 'string')
   const [open, setOpen] = useState<string | null>(null)
   const [onlyFail, setOnlyFail] = useState(false)
+  const [confirmRetry, setConfirmRetry] = useState<string | null>(null)
+  const [retrying, setRetrying] = useState<string | null>(null)
   const options = useMemo(() => projects.map((p) => ({ value: `${p.accountId}|${fullPath(p)}`, label: fullPath(p) })), [projects])
   const all = !sel || options.some((o) => o.value === sel) ? options : [{ value: sel, label: sel.slice(sel.indexOf('|') + 1) }, ...options]
   const cur = all.find((o) => o.value === sel) ?? all[0]
   const accountId = cur ? cur.value.slice(0, cur.value.indexOf('|')) : ''
   const project = cur ? cur.value.slice(cur.value.indexOf('|') + 1) : ''
   const data = useLoad(() => (cur ? api.pipelines(accountId, project) : Promise.resolve(null)), [cur?.value], 30000)
+  const canWrite = !!accounts.find((a) => a.id === accountId)?.write
+  const retry = async (id: string) => {
+    if (confirmRetry !== id) { setConfirmRetry(id); return }
+    setConfirmRetry(null); setRetrying(id)
+    try { await api.remoteAct({ action: 'retry', account: accountId, project, id }); toast({ kind: 'ok', title: 'Đã yêu cầu chạy lại job lỗi', detail: 'Pipeline #' + id }); data.reload() }
+    catch (e) { toast({ kind: 'err', title: 'Không chạy lại được', detail: (e as Error).message }) }
+    finally { setRetrying(null) }
+  }
   const runs = (data.data ?? []).filter((r) => !onlyFail || r.status === 'failed')
   const fail = (data.data ?? []).filter((r) => r.status === 'failed').length
 
@@ -101,7 +112,14 @@ export function RemotePipelines({ projects }: { projects: ProjectEntry[]; accoun
               {open === r.id && (
                 <>
                   <Jobs accountId={accountId} project={project} run={r} />
-                  {safeUrl(r.url) && <div className="border-t border-line bg-surface-2 px-4 py-2 text-[12px]"><a className="text-ahead" href={safeUrl(r.url)} target="_blank" rel="noopener noreferrer">Mở trên remote</a></div>}
+                  <div className="flex items-center gap-3 border-t border-line bg-surface-2 px-4 py-2 text-[12px]">
+                    {safeUrl(r.url) && <a className="text-ahead" href={safeUrl(r.url)} target="_blank" rel="noopener noreferrer">Mở trên remote</a>}
+                    {canWrite && r.status === 'failed' && (
+                      <button className={'btn sm ml-auto ' + (confirmRetry === r.id ? 'danger' : '')} disabled={retrying === r.id} onBlur={() => setConfirmRetry(null)} onClick={() => void retry(r.id)}>
+                        {retrying === r.id ? 'Đang gửi…' : confirmRetry === r.id ? 'Bấm lần nữa để chạy lại job lỗi' : 'Chạy lại job lỗi'}
+                      </button>
+                    )}
+                  </div>
                 </>
               )}
             </div>
