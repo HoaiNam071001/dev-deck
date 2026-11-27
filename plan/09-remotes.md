@@ -42,9 +42,9 @@ Thêm provider mới = thêm một file cùng 3 hàm `whoami`, `list`, `detail` 
 
 ## Giai đoạn 9b — Branches và Pipelines
 
-- [ ] Tab Branches: nhánh repo local ↔ MR liên quan, ahead/behind, gợi ý nhánh đã merge để dọn (lấy từ `server/git.js` + remote)
-- [ ] Tab Pipelines: danh sách pipeline, stage, job lỗi kèm log rút gọn
-- [ ] Liên kết MR ↔ repo local qua `remote.origin.url`; hiện MR của branch hiện tại trong chi tiết repo (trang Git)
+- [x] Tab Branches theo project trên remote (`RemoteBranches.tsx`, `/api/remotes/branches`): nhánh từ API GitLab/GitHub, commit cuối, mặc định/bảo vệ, MR/PR theo nhánh, cột "có ở local" (ghép clone qua URL remote), gợi ý nhánh đã merge để dọn (chỉ chép lệnh `git push origin --delete`, không tự xóa); chưa thử token thật
+- [ ] Tab Pipelines: danh sách pipeline, stage (đã có: job lỗi + 40 dòng log cuối trong chi tiết MR GitLab, `failedJobs`; GitHub chưa có log; chưa có tab riêng)
+- [x] Liên kết MR ↔ repo local qua URL remote (`server/remotes/match.js`); hiện MR của branch hiện tại trong chi tiết repo (`RepoMr.tsx`; chưa thử token thật)
 - [ ] Đối chiếu test chạy local (tab Job) với CI cùng branch
 
 ## Giai đoạn 9c — Thông báo

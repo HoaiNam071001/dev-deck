@@ -1,6 +1,7 @@
 import { useMemo, useState, type KeyboardEvent } from 'react'
 import { api, useLoad } from '../api'
 import { RemoteAccountModal } from '../components/RemoteAccountModal'
+import { RemoteBranches } from '../components/RemoteBranches'
 import { RemoteDetailModal } from '../components/RemoteDetail'
 import { ApprovalChip, CiChip, copyCrLink, CR_WORD, crRef, PROVIDER_LABEL, ProviderTag, ThreadChip, unresolved } from '../components/RemoteBits'
 import { SideSlot, StatusSlot } from '../components/Shell'
@@ -101,6 +102,7 @@ export function RemotesPage() {
   const [pinnedArr, setPinnedArr] = usePersisted<string[]>('remotes.pinned', [], isStrArr)
   const [hiddenArr, setHiddenArr] = usePersisted<string[]>('remotes.hidden', [], isStrArr)
   const [collapsedArr, setCollapsedArr] = usePersisted<string[]>('remotes.collapsed', [], isStrArr)
+  const [tab, setTab] = usePersisted<'mr' | 'branches'>('remotes.tab', 'mr', (v) => v === 'mr' || v === 'branches')
   const [project, setProject] = useState<string | null>(null)
   const [showHidden, setShowHidden] = useState(false)
   const [expandedGroups, setExpandedGroups] = useState<string[]>([])
@@ -249,7 +251,11 @@ export function RemotesPage() {
           </div>
         )}
 
-        {hasAccounts && (
+        {hasAccounts && <Segmented<'mr' | 'branches'> label="Chế độ xem" value={tab} onChange={setTab} options={[{ id: 'mr', label: 'MR / PR' }, { id: 'branches', label: 'Branches' }]} />}
+
+        {hasAccounts && tab === 'branches' && <RemoteBranches projects={projects} accounts={accs} />}
+
+        {hasAccounts && tab === 'mr' && (
           <>
             <KpiStrip label="Tóm tắt MR / PR">
               <Kpi label="Đang mở" value={stats.open} />

@@ -7,6 +7,7 @@ import { pinRepo, toast, unpinRepo, useStore } from '../lib/store'
 import type { FileChange, RepoSummary } from '../types'
 import { Spinner, Icon } from './ui'
 import { RepoJobs } from './JobDetail'
+import { RepoMr } from './RepoMr'
 
 type Tab = 'changes' | 'branches' | 'commits' | 'remotes'
 
@@ -103,6 +104,7 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
           <span className="truncate text-fg-mute">→ {data.upstream ?? 'chưa có upstream'}</span>
         </div>
 
+        <RepoMr remotes={data.remotes.map((r) => r.url)} branch={data.branch} />
         <RepoJobs repoPath={data.path} />
 
         <div className="flex gap-1.5">

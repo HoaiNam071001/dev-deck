@@ -66,6 +66,41 @@ async function list(acc, { scope, state }) {
   return (d?.search?.nodes || []).filter((p) => p && p.number).map((p) => toCR(acc, p, me))
 }
 
+/** PR có nhánh nguồn `branch` trong repo "owner/name"; từ chối giá trị có ký tự lạ (đi vào câu search). */
+async function byBranch(acc, projectPath, branch) {
+  if (!/^[\w.-]+\/[\w.-]+$/.test(projectPath) || !/^[\w./-]+$/.test(branch)) return []
+  const q = `is:pr repo:${projectPath} head:${branch} sort:updated-desc`
+  const d = await gql(acc, `query($q: String!) { search(query: $q, type: ISSUE, first: 5) { nodes { ... on PullRequest { ${PR_FIELDS} } } } }`, { q })
+  return (d?.search?.nodes || []).filter((p) => p && p.number && p.headRefName === branch).map((p) => toCR(acc, p, acc.user))
+}
+
+/** 30 PR mới cập nhật nhất của repo "owner/name" (mọi trạng thái). */
+async function byProject(acc, projectPath) {
+  if (!/^[\w.-]+\/[\w.-]+$/.test(projectPath)) return []
+  const q = `is:pr repo:${projectPath} sort:updated-desc`
+  const d = await gql(acc, `query($q: String!) { search(query: $q, type: ISSUE, first: 30) { nodes { ... on PullRequest { ${PR_FIELDS} } } } }`, { q })
+  return (d?.search?.nodes || []).filter((p) => p && p.number).map((p) => toCR(acc, p, acc.user))
+}
+
+/** Nhánh của repo "owner/name": commit cuối, nhánh mặc định, có bảo vệ không. Tối đa 100 nhánh mới nhất. */
+async function branches(acc, projectPath) {
+  const m = /^([\w.-]+)\/([\w.-]+)$/.exec(projectPath)
+  if (!m) return { defaultBranch: null, url: null, branches: [] }
+  const d = await gql(acc, `query($owner: String!, $name: String!) { repository(owner: $owner, name: $name) {
+    url defaultBranchRef { name }
+    refs(refPrefix: "refs/heads/", first: 100, orderBy: { field: TAG_COMMIT_DATE, direction: DESC }) { nodes { name branchProtectionRule { id }
+      target { ... on Commit { oid messageHeadline committedDate url author { name user { login } } } } } }
+  } }`, { owner: m[1], name: m[2] })
+  const r = d?.repository
+  if (!r) throw new Error('Không tìm thấy repo')
+  const def = r.defaultBranchRef?.name || null
+  const list = (r.refs?.nodes || []).filter(Boolean).map((b) => ({
+    name: b.name, isDefault: b.name === def, protected: !!b.branchProtectionRule, merged: null,
+    commit: b.target?.oid ? { sha: b.target.oid.slice(0, 8), title: b.target.messageHeadline || '', author: b.target.author?.name || b.target.author?.user?.login || '', date: b.target.committedDate || '', url: b.target.url || null } : null,
+  }))
+  return { defaultBranch: def, url: r.url || null, branches: list }
+}
+
 const RUN = { SUCCESS: 'success', FAILURE: 'failed', TIMED_OUT: 'failed', STARTUP_FAILURE: 'failed', ACTION_REQUIRED: 'failed', CANCELLED: 'canceled', SKIPPED: 'none', NEUTRAL: 'success', STALE: 'none' }
 function checkOf(n) {
   if (n.__typename === 'CheckRun') {
@@ -108,4 +143,4 @@ function parseKey(key) {
   return [m[1], m[2], Number(num)]
 }
 
-module.exports = { whoami, list, detail, parseKey }
+module.exports = { whoami, list, byBranch, byProject, branches, detail, parseKey }

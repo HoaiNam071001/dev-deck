@@ -108,6 +108,19 @@ export function RemoteDetailModal({ cr, onClose }: { cr: ChangeRequest; onClose:
               </div>
             )}
 
+            {!!full?.failedJobs?.length && (
+              <div className="rounded-[10px] border border-danger/40 bg-surface px-3.5 py-2">
+                <div className="py-1 text-[13px] font-semibold">Job lỗi</div>
+                {full.failedJobs.map((j) => (
+                  <details key={j.id} className="border-t border-line py-1.5 first-of-type:border-t-0">
+                    <summary className="cursor-pointer text-[12.5px]"><b className="font-semibold">{j.name}</b> <span className="text-fg-mute">· {j.stage}{j.reason ? ' · ' + j.reason : ''}</span></summary>
+                    {j.log ? <pre className="mono mt-1.5 max-h-60 overflow-auto rounded-md bg-surface-2 p-2 text-[11px] leading-snug whitespace-pre-wrap">{j.log}</pre> : <div className="mt-1 text-[12px] text-fg-mute">Không đọc được log.</div>}
+                    {safeUrl(j.url) && <a className="mt-1 inline-block text-[11.5px] text-ahead hover:underline" href={safeUrl(j.url)} target="_blank" rel="noopener noreferrer">mở job</a>}
+                  </details>
+                ))}
+              </div>
+            )}
+
             {full?.description && (
               <details className="rounded-[10px] border border-border bg-surface px-3.5 py-2">
                 <summary className="cursor-pointer py-1 text-[13px] font-semibold">Mô tả</summary>

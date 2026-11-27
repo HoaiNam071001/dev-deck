@@ -104,6 +104,43 @@ async function list(acc, { scope, state }) {
   return pool(data || [], 6, (m) => enrich(acc, m, me).catch(() => base(acc, m, me)))
 }
 
+/** MR của một nhánh nguồn trong project (đường dẫn "group/proj"), mới cập nhật nhất trước. */
+async function byBranch(acc, projectPath, branch) {
+  const { data } = await get(acc, `/projects/${encodeURIComponent(projectPath)}/merge_requests?source_branch=${encodeURIComponent(branch)}&state=all&order_by=updated_at&sort=desc&per_page=5`)
+  return pool(data || [], 5, (m) => enrich(acc, m, acc.user).catch(() => base(acc, m, acc.user)))
+}
+
+/** 50 MR mới cập nhật nhất của project (mọi trạng thái), không bổ sung CI/approve/thread để nhẹ request. */
+async function byProject(acc, projectPath) {
+  const { data } = await get(acc, `/projects/${encodeURIComponent(projectPath)}/merge_requests?state=all&order_by=updated_at&sort=desc&per_page=50`)
+  return (data || []).map((m) => base(acc, m, acc.user))
+}
+
+/** Nhánh của project trên remote: commit cuối, mặc định / bảo vệ, đã merge vào nhánh mặc định chưa. Tối đa 100 nhánh mới nhất. */
+async function branches(acc, projectPath) {
+  const p = encodeURIComponent(projectPath)
+  const [{ data: proj }, { data }] = await Promise.all([
+    get(acc, `/projects/${p}`),
+    get(acc, `/projects/${p}/repository/branches?per_page=100`),
+  ])
+  const list = (data || []).map((b) => ({
+    name: b.name, isDefault: !!b.default, protected: !!b.protected, merged: b.default ? null : !!b.merged,
+    commit: b.commit ? { sha: String(b.commit.id || '').slice(0, 8), title: b.commit.title || '', author: b.commit.author_name || '', date: b.commit.committed_date || b.commit.created_at || '', url: b.commit.web_url || null } : null,
+  }))
+  return { defaultBranch: proj?.default_branch || null, url: proj?.web_url || null, branches: list }
+}
+
+/** 40 dòng cuối log của job (bỏ mã màu ANSI, tối đa 4000 ký tự); không đọc được thì null. */
+function jobLogTail(acc, project, jobId) {
+  return cached(`gl:${acc.id}:${project}:job${jobId}:log`, 5 * 60000, async () => {
+    try {
+      const { text } = await get(acc, `/projects/${project}/jobs/${jobId}/trace`)
+      const clean = String(text || '').replace(/\x1b\[[0-9;?]*[A-Za-z]/g, '').replace(/\r/g, '\n').replace(/\n{2,}/g, '\n')
+      return clean.split('\n').slice(-40).join('\n').slice(-4000).trim() || null
+    } catch { return null }
+  })
+}
+
 const STAGE_RANK = { failed: 4, running: 3, pending: 2, canceled: 1, success: 0, none: -1 }
 
 async function detail(acc, ref) {
@@ -116,6 +153,7 @@ async function detail(acc, ref) {
   const threads = threadsOf(dis)
   cr.threads = { resolved: threads.filter((x) => x.resolved).length, total: threads.length }
   let checks = []
+  let failedJobs = []
   if (m.head_pipeline) {
     cr.ci = ci(m.head_pipeline.status)
     try {
@@ -127,10 +165,15 @@ async function detail(acc, ref) {
         if (prev === undefined || STAGE_RANK[s] > STAGE_RANK[prev]) stages.set(j.stage, s)
       }
       checks = [...stages].map(([name, status]) => ({ name, status }))
+      const bad = (jobs || []).filter((j) => j.status === 'failed' && !j.allow_failure).slice(0, 3)
+      failedJobs = await pool(bad, 3, async (j) => ({
+        id: String(j.id), name: j.name, stage: j.stage, url: j.web_url || null,
+        reason: j.failure_reason || '', log: await jobLogTail(acc, project, j.id),
+      }))
     } catch { /* không đọc được job: bỏ qua */ }
   }
   return {
-    ...cr, description: String(m.description || ''), threadList: threads, checks,
+    ...cr, description: String(m.description || ''), threadList: threads, checks, failedJobs,
     approvedBy: ap?.by || [], mergeStatus: m.detailed_merge_status || m.merge_status || '',
     pipelineUrl: m.head_pipeline?.web_url || null,
   }
@@ -143,4 +186,4 @@ function parseKey(key) {
   return [project, iid]
 }
 
-module.exports = { whoami, list, detail, parseKey }
+module.exports = { whoami, list, byBranch, byProject, branches, detail, parseKey }

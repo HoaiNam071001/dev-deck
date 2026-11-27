@@ -171,10 +171,28 @@ export interface ChangeRequestDetail extends ChangeRequest {
   description: string
   threadList: ReviewThread[]
   checks: { name: string; status: CiState | 'none' }[]
+  /** Job lỗi kèm đoạn cuối log (chỉ GitLab) */
+  failedJobs?: { id: string; name: string; stage: string; url: string | null; reason: string; log: string | null }[]
   approvedBy: string[]
   mergeStatus: string
   pipelineUrl: string | null
 }
 export interface CrListResponse { items: ChangeRequest[]; errors: { accountId: string; name: string; error: string }[]; fetchedAt: string }
+export interface RemoteBranch {
+  name: string
+  isDefault: boolean
+  protected: boolean
+  /** Đã merge vào nhánh mặc định (chỉ GitLab; null = không biết) */
+  merged: boolean | null
+  commit: { sha: string; title: string; author: string; date: string; url: string | null } | null
+}
+export interface RemoteBranchesResponse {
+  defaultBranch: string | null
+  url: string | null
+  branches: RemoteBranch[]
+  crs: ChangeRequest[]
+  crsError: boolean
+  local: { path: string; name: string; branches: string[] } | null
+}
 export type CrScope = 'mine' | 'review' | 'assigned'
 export type CrState = 'opened' | 'merged' | 'closed'

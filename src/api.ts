@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ChangeRequestDetail, CrListResponse, CrScope, CrState, RemoteAccount, ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource } from './types'
+import type { ChangeRequest, ChangeRequestDetail, RemoteBranchesResponse, CrListResponse, CrScope, CrState, RemoteAccount, ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource } from './types'
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
@@ -39,6 +39,10 @@ export const api = {
     request<{ ok: true; user: string }>('/api/remotes/accounts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'test', id }) }),
   changeRequests: (account: string, scope: CrScope, state: CrState) =>
     request<CrListResponse>(`/api/remotes/crs?account=${encodeURIComponent(account)}&scope=${scope}&state=${state}`),
+  branchChangeRequests: (remotes: string[], branch: string) =>
+    request<ChangeRequest[]>('/api/remotes/for-branch?' + new URLSearchParams([...remotes.map((r) => ['remote', r]), ['branch', branch]])),
+  remoteBranches: (account: string, project: string) =>
+    request<RemoteBranchesResponse>('/api/remotes/branches?' + new URLSearchParams({ account, project })),
   changeRequest: (key: string) => request<ChangeRequestDetail>('/api/remotes/cr?key=' + encodeURIComponent(key)),
   config: () => request<GitConfig>('/api/git/config'),
   overview: () => request<Overview>('/api/overview'),

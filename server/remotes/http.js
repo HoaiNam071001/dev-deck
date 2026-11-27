@@ -24,7 +24,7 @@ async function request(url, { method = 'GET', headers = {}, body } = {}) {
       err.status = res.status
       throw err
     }
-    return { data, headers: res.headers }
+    return { data, text, headers: res.headers }
   } catch (e) {
     if (e.name === 'AbortError') throw new Error('Hết thời gian chờ khi gọi ' + new URL(url).host)
     if (e.status) throw e

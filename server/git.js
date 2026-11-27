@@ -253,3 +253,25 @@ function knownRepo(p) {
 function repoPathsInfo() { return { paths: repoPaths(false).paths } }
 
 module.exports = { repoPathsInfo, lastScan, listRepos, repoDetail, loadConfig, saveConfig, knownRepo, browse }
+
+let urlCache = null
+/** URL các remote của mọi repo đã quét (cache 5 phút), để ghép repo local với project trên GitLab / GitHub. */
+async function remoteUrlMap() {
+  if (urlCache && Date.now() - urlCache.at < 5 * 60000) return urlCache.list
+  const { paths } = repoPaths(false)
+  const list = await pool(paths, 8, async (p) => {
+    const out = await git(p, ['config', '--get-regexp', '^remote\..*\.url$'])
+    return { path: p, name: path.basename(p), urls: (out || '').split('\n').map((l) => l.replace(/^\S+\s+/, '').trim()).filter(Boolean) }
+  })
+  urlCache = { at: Date.now(), list }
+  return list
+}
+
+/** Tên nhánh local của một repo đã quét. */
+async function localBranchNames(p) {
+  knownRepo(p)
+  return ((await git(p, ['for-each-ref', '--format=%(refname:short)', 'refs/heads'])) || '').split('\n').filter(Boolean)
+}
+
+module.exports.remoteUrlMap = remoteUrlMap
+module.exports.localBranchNames = localBranchNames
