@@ -8,6 +8,7 @@ const git = require('./git')
 const gitActions = require('./git-actions')
 const jobs = require('./jobs')
 const reporter = require('./jobs/reporter')
+const remotes = require('./remotes')
 
 const PORT = Number(process.env.PORT) || 4317
 const DIST = path.join(__dirname, '..', 'dist')
@@ -70,6 +71,19 @@ async function api(req, res, url) {
       if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
       return json(res, 200, await jobs.stop(await readBody(req)))
     }
+    if (url.pathname === '/api/remotes/accounts') {
+      if (req.method !== 'POST') return json(res, 200, remotes.accounts())
+      if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
+      const body = await readBody(req)
+      if (body.action === 'remove') return json(res, 200, remotes.removeAccount(String(body.id || '')))
+      if (body.action === 'test') return json(res, 200, await remotes.testAccount(String(body.id || '')))
+      return json(res, 200, await remotes.addAccount(body))
+    }
+    if (url.pathname === '/api/remotes/crs') {
+      const q = url.searchParams
+      return json(res, 200, await remotes.listChangeRequests({ account: q.get('account') || 'all', scope: q.get('scope') || 'mine', state: q.get('state') || 'opened' }))
+    }
+    if (url.pathname === '/api/remotes/cr') return json(res, 200, await remotes.changeRequest(url.searchParams.get('key') || ''))
     // Trang Tổng quan: chỉ đọc file nhỏ, không quét repo, không đọc log token
     if (url.pathname === '/api/overview') return json(res, 200, { config: git.loadConfig(), scan: git.lastScan(), activity: gitActions.recentActivity(8) })
     if (url.pathname === '/api/git/browse') return json(res, 200, git.browse(url.searchParams.get('path') || ''))

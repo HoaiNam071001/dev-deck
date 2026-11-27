@@ -135,3 +135,46 @@ export interface ReporterStatus {
 export interface JobsConfig { folders: string[]; custom: boolean; recent: string[] }
 
 export interface Overview { config: GitConfig; scan: ScanSummary | null; activity: ActivityItem[] }
+
+// ---- Remotes (GitLab / GitHub): MR / PR ----
+export type RemoteProvider = 'gitlab' | 'github'
+export interface RemoteAccount { id: string; provider: RemoteProvider; name: string; baseUrl: string; user: string; tokenHint: string }
+export type CiState = 'success' | 'failed' | 'running' | 'pending' | 'canceled' | 'none'
+export interface RemotePerson { name: string; username: string }
+export interface ChangeRequest {
+  key: string
+  accountId: string
+  provider: RemoteProvider
+  number: number
+  title: string
+  url: string
+  project: string
+  source: string
+  target: string
+  author: RemotePerson
+  draft: boolean
+  state: 'opened' | 'merged' | 'closed'
+  createdAt: string
+  updatedAt: string
+  /** null = chưa biết */
+  conflict: boolean | null
+  ci: CiState
+  approvals: { have: number; need: number | null; approved: boolean; changes: boolean } | null
+  threads: { resolved: number; total: number } | null
+  reviewers: RemotePerson[]
+  mine: boolean
+  reviewMe: boolean
+}
+export interface ReviewComment { author: RemotePerson; body: string; createdAt: string; url: string | null }
+export interface ReviewThread { id: string; resolved: boolean; outdated: boolean; path: string | null; line: number | null; comments: ReviewComment[] }
+export interface ChangeRequestDetail extends ChangeRequest {
+  description: string
+  threadList: ReviewThread[]
+  checks: { name: string; status: CiState | 'none' }[]
+  approvedBy: string[]
+  mergeStatus: string
+  pipelineUrl: string | null
+}
+export interface CrListResponse { items: ChangeRequest[]; errors: { accountId: string; name: string; error: string }[]; fetchedAt: string }
+export type CrScope = 'mine' | 'review' | 'assigned'
+export type CrState = 'opened' | 'merged' | 'closed'

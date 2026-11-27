@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource } from './types'
+import type { ChangeRequestDetail, CrListResponse, CrScope, CrState, RemoteAccount, ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource } from './types'
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
@@ -30,6 +30,16 @@ export const api = {
     request<JobsConfig>('/api/jobs/config', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ folders }) }),
   stopJob: (pid: number, start: string) =>
     request<{ ok: true }>('/api/jobs/stop', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pid, start }) }),
+  remoteAccounts: () => request<RemoteAccount[]>('/api/remotes/accounts'),
+  addRemoteAccount: (a: { provider: string; name: string; baseUrl: string; token: string }) =>
+    request<RemoteAccount>('/api/remotes/accounts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'add', ...a }) }),
+  removeRemoteAccount: (id: string) =>
+    request<RemoteAccount[]>('/api/remotes/accounts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'remove', id }) }),
+  testRemoteAccount: (id: string) =>
+    request<{ ok: true; user: string }>('/api/remotes/accounts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'test', id }) }),
+  changeRequests: (account: string, scope: CrScope, state: CrState) =>
+    request<CrListResponse>(`/api/remotes/crs?account=${encodeURIComponent(account)}&scope=${scope}&state=${state}`),
+  changeRequest: (key: string) => request<ChangeRequestDetail>('/api/remotes/cr?key=' + encodeURIComponent(key)),
   config: () => request<GitConfig>('/api/git/config'),
   overview: () => request<Overview>('/api/overview'),
   browse: (path: string) => request<BrowseResult>('/api/git/browse?path=' + encodeURIComponent(path)),

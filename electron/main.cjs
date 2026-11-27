@@ -1,5 +1,5 @@
 // Tiến trình chính của app desktop: chạy server DevDeck nội bộ (cổng ngẫu nhiên, chỉ 127.0.0.1) rồi mở cửa sổ không viền trỏ tới nó.
-const { app, BrowserWindow, shell, Menu, dialog, ipcMain, Tray, Notification, nativeImage, screen } = require('electron')
+const { app, BrowserWindow, shell, Menu, dialog, ipcMain, Tray, Notification, nativeImage, screen, safeStorage } = require('electron')
 const { execFile, spawn } = require('child_process')
 const fs = require('fs')
 const path = require('path')
@@ -106,6 +106,8 @@ function updateTray() {
 
 async function createWindow() {
   const { start } = require('../server/index.js')
+  // Token GitLab / GitHub được mã hóa bằng khóa của hệ điều hành (DPAPI / Keychain) khi có thể
+  if (safeStorage.isEncryptionAvailable()) require('../server/remotes').setCrypto({ encrypt: (t) => safeStorage.encryptString(t), decrypt: (b) => safeStorage.decryptString(b) })
   // Chế độ dev: API cố định 4317 (Vite proxy /api về đó), giao diện lấy từ Vite để có hot reload
   const devUrl = process.env.DEVDECK_DEV_URL
   const { server, port } = await start(devUrl ? 4317 : 0)

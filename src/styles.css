@@ -127,11 +127,11 @@
 .legend i, .tip i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
 
 /* ---------- Điều khiển ---------- */
-select, input[type=search], input[type=text], input[type=number], input:not([type]), textarea {
+select, input[type=search], input[type=text], input[type=password], input[type=number], input:not([type]), textarea {
   background: var(--bg-chrome); border: 1px solid var(--border-strong); border-radius: var(--radius); color: var(--fg); font-size: var(--text);
 }
 select { height: 30px; padding: 0 8px; background: var(--surface); }
-input:not([type]), input[type=text], input[type=search], input[type=number] { height: 28px; padding: 0 8px; box-sizing: border-box; }
+input:not([type]), input[type=text], input[type=search], input[type=password], input[type=number] { height: 28px; padding: 0 8px; box-sizing: border-box; }
 textarea { padding: 7px 9px; font-family: var(--font-mono); resize: none; }
 .btn, .icon-btn { height: 30px; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--raised); color: var(--fg); font-size: var(--text); font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .btn:hover:not(:disabled), .icon-btn:hover:not(:disabled) { background: #2E3135; }
@@ -228,6 +228,7 @@ textarea { padding: 7px 9px; font-family: var(--font-mono); resize: none; }
 
 /* Hộp thoại chọn thư mục (dùng đến khi có hộp thoại hệ thống ở giai đoạn 6b) */
 dialog.modal { margin: auto; /* Tailwind preflight đặt margin 0 nên hộp thoại bị dính góc, cần auto để canh giữa */ width: min(720px, calc(100vw - 32px)); height: min(560px, calc(100vh - 48px)); padding: 0; border: 1px solid var(--border-pop); border-radius: var(--radius-xl); background: var(--surface); color: var(--fg); overflow: hidden; }
+dialog.modal.modal-wide { width: min(1240px, calc(100vw - 48px)); height: calc(100vh - 48px); }
 dialog.modal[open] { display: flex; flex-direction: column; }
 dialog.modal::backdrop { background: rgba(8,9,10,.6); }
 .modal-head { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }

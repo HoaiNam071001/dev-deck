@@ -70,6 +70,7 @@ const NAV: { to: Route; label: string; icon: string; n: string }[] = [
   { to: '/ai', label: 'AI', icon: 'ai', n: '2' },
   { to: '/git', label: 'Git', icon: 'git', n: '3' },
   { to: '/jobs', label: 'Job', icon: 'terminal', n: '4' },
+  { to: '/remotes', label: 'Remotes', icon: 'merge', n: '5' },
 ]
 
 function TitleBar() {
@@ -170,6 +171,7 @@ export function Shell({ children }: { children: ReactNode }) {
       else if (k === '2') go('/ai')
       else if (k === '3') go('/git')
       else if (k === '4') go('/jobs')
+      else if (k === '5') go('/remotes')
       else if (k === 'k') { e.preventDefault(); setState({ palette: !getState().palette }) }
       else if (k === 'r') { e.preventDefault(); setState({ pending: 'rescan' }); navigate('/git') }
     }
@@ -178,7 +180,7 @@ export function Shell({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    document.title = { '/': 'Tổng quan', '/ai': 'AI', '/git': 'Git', '/jobs': 'Job' }[route] + ' · DevDeck'
+    document.title = { '/': 'Tổng quan', '/ai': 'AI', '/git': 'Git', '/jobs': 'Job', '/remotes': 'Remotes' }[route] + ' · DevDeck'
   }, [route])
 
   return (
