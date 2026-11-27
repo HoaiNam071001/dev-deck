@@ -20,7 +20,7 @@ Việc phát sinh: thêm vào [00-backlog.md](00-backlog.md) bất cứ lúc nà
 | 10 | Git: stash, worktree, diff theo hunk, thao tác hàng loạt | [10-git-workflow.md](10-git-workflow.md) | chưa |
 | 11 | Token AI theo nhánh git / theo MR | [11-token-by-branch.md](11-token-by-branch.md) | chưa |
 | 12 | Chạy script npm ngay trong app | [12-npm-scripts.md](12-npm-scripts.md) | chưa |
-| 13 | Tích hợp Jira: chip ticket, tạo nhánh từ ticket, chuyển trạng thái | [13-jira.md](13-jira.md) | chưa |
+| 13 | Tích hợp Jira: chip ticket, tạo nhánh từ ticket, chuyển trạng thái, theo dõi thay đổi ticket | [13-jira.md](13-jira.md) | chưa |
 
 ## Nguyên tắc xuyên suốt
 

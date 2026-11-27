@@ -3,7 +3,7 @@ import { api } from '../api'
 import { unresolved } from '../components/RemoteBits'
 import type { ChangeRequest } from '../types'
 import { systemNotify } from './platform'
-import { currentRoute } from './router'
+import { currentRoute, navigate } from './router'
 import { queueCounts, reviewQueue, waitAlerts, type WaitSeen } from './reviewQueue'
 import { setState, toast } from './store'
 
@@ -118,8 +118,16 @@ async function poll() {
   const first = events[0]
   const title = events.length === 1 ? first.title : `${events.length} cập nhật MR / PR`
   const body = events.length === 1 ? first.body : events.slice(0, 3).map((e) => `${e.title}: ${e.body}`).join('\n')
-  systemNotify(title, body)
-  toast({ kind: events.some((e) => e.title === 'Pipeline lỗi' || e.title === 'MR bị conflict' || e.title === 'Review trễ hạn') ? 'err' : 'ok', title, detail: body })
+  // Mọi sự kiện cùng một MR / PR thì bấm vào mở thẳng MR / PR đó; nhiều MR thì mở tab Remotes
+  const target = events.every((e) => e.key === first.key) ? first.key : ''
+  systemNotify(title, body, target)
+  toast({ kind: events.some((e) => e.title === 'Pipeline lỗi' || e.title === 'MR bị conflict' || e.title === 'Review trễ hạn') ? 'err' : 'ok', title, detail: body, onOpen: () => openRemoteCr(target) })
+}
+
+/** Mở tab Remotes; có `key` thì mở luôn chi tiết MR / PR đó (trang Remotes tự bỏ bộ lọc nếu cần). */
+export function openRemoteCr(key: string) {
+  setState({ openRemote: key || null })
+  navigate('/remotes')
 }
 
 /** Poll nền MR / PR của tôi và cần tôi review, báo khi có thay đổi (mount một lần ở App). */

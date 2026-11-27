@@ -18,7 +18,7 @@ export interface DesktopBridge {
   updateInstall?: () => Promise<void>
   onUpdateStatus?: (fn: (s: UpdateStatus) => void) => () => void
   pickFolder?: () => Promise<string[]>
-  notify?: (title: string, body: string) => void
+  notify?: (title: string, body: string, target?: string) => void
   setAttention?: (n: number) => void
   setReviewWaiting?: (n: number) => void
   onCommand?: (fn: (cmd: string) => void) => () => void
@@ -32,7 +32,8 @@ export interface DesktopBridge {
 export const bridge = (): DesktopBridge | undefined => (window as unknown as { devdeck?: DesktopBridge }).devdeck
 /** Báo lỗi ra hệ thống khi cửa sổ không được xem (người dùng tắt được ở trang Tổng quan). */
 export const notifyEnabled = () => { try { return localStorage.getItem('notify') !== '0' } catch { return true } }
-export function systemNotify(title: string, body: string) { if (notifyEnabled()) bridge()?.notify?.(title, body) }
+/** `target`: khóa MR / PR; bấm vào thông báo hệ thống thì đưa cửa sổ lên và mở MR / PR đó. */
+export function systemNotify(title: string, body: string, target?: string) { if (notifyEnabled()) bridge()?.notify?.(title, body, target) }
 export const revealLabel = isMac ? 'Hiện trong Finder' : 'Hiện trong Explorer'
 
 export async function copyText(text: string): Promise<boolean> {

@@ -223,6 +223,8 @@ textarea { padding: 7px 9px; font-family: var(--font-mono); resize: none; }
 .toast-ic { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex: none; }
 .toast-ic.ok { background: rgba(48,207,67,.16); color: var(--accent); } .toast-ic.err { background: rgba(242,107,107,.16); color: var(--danger); }
 .toast-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.toast-open { background: none; border: 0; padding: 0; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+.toast-open:hover .toast-t { text-decoration: underline; }
 .toast-t { font-weight: 500; }
 .toast-d { font: var(--text-sm) var(--font-mono); color: var(--fg-mute); white-space: pre-wrap; max-height: 80px; overflow: hidden; word-break: break-word; }
 .toast .ghost { align-self: flex-start; font-size: var(--text-sm); }

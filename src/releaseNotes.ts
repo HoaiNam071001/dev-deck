@@ -9,10 +9,13 @@ export const RELEASE_NOTES: ReleaseNote[] = [
   {
     version: '2.5.0',
     date: '2026-11-27',
-    title: 'Hoàn thiện: biểu đồ so sánh dự án, xuất CSV, chạy nền',
+    title: 'Hàng đợi review, so sánh dự án, xuất CSV, chạy nền',
     items: [
+      { tag: 'new', text: 'Remotes có tab hàng đợi review: MR / PR chờ bạn xem, thời gian chờ, độ lớn và trạng thái riêng (chưa xem / đang xem / chờ tác giả sửa / cần xem lại). Quá hạn thì nhắc một lần; số MR chờ hiện ở Tổng quan, thanh bên và khay hệ thống.' },
+      { tag: 'new', text: 'Thanh bên Remotes có badge số thread review mới chưa xem.' },
       { tag: 'new', text: 'Biểu đồ token có chế độ "So sánh dự án" (6 dự án lớn nhất + Khác); xuất CSV kèm cột theo dự án, hoặc cả bảng nhà cung cấp / model / dự án ở tab Chi tiết.' },
       { tag: 'new', text: 'Chạy DevDeck nền không cần Electron: `npm run service:install` (Task Scheduler).' },
+      { tag: 'fix', text: 'Bấm vào thông báo MR / PR (hệ thống hoặc toast) giờ mở đúng MR / PR đó, kể cả khi bộ lọc Remotes đang che nó.' },
       { tag: 'improve', text: 'Banner lỗi ở mọi trang có nút "Thử lại"; danh sách hơn 200 repo chỉ dựng các hàng đang xem nên cuộn mượt.' },
       { tag: 'improve', text: 'Chữ phụ và màu lỗi sáng hơn để đạt tương phản 4.5:1 trên mọi nền khối; nút xóa dùng chữ tối cho dễ đọc.' },
     ],

@@ -12,7 +12,7 @@ import { Chip, ErrorBanner, Icon, Kpi, KpiStrip, NavLabel, Segmented, Select, Sp
 import { relTime } from '../lib/format'
 import { usePersisted } from '../lib/persist'
 import { GROUP_BYS, groupChangeRequests, projectKey, projectsOf, type CrGroup, type GroupBy, type ProjectEntry } from '../lib/remoteGroups'
-import { toast } from '../lib/store'
+import { setState as setStore, toast, useStore } from '../lib/store'
 import type { ChangeRequest, CrScope, CrState } from '../types'
 
 const SCOPES: CrScope[] = ['mine', 'review', 'assigned', 'all']
@@ -118,6 +118,15 @@ export function RemotesPage() {
   const [openKey, setOpenKey] = useState<string | null>(null)
   const [confirmDel, setConfirmDel] = useState<string | null>(null)
   const [confirmWrite, setConfirmWrite] = useState<string | null>(null)
+
+  // Bấm thông báo MR / PR: bỏ bộ lọc có thể che MR đó (account, phạm vi, trạng thái, tab) rồi mở chi tiết
+  const wanted = useStore((s) => s.openRemote)
+  useEffect(() => {
+    if (!wanted) return
+    setAccount('all'); setScope('all'); setState('opened'); setTab('mr'); setProject(null); setQuery('')
+    setOpenKey(wanted)
+    setStore({ openRemote: null })
+  }, [wanted, setAccount, setScope, setState, setTab, setProject, setQuery])
 
   const pinned = useMemo(() => new Set(pinnedArr), [pinnedArr])
   const hidden = useMemo(() => new Set(hiddenArr), [hiddenArr])

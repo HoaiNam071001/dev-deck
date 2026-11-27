@@ -52,6 +52,7 @@ Thêm provider mới = thêm một file cùng 3 hàm `whoami`, `list`, `detail` 
 
 - [x] Thông báo hệ thống + toast khi MR của tôi có thread/comment mới, pipeline lỗi, conflict, hoặc có MR mới cần tôi review (`src/lib/remoteWatch.ts`, poll 2 phút ở App, theo công tắc thông báo; chưa thử token thật)
 - [x] Nhớ trạng thái đã xem trong localStorage (`remote.seen`) để không báo lặp; lần đầu chỉ ghi mốc, không báo; account lỗi thì bỏ qua lượt đó
+- [x] Sửa: bấm thông báo không mở được MR / PR – thông báo hệ thống và toast không có hành động khi bấm. Nay `notify(title, body, target)` + `Notification` `click` đưa cửa sổ lên và gửi `open:<khóa>`; toast có `onOpen`; `RemotesPage` nhận `openRemote` từ store, bỏ bộ lọc (account / phạm vi / trạng thái / tab / project / tìm kiếm) rồi mở chi tiết. Nhiều MR cùng báo một lúc thì chỉ mở tab Remotes (chưa kiểm bằng mắt trên app Electron)
 
 ## Giai đoạn 9d — Thao tác ghi (cần bật riêng trong cài đặt)
 

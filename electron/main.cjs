@@ -65,6 +65,8 @@ function openTerminal(dir) {
   else spawn('x-terminal-emulator', [], { cwd: dir, detached: true, stdio: 'ignore' }).unref()
 }
 
+const liveNotes = new Set()
+
 function setupIpc() {
   const guard = (fn) => async (_e, p) => { try { fn(knownRepo(p)) } catch (e) { return String(e.message || e) } }
   ipcMain.handle('devdeck:version', () => app.getVersion())
@@ -82,10 +84,23 @@ function setupIpc() {
     else if (cmd === 'maximize') w.isMaximized() ? w.unmaximize() : w.maximize()
     else if (cmd === 'close') w.close()
   })
-  ipcMain.on('devdeck:notify', (_e, title, body) => {
+  ipcMain.on('devdeck:notify', (_e, title, body, target) => {
     // Chỉ báo khi cửa sổ không đang được xem; việc bật/tắt do giao diện quyết định
     if (win && win.isFocused()) return
-    if (Notification.isSupported()) new Notification({ title: String(title).slice(0, 120), body: String(body).slice(0, 300) }).show()
+    if (!Notification.isSupported()) return
+    const n = new Notification({ title: String(title).slice(0, 120), body: String(body).slice(0, 300) })
+    // Giữ tham chiếu tới khi đóng, nếu không bị thu gom rác thì bấm vào không có tác dụng
+    liveNotes.add(n)
+    const done = () => liveNotes.delete(n)
+    n.on('close', done)
+    n.on('failed', done)
+    n.on('click', () => {
+      done()
+      showWindow()
+      // `target` là khóa MR / PR do giao diện gửi; chỉ chuyển tiếp lại cho giao diện, không dùng ở đây
+      win?.webContents.send('devdeck:command', 'open:' + String(target || '').slice(0, 500))
+    })
+    n.show()
   })
   ipcMain.on('devdeck:attention', (_e, n) => { attention = Math.max(0, n | 0); updateTray() })
   ipcMain.on('devdeck:reviewWaiting', (_e, n) => { reviewWaiting = Math.max(0, n | 0); updateTray() })

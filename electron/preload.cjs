@@ -8,7 +8,7 @@ contextBridge.exposeInMainWorld('devdeck', {
   openTerminal: (p) => ipcRenderer.invoke('devdeck:openTerminal', p),
   reveal: (p) => ipcRenderer.invoke('devdeck:reveal', p),
   pickFolder: () => ipcRenderer.invoke('devdeck:pickFolder'),
-  notify: (title, body) => ipcRenderer.send('devdeck:notify', String(title), String(body || '')),
+  notify: (title, body, target) => ipcRenderer.send('devdeck:notify', String(title), String(body || ''), target ? String(target) : ''),
   setAttention: (n) => ipcRenderer.send('devdeck:attention', Number(n) || 0),
   setReviewWaiting: (n) => ipcRenderer.send('devdeck:reviewWaiting', Number(n) || 0),
   minimize: () => ipcRenderer.send('devdeck:win', 'minimize'),

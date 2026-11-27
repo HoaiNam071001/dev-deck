@@ -36,9 +36,23 @@ Lưu account giống Remotes (`server/remotes/store.js`): token mã hóa bằng 
 - [ ] Ghi worklog: thời gian + ghi chú; (tùy chọn) gợi ý thời gian từ khoảng commit / phiên AI trên nhánh đó ([11](11-token-by-branch.md))
 - [ ] Mọi thao tác ghi vào `data/audit.log` (không ghi nội dung comment, chỉ độ dài); xác nhận hai bước khi bật ghi
 
+## Giai đoạn 13d — Theo dõi thay đổi ticket (chỉ đọc, làm ngay sau 13a) *(người dùng yêu cầu 2026-11-27)*
+
+Mục tiêu: thấy ticket của mình, ghim thêm ticket cần để mắt, và biết khi chúng đổi để làm tiếp, không cần mở Jira.
+
+- [ ] Phạm vi theo dõi = ticket "Việc của tôi" (13a, chưa Done) + ticket đã ghim. Ghim lưu cục bộ (`jira.pinned` trong cấu hình, không ghi gì lên Jira); nút ghim trên chip / panel, ô nhập mã để ghim ticket của người khác
+- [ ] Server: một lần gọi JQL `key in (...)` lấy `status, assignee, priority, sprint, summary, updated, comment` (giới hạn 50 key, dùng chung cache 60 giây của 13a); với ticket có `updated` mới hơn mốc đã xem mới gọi `/issue/{key}?fields=comment&expand=changelog` để biết cái gì đổi
+- [ ] Sự kiện báo: **trạng thái đổi**, **comment mới** (tên người viết + vài dòng đầu, bỏ comment của chính mình), **đổi người nhận / ưu tiên / sprint**. Không báo sửa mô tả / tiêu đề (đã loại khỏi phạm vi)
+- [ ] Mốc "đã xem" theo từng ticket (`jira.seen[key] = {updated, commentId}`), lưu cục bộ; mở panel ticket hoặc bấm "đánh dấu đã xem" thì cập nhật mốc
+- [ ] Poll 2 phút khi app đang mở, dùng lại `src/lib/remoteWatch.ts` (công tắc thông báo, toast + thông báo hệ thống, gộp nhiều thay đổi một lần); lần đầu ghim chỉ lấy mốc, không báo dồn
+- [ ] Hộp tin "Có gì mới": mỗi ticket một khối, các dòng thay đổi kể từ lần xem cuối (vd `In Progress → In Review`, `Anh B: "đã sửa xong, xem lại"`); badge số ticket chưa xem trên sidebar (giống badge thread ở 9)
+- [ ] "Làm tiếp": từ ticket mở nhánh local đã nối (mã trong tên nhánh) hoặc MR / PR đã nối; chưa có nhánh thì nút "Tạo nhánh" (13b)
+- [ ] Test: so sánh trước / sau ra đúng sự kiện, bỏ comment của mình, lần đầu không báo dồn, ADF → chữ thuần cho comment Cloud
+
 ## Tiêu chí xong
 
 - Nhánh `feature/ABC-123-...` hiện chip ABC-123 đúng trạng thái trên Jira.
+- Ticket đã ghim hoặc được giao cho tôi đổi trạng thái / có comment / đổi người nhận trong lúc app mở thì có thông báo, và hộp "Có gì mới" cho biết đổi gì, từ nhánh / MR nào để làm tiếp.
 - Tạo được nhánh từ ticket và MR mang mã ticket.
 - Chuyển trạng thái / worklog chỉ chạy được khi đã bật ghi cho account.
 
@@ -47,4 +61,5 @@ Lưu account giống Remotes (`server/remotes/store.js`): token mã hóa bằng 
 - **Rate limit Jira Cloud**: gom ticket bằng JQL `key in (...)`, cache 60 giây, giới hạn 50 key mỗi lần gọi.
 - **Regex bắt nhầm** (`UTF-8`, `ISO-8601`) → chỉ nhận project key có thật.
 - **Workflow mỗi project khác nhau**: không cứng tên trạng thái, luôn lấy transitions từ API.
+- **Poll nhiều ticket tốn quota** (13d): chỉ gọi changelog / comment cho ticket có `updated` đổi; dừng poll khi app ẩn.
 - **Cloud và Data Center khác API** (v3 dùng ADF cho mô tả / comment, v2 dùng chữ thuần) → chuyển ADF sang chữ thuần khi hiển thị, gửi comment đúng định dạng từng bản.

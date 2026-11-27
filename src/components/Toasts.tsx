@@ -8,10 +8,17 @@ export function Toasts() {
       {toasts.map((t) => (
         <div key={t.id} className="toast" role={t.kind === 'err' ? 'alert' : 'status'}>
           <span className={'toast-ic ' + t.kind}><Icon name={t.kind === 'ok' ? 'check' : 'alert'} size={12} /></span>
-          <span className="toast-body">
-            <span className="toast-t">{t.title}</span>
-            {t.detail && <span className="toast-d">{t.detail}</span>}
-          </span>
+          {t.onOpen ? (
+            <button className="toast-body toast-open" title="Bấm để mở" onClick={() => { dismissToast(t.id); t.onOpen!() }}>
+              <span className="toast-t">{t.title}</span>
+              {t.detail && <span className="toast-d">{t.detail}</span>}
+            </button>
+          ) : (
+            <span className="toast-body">
+              <span className="toast-t">{t.title}</span>
+              {t.detail && <span className="toast-d">{t.detail}</span>}
+            </span>
+          )}
           <button className="ghost" onClick={() => dismissToast(t.id)}>Đóng</button>
         </div>
       ))}

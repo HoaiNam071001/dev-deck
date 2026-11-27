@@ -4,7 +4,7 @@ import { Link, navigate, useRoute, type Route } from '../lib/router'
 import { usePersisted } from '../lib/persist'
 import { bridge, MOD, type UpdateStatus } from '../lib/platform'
 import { getState, openPalette, setState, useStore } from '../lib/store'
-import { markRemotesRead } from '../lib/remoteWatch'
+import { markRemotesRead, openRemoteCr } from '../lib/remoteWatch'
 import { CommandPalette } from './CommandPalette'
 import { ReleaseNotesModal } from './ReleaseNotesModal'
 import { Toasts } from './Toasts'
@@ -16,7 +16,10 @@ function useDesktopSync() {
   useEffect(() => { bridge()?.setAttention?.(attention) }, [attention])
   const waiting = useStore((s) => s.reviewQueue.waiting)
   useEffect(() => { bridge()?.setReviewWaiting?.(waiting) }, [waiting])
-  useEffect(() => bridge()?.onCommand?.((cmd) => { if (cmd === 'rescan') { setState({ pending: 'rescan' }); navigate('/git') } }), [])
+  useEffect(() => bridge()?.onCommand?.((cmd) => {
+    if (cmd === 'rescan') { setState({ pending: 'rescan' }); navigate('/git') }
+    else if (cmd.startsWith('open:')) openRemoteCr(cmd.slice(5))
+  }), [])
 }
 
 /** Nút kiểm tra / cài bản mới trên thanh trạng thái (chỉ có trong app desktop). */
