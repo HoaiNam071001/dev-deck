@@ -218,7 +218,7 @@ textarea { padding: 7px 9px; font-family: var(--font-mono); resize: none; }
 .pal-item.on { background: var(--selected); }
 .pal-hint { margin-left: auto; font: var(--text-sm) var(--font-mono); color: var(--fg-mute); }
 
-.toasts { position: absolute; right: 16px; bottom: 36px; z-index: 60; display: flex; flex-direction: column; gap: 8px; width: 340px; pointer-events: none; }
+.toasts { position: fixed; inset: auto 16px 36px auto; margin: 0; padding: 0; border: 0; background: transparent; color: inherit; overflow: visible; z-index: 60; display: flex; flex-direction: column; gap: 8px; width: 340px; pointer-events: none; }
 .toast { pointer-events: auto; display: flex; gap: 10px; padding: 12px 14px; background: var(--selected); border: 1px solid var(--border-pop); border-radius: var(--radius-lg); box-shadow: 0 12px 32px rgba(0,0,0,.5); }
 .toast-ic { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex: none; }
 .toast-ic.ok { background: rgba(48,207,67,.16); color: var(--accent); } .toast-ic.err { background: rgba(242,107,107,.16); color: var(--danger); }

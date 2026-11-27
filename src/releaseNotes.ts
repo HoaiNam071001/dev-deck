@@ -9,9 +9,14 @@ export const RELEASE_NOTES: ReleaseNote[] = [
   {
     version: '2.6.0',
     date: '2026-11-27',
-    title: 'Hàng đợi review: phía tác giả',
+    title: 'Git: stash, worktree, diff theo hunk',
     items: [
+      { tag: 'new', text: 'Tab Stash trong chi tiết repo: cất thay đổi đang làm dở (kèm ghi chú, tùy chọn gồm tệp mới), xem tệp và diff của từng stash, áp dụng, lấy lại hoặc xóa. Chuyển nhánh khi còn thay đổi giờ có nút "Stash rồi chuyển".' },
+      { tag: 'new', text: 'Tab Worktree: làm song song nhiều nhánh trên cùng một repo, mỗi nhánh một thư mục. Thêm, mở bằng VS Code / Terminal / Explorer, xóa (cảnh báo khi còn thay đổi chưa commit) và dọn worktree hỏng. Worktree được gom vào repo chính thay vì hiện thành repo riêng, và job chạy trong worktree hiện đúng nhánh.' },
+      { tag: 'new', text: 'Xem diff từng tệp ngay trong tab Thay đổi (số dòng, màu +/−, gập hunk) và stage / bỏ stage từng hunk. Phím tắt: ↑↓ chọn tệp, `]` `[` hunk kế / trước, `s` stage hunk, `u` bỏ stage hunk.' },
       { tag: 'new', text: 'Hàng đợi review có thêm chế độ "MR của tôi đang chờ": mỗi MR / PR của bạn hiện từng reviewer chưa phản hồi và đã chờ bao lâu, màu theo mức chờ.' },
+      { tag: 'fix', text: 'MR đã conflict từ lâu không còn bị báo "MR bị conflict" lặp lại khi GitLab / GitHub tạm trả trạng thái "chưa rõ".' },
+      { tag: 'fix', text: 'Thông báo (toast) luôn hiện phía trên hộp thoại đang mở thay vì bị che.' },
     ],
   },
   {

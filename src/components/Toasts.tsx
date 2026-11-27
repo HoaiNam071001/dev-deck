@@ -1,10 +1,22 @@
+import { useEffect, useRef } from 'react'
 import { dismissToast, useStore } from '../lib/store'
 import { Icon } from './ui'
 
 export function Toasts() {
   const toasts = useStore((s) => s.toasts)
+  const ref = useRef<HTMLDivElement>(null)
+  // Modal dùng showModal() nên nằm ở top layer, z-index không vượt được. Toast là popover (cũng top layer);
+  // hiện lại mỗi khi có toast mới để nó nằm trên modal đang mở.
+  useEffect(() => {
+    const el = ref.current as (HTMLDivElement & { showPopover?: () => void; hidePopover?: () => void }) | null
+    if (!el?.showPopover) return
+    try {
+      if (el.matches(':popover-open')) el.hidePopover?.()
+      if (toasts.length) el.showPopover()
+    } catch { /* trình duyệt không hỗ trợ: toast vẫn hiện bằng z-index */ }
+  }, [toasts])
   return (
-    <div className="toasts" role="region" aria-label="Thông báo">
+    <div ref={ref} className="toasts" role="region" aria-label="Thông báo" {...({ popover: 'manual' } as object)}>
       {toasts.map((t) => (
         <div key={t.id} className="toast" role={t.kind === 'err' ? 'alert' : 'status'}>
           <span className={'toast-ic ' + t.kind}><Icon name={t.kind === 'ok' ? 'check' : 'alert'} size={12} /></span>
