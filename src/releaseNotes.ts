@@ -9,8 +9,12 @@ export const RELEASE_NOTES: ReleaseNote[] = [
   {
     version: '2.8.0',
     date: '2026-11-28',
-    title: 'Token AI theo nhánh, thao tác Git hàng loạt, chạy script npm',
+    title: 'Jira, thông báo khi AI xong, token AI theo nhánh, Git hàng loạt, chạy script npm',
     items: [
+      { tag: 'new', text: 'Trang Jira riêng (Cmd/Ctrl+6): kết nối Jira Cloud hoặc Server / Data Center bằng token, xem ticket giao cho bạn và ticket đã ghim (dán link hoặc mã là ghim được), theo dõi việc của người khác theo người hoặc JQL, và nhận thông báo khi ticket đổi trạng thái, có comment mới, đổi người nhận / ưu tiên / sprint. Mọi thứ lưu trên máy, mặc định chỉ đọc.' },
+      { tag: 'new', text: 'Chip ticket Jira ở tên nhánh và MR / PR; bấm để xem chi tiết, mở nhánh hoặc MR đã nối, hoặc tạo nhánh từ ticket (mẫu tên sửa được). Tạo MR / PR tự điền tiêu đề và link ticket.' },
+      { tag: 'new', text: 'Bật ghi cho account Jira (xác nhận hai bước) để đổi trạng thái ngay trên dòng ticket, gửi comment và ghi giờ; có gợi ý chuyển "In Review" / "Done" theo MR và gợi ý thời gian từ commit của bạn.' },
+      { tag: 'new', text: 'Thông báo khi AI chạy xong một câu hỏi (Claude Code qua hook Stop, Codex / Gemini / Antigravity qua log), bật tắt theo nguồn và theo thư mục; mở bằng nút chuông ở trang AI hoặc lệnh "Thông báo AI" trong Cmd/Ctrl+K.' },
       { tag: 'new', text: 'Tab Script ở chi tiết repo: chạy script của package.json (cả package con), thêm tham số, xem log màu có tìm và sao chép, ghim script hay dùng, mở nhanh cổng dev server và dừng được. Báo khi script chạy lâu kết thúc; thoát app thì các script đang chạy tự dừng.' },
       { tag: 'new', text: 'Tab Chi tiết của trang AI có bảng "Theo nhánh" và "Phiên ngốn nhiều nhất", thanh bên lọc theo nhánh khi đã chọn dự án. Số liệu theo nhánh có với Claude Code và Codex.' },
       { tag: 'new', text: 'Chi tiết repo hiện token AI của nhánh đang mở (hôm nay / tổng) và token của từng nhánh ở tab Nhánh; chi tiết MR / PR hiện token của nhánh nguồn nếu máy có bản clone.' },

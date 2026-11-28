@@ -27,9 +27,9 @@ Khi một phiên AI (Claude, Codex, Gemini, Antigravity) trả lời xong một 
 - [x] Danh sách repo / thư mục đã thấy trong log AI (gộp theo `projectPath`), mỗi dòng có công tắc; thêm quy tắc cho thư mục cha; hiển thị rõ dòng nào đang thừa hưởng từ thư mục cha
 - [x] Server: `GET/PUT /api/ai/notify` (validate: đường dẫn tuyệt đối, tối đa ~200 quy tắc, ghi `data/audit.log`); bộ lọc theo quy tắc áp ở server trước khi đưa sự kiện vào hàng đợi
 - [x] Poll `/api/ai/done` (4 giây/lần; server đã lọc theo công tắc, nguồn, thư mục, ngưỡng), gọi `devdeck:notify` với target `ai:<id>`; xử lý `open:ai:...` → chuyển sang trang AI
-- [ ] Ghi chú phát hành (làm khi chốt bản)
+- [x] Ghi chú phát hành (gộp vào mục 2.8.0 trong `src/releaseNotes.ts`)
 - [ ] Kiểm bằng mắt panel Thông báo trong app; thử trên log thật của Codex / Gemini / Antigravity (isDone mới dựa trên fixture + suy đoán định dạng)
-- [ ] Lệnh "Thông báo AI" trong CommandPalette
+- [x] Lệnh "Thông báo AI" trong CommandPalette (mở trang AI và bật panel Thông báo)
 
 ## Tiêu chí xong
 - Chạy một câu hỏi dài > ngưỡng trên từng nguồn → đúng 1 thông báo khi xong, không báo giữa chừng khi AI đang gọi tool

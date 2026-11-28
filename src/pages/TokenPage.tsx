@@ -9,7 +9,7 @@ import { ErrorBanner, Icon, Kpi, KpiStrip, NavLabel, Segmented, Select, ShareBar
 import { ShortNum } from '../components/ShortNum'
 import { dayKey, fmt, relTime } from '../lib/format'
 import { baseName } from '../lib/repo'
-import { useStore } from '../lib/store'
+import { setState, useStore } from '../lib/store'
 import { downloadCsv } from '../lib/csv'
 import { usePersisted } from '../lib/persist'
 import { buckets, byBranch, bySession, filterRows, granOf, group, KEYS, topSeries, PROVIDERS, providerOf, sum, totalOf, type Totals } from '../lib/usage'
@@ -59,6 +59,8 @@ export function TokenPage() {
   const [project, setProject] = usePersisted<string>('ai.project', '', (v) => typeof v === 'string')
   const [provider, setProvider] = usePersisted<string>('ai.provider', '', (v) => typeof v === 'string')
   const [notifyOpen, setNotifyOpen] = useState(false)
+  const wantNotify = useStore((s) => s.openAiNotify)
+  useEffect(() => { if (wantNotify) { setNotifyOpen(true); setState({ openAiNotify: false }) } }, [wantNotify])
   const [branch, setBranch] = useState('')   // lọc theo nhánh, chỉ khi đã chọn dự án; không nhớ giữa các lần mở
   const sources = useLoad(api.usageSources, [], ms, 'usageSources').data ?? []
 

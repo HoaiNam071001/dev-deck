@@ -14,7 +14,7 @@ Việc phát sinh: thêm vào [00-backlog.md](00-backlog.md) bất cứ lúc nà
 | 4 | Thao tác repo: tạo mới, clone, xóa, fetch/pull | [04-git-repo-actions.md](04-git-repo-actions.md) | xong (chưa test UI trên trình duyệt) |
 | 5 | Hoàn thiện: test, a11y, hiệu năng, đóng gói | [05-polish.md](05-polish.md) | xong (chưa kiểm bằng mắt trên trình duyệt: ảo hóa danh sách, biểu đồ so sánh dự án) |
 | 6 | Giao diện mới + chuyển thành desktop app | [06-redesign-desktop.md](06-redesign-desktop.md) | xong |
-| 7 | Mục "AI" đa nhà cung cấp (Claude, Codex, Gemini) | [07-ai-usage.md](07-ai-usage.md) | xong (Codex/Gemini chưa thử trên log thật) |
+| 7 | Mục "AI" đa nhà cung cấp (Claude, Codex, Gemini) | [07-ai-usage.md](07-ai-usage.md) | xong (Codex đã thử trên log thật; Gemini chưa) |
 | 8 | Đọc log token từ Antigravity (đa model: Gemini, Claude…) | [08-antigravity-usage.md](08-antigravity-usage.md) | xong |
 | 9 | Tab Remotes: MR / PR trên GitLab, GitHub | [09-remotes.md](09-remotes.md) | 9a-9d xong code (chưa thử token thật); 9e đang làm: có hàng đợi review + thời gian chờ + độ lớn, còn phía tác giả, ngưỡng sửa được (chưa kiểm bằng mắt) |
 | 10 | Git: stash, worktree, diff theo hunk, thao tác hàng loạt | [10-git-workflow.md](10-git-workflow.md) | một phần: 10a stash, 10b worktree, 10c diff + stage theo hunk xong (chưa kiểm bằng mắt); 10d hàng loạt (pull tất cả, dọn nhánh đã merge, phạm vi repo đã tick) xong code; chưa kiểm bằng mắt |

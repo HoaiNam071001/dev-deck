@@ -27,6 +27,7 @@ function Palette() {
     const list: Item[] = [
       cmd('home', 'Mở Tổng quan', MOD + '1', () => navigate('/')),
       cmd('ai', 'Mở AI', MOD + '2', () => navigate('/ai')),
+      cmd('ai-notify', 'Thông báo AI (báo khi AI chạy xong)', undefined, () => { setState({ openAiNotify: true }); navigate('/ai') }),
       cmd('git', 'Mở Git', MOD + '3', () => navigate('/git')),
       cmd('jobs', 'Mở Job (tiến trình đang chạy)', MOD + '4', () => navigate('/jobs')),
       cmd('jira', 'Mở Jira (ticket của tôi, có gì mới)', MOD + '6', () => navigate('/jira')),

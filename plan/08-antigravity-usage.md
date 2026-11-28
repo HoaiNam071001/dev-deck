@@ -71,42 +71,42 @@ Mục tiêu: bổ sung adapter đọc log token cục bộ của **Antigravity**
 ## 3. Các bước triển khai chi tiết
 
 ### Bước 1: Tạo adapter backend & test fixture
-- [ ] Tạo `server/usage/antigravity.js`:
+- [x] Tạo `server/usage/antigravity.js`:
   - Xuất `{ id: 'antigravity', label: 'Antigravity', root: ROOT, files, parse }`.
   - `files()`: duyệt thư mục cấp 1 trong `ROOT`, thu thập `<ROOT>/<convId>/.system_generated/logs/transcript.jsonl` tồn tại.
   - `parse(text, file)`: lấy `convId` từ cấu trúc đường dẫn (cha cấp 3 của `transcript.jsonl`), duyệt `jsonLines(text, '"PLANNER_RESPONSE"')`, map các dòng hợp lệ thành `UsageRow`.
-- [ ] Đăng ký `require('./antigravity')` vào mảng `ADAPTERS` trong `server/usage/index.js`.
-- [ ] Tạo fixture `server/usage/__fixtures__/antigravity.jsonl` gồm:
+- [x] Đăng ký `require('./antigravity')` vào mảng `ADAPTERS` trong `server/usage/index.js`.
+- [x] Tạo fixture `server/usage/__fixtures__/antigravity.jsonl` gồm:
   - Dòng `USER_INPUT` và `GENERIC` (phải bị bỏ qua).
   - Dòng `PLANNER_RESPONSE` model Gemini có `cache_read_tokens > 0`.
   - Dòng `PLANNER_RESPONSE` model Claude (trong cùng hội thoại) để kiểm chứng tách model.
   - Một dòng JSON lỗi (phải bỏ qua an toàn).
-- [ ] Bổ sung assertion cho `antigravity` trong `server/usage/test.js` và chạy `node server/usage/test.js`.
+- [x] Bổ sung assertion cho `antigravity` trong `server/usage/test.js` và chạy `node server/usage/test.js`.
 
 ### Bước 2: Cập nhật kiểu dữ liệu & logic tổng hợp frontend
-- [ ] `src/types.ts`: cập nhật `export type Provider = 'claude' | 'codex' | 'gemini' | 'antigravity'`.
-- [ ] `src/lib/usage.ts`:
+- [x] `src/types.ts`: cập nhật `export type Provider = 'claude' | 'codex' | 'gemini' | 'antigravity'`.
+- [x] `src/lib/usage.ts`:
   - Thêm `{ id: 'antigravity', label: 'Antigravity', color: '#8B5CF6' }` vào `PROVIDERS`.
   - Cập nhật `Bucket` interface và hàm `buckets()` để có field `antigravity: number` (tránh hardcode thiếu key khi chọn biểu đồ *Theo nhà cung cấp*).
-- [ ] `src/components/StackedChart.tsx`:
+- [x] `src/components/StackedChart.tsx`:
   - Cập nhật union type `keys` (dòng 9) để bao gồm `'antigravity'` (nên dùng `Provider` từ `../types` thay vì liệt kê tay từng provider).
 
 ### Bước 3: Cập nhật UI & tài liệu
-- [ ] `src/pages/TokenPage.tsx`:
+- [x] `src/pages/TokenPage.tsx`:
   - Kiểm tra bộ lọc `Segmented` "Nhà cung cấp", sidebar "Nguồn log", bảng "Theo nhà cung cấp" và "Theo model" tự nhận `antigravity` từ `PROVIDERS` và `/api/usage/sources`.
   - (Tuỳ chọn) Thêm bảng/nhóm "Theo hãng model" nếu muốn gộp model Claude ở cả Claude Code và Antigravity lại xem chung.
-- [ ] `src/pages/HomePage.tsx`:
+- [x] `src/pages/HomePage.tsx`:
   - Cập nhật mô tả thẻ `QuickCard` "AI" (`desc` và `foot`) để liệt kê thêm `Antigravity`.
-- [ ] `README.md`:
+- [x] `README.md`:
   - Bổ sung dòng `Antigravity` (`~/.gemini/antigravity/brain`, biến `ANTIGRAVITY_DIR`) vào bảng "Nguồn log AI".
 
 ---
 
 ## 4. Kiểm thử & tiêu chí hoàn thành
 
-- [ ] `node server/usage/test.js` pass toàn bộ các adapter (`claude`, `codex`, `gemini`, `antigravity`).
-- [ ] `npm run typecheck` (`tsc --noEmit`) và `npm run build` pass không lỗi TypeScript.
-- [ ] Chạy `npm run dev` hoặc `npm start`, kiểm tra:
+- [x] `node server/usage/test.js` pass toàn bộ các adapter (`claude`, `codex`, `gemini`, `antigravity`).
+- [x] `npm run typecheck` (`tsc --noEmit`) và `npm run build` pass không lỗi TypeScript.
+- [~] Chạy `npm run dev` hoặc `npm start`, kiểm tra (đã kiểm `/api/usage/sources` và `/api/usage` trên máy macOS này: Claude + Codex có dữ liệu; máy này chưa có Antigravity nên mục dưới đối chiếu trên máy có log):
   - `GET /api/usage/sources` trả về nguồn `antigravity` với `found: true`, số file và số dòng hợp lý.
   - `GET /api/usage` trả về các row `provider: "antigravity"`, `input` khớp `input_tokens`, `cacheRead` khớp `cache_read_tokens`, `output` khớp `output_tokens`.
   - Trang AI hiển thị nguồn `Antigravity`, lọc theo nhà cung cấp `Antigravity` hoạt động, biểu đồ xếp chồng theo loại token & theo nhà cung cấp hiển thị đúng, bảng "Theo model" tách riêng từng model dùng trong Antigravity.

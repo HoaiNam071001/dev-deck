@@ -98,7 +98,7 @@ plan/     kế hoạch theo giai đoạn
 | Gemini CLI | `~/.gemini/tmp/*/chats` | `GEMINI_DIR` |
 | Antigravity | `~/.gemini/antigravity/brain/*/.system_generated/logs/transcript.jsonl` | `ANTIGRAVITY_DIR` |
 
-Parser Antigravity đã đối chiếu với log thật. Parser Codex và Gemini CLI dựa trên định dạng log đã biết, chỉ kiểm thử bằng fixture (`node server/usage/test.js`), chưa kiểm chứng trên log thật. Antigravity không ghi project trong log nên tên project suy ra từ `~/.gemini/projects.json`, không khớp thì hiện `agy-<mã hội thoại>`. Nguồn không có thư mục thì hiện "chưa có".
+Parser Antigravity đã đối chiếu với log thật. Parser Codex đã chạy thử trên log thật (có số dòng, model, token, nhánh, project hợp lý). Parser Gemini CLI dựa trên định dạng log đã biết, chỉ kiểm thử bằng fixture (`node server/usage/test.js`), chưa kiểm chứng trên log thật. Antigravity không ghi project trong log nên tên project suy ra từ `~/.gemini/projects.json`, không khớp thì hiện `agy-<mã hội thoại>`. Nguồn không có thư mục thì hiện "chưa có".
 
 ## An toàn
 
