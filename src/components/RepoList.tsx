@@ -145,7 +145,16 @@ export function RepoList({ repos, selected, pinned, menu, setMenu, onPick, empty
     <div ref={box} className="min-h-0 flex-1 overflow-y-auto" role="list" aria-label="Danh sách repo">
       {virtual
         ? <div style={{ position: 'relative', height: repos.length * ROW_H }}>{repos.slice(from, to).map((r, k) => row(r, from + k))}</div>
-        : repos.map(row)}
+        : repos.map((r, i) => {
+          const isPin = pinned.includes(r.path)
+          const head = !!pinned.length && repos.some((x) => pinned.includes(x.path)) && repos.some((x) => !pinned.includes(x.path)) && (i === 0 || (pinned.includes(repos[i - 1].path) !== isPin))
+          return (
+            <div key={r.path}>
+              {head && <div className="border-b border-raised px-3.5 pt-2 pb-1 text-[10px] font-semibold tracking-[.08em] text-fg-mute uppercase">{isPin ? 'Đã ghim' : 'Khác'}</div>}
+              {row(r, i)}
+            </div>
+          )
+        })}
       {!repos.length && (typeof empty === 'string' ? <p className="empty">{empty}</p> : empty)}
     </div>
   )

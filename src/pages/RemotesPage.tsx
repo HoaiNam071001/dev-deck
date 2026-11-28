@@ -41,7 +41,7 @@ function CrRow({ c, hideProject, onOpen }: { c: ChangeRequest; hideProject: bool
           <span className="mono">{crRef(c)}</span>·
           {!hideProject && <><span className="truncate" title={c.project}>{c.project}</span>·</>}
           <span className="mono rounded bg-raised px-1.5 text-[11px] text-fg-soft">{c.source}</span>→<span className="mono rounded bg-raised px-1.5 text-[11px] text-fg-soft">{c.target}</span>
-          {!c.mine && <>·<span className="truncate">{c.author.name}</span></>}
+          {!c.mine && <>·<span className="flex size-4 flex-none items-center justify-center rounded-full bg-raised text-[9px] font-semibold text-fg-soft" aria-hidden="true">{(c.author.name || '?').trim().charAt(0).toUpperCase()}</span><span className="truncate">{c.author.name}</span></>}
         </div>
       </div>
       <div className="flex flex-none flex-nowrap items-center justify-end gap-1.5 whitespace-nowrap max-md:hidden">

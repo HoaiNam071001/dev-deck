@@ -9,8 +9,10 @@ const KINDS: { id: string; label: string }[] = [
 const KIND_LABEL = Object.fromEntries(KINDS.map((k) => [k.id, k.label]))
 
 /** Theo dõi việc của người khác: chọn người (tìm trong Jira) hoặc dán JQL. Chỉ lưu cục bộ, người kia không biết. */
-export function JiraFollows({ accounts, follows, onChanged }: { accounts: JiraAccount[]; follows: JiraFollow[]; onChanged: () => void }) {
-  const [open, setOpen] = useState(false)
+export function JiraFollows({ accounts, follows, onChanged, open: openProp, onOpen, hideList }: { accounts: JiraAccount[]; follows: JiraFollow[]; onChanged: () => void; /** Điều khiển từ ngoài (sidebar) */ open?: boolean; onOpen?: (v: boolean) => void; /** Ẩn dòng chip đang theo dõi (đã hiện ở nơi khác) */ hideList?: boolean }) {
+  const [openOwn, setOpenOwn] = useState(false)
+  const open = openProp ?? openOwn
+  const setOpen = (v: boolean) => (onOpen ? onOpen(v) : setOpenOwn(v))
   const [mode, setMode] = useState<'user' | 'jql'>('user')
   const [account, setAccount] = useState(accounts[0]?.id ?? '')
   const [q, setQ] = useState('')
@@ -38,7 +40,7 @@ export function JiraFollows({ accounts, follows, onChanged }: { accounts: JiraAc
 
   return (
     <div className="flex flex-col gap-2 text-[12.5px]">
-      <div className="flex flex-wrap items-center gap-2">
+      {!hideList && <div className="flex flex-wrap items-center gap-2">
         <span className="text-fg-mute">Đang theo dõi:</span>
         {follows.map((f) => (
           <span key={f.id} className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5" title={`${f.jql}\nBáo: ${f.events.map((k) => KIND_LABEL[k] ?? k).join(', ')}`}>
@@ -48,7 +50,7 @@ export function JiraFollows({ accounts, follows, onChanged }: { accounts: JiraAc
         ))}
         {!follows.length && <span className="text-fg-mute">chưa có ai</span>}
         <button className="btn sm" onClick={() => setOpen(!open)} aria-expanded={open}>{open ? 'Đóng' : '+ Theo dõi người / JQL'}</button>
-      </div>
+      </div>}
       {open && (
         <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
           <div className="seg" role="group" aria-label="Cách theo dõi">
