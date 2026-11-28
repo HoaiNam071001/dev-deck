@@ -6,7 +6,7 @@ import { ReporterSetup } from '../components/ReporterSetup'
 import { usePersisted } from '../lib/persist'
 import { RefreshInfo, useRefreshMs } from '../components/RefreshInfo'
 import { SideSlot, StatusSlot } from '../components/Shell'
-import { Chip, ErrorBanner, Icon, NavLabel, Spinner } from '../components/ui'
+import { Chip, ErrorBanner, Icon, Kpi, KpiStrip, NavLabel, Spinner } from '../components/ui'
 import { bridge } from '../lib/platform'
 import { baseName } from '../lib/repo'
 import { toast } from '../lib/store'
@@ -26,7 +26,7 @@ function JobCard({ j, now, onOpen, confirm, setConfirm, busy, onStop }: {
   const onKey = (e: KeyboardEvent) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onOpen() } }
 
   return (
-    <div className="overflow-hidden rounded-[10px] border border-border bg-surface">
+    <div className="border-t border-line first:border-t-0">
       <div role="button" tabIndex={0} aria-haspopup="dialog" onClick={() => onOpen()} onKeyDown={onKey}
         className="grid cursor-pointer grid-cols-[auto_minmax(0,1.1fr)_minmax(200px,1fr)_auto_auto] items-center gap-4 px-3.5 py-3 hover:bg-[#1F2124] max-md:grid-cols-[auto_1fr_auto]">
         <span className="size-2 rounded-full" title={running ? 'Đang chạy' : 'Đang chờ'}
@@ -95,11 +95,15 @@ export function JobsPage() {
   const cfg = useLoad(api.jobsConfig, [], 0, 'jobsConfig')
   const [picking, setPicking] = useState(false)
   const [filter, setFilter] = usePersisted<string>('jobs.filter', '', (v) => typeof v === 'string')
+  const [kind, setKind] = usePersisted<string>('jobs.kind', '', (v) => typeof v === 'string')
   const folders = cfg.data?.folders ?? []
 
   const all = jobs.data?.jobs ?? []
   const inFolder = (j: Job, f: string) => { const a = norm(j.repo), b = norm(f); return a === b || a.startsWith(b + '/') }
-  const list = filter ? all.filter((j) => inFolder(j, filter)) : all
+  const inDir = filter ? all.filter((j) => inFolder(j, filter)) : all
+  const list = kind ? inDir.filter((j) => j.kind === kind) : inDir
+  const ports = list.reduce((n, j) => n + j.ports.length, 0)
+  const testing = list.filter((j) => j.progress)
   const groups = [...new Set(list.map((j) => j.repo))].map((repo) => ({ repo, items: list.filter((j) => j.repo === repo) }))
   const total = list.reduce((s, j) => s + j.mem, 0)
 
@@ -156,6 +160,14 @@ export function JobsPage() {
             {cfg.data?.custom && <button className="btn w-full !h-7 whitespace-nowrap" onClick={() => void saveFolders([])} title="Bỏ danh sách riêng, dùng lại thư mục quét của Git">Dùng thư mục của Git</button>}
           </div>
         </div>
+        <div className="side-group">
+          <NavLabel>Loại</NavLabel>
+          {([['', 'Tất cả'], ['test', 'Test'], ['dev', 'Dev server'], ['build', 'Build']] as const).map(([id, label]) => (
+            <button key={id} className={'nav-item' + (kind === id ? ' on' : '')} aria-pressed={kind === id} onClick={() => setKind(id)}>
+              {label}<span className="nav-n">{id ? inDir.filter((j) => j.kind === id).length : inDir.length}</span>
+            </button>
+          ))}
+        </div>
       </SideSlot>
 
       {mj && modal && <JobDetailModal key={mj.pid} job={mj} now={now} initialTab={modal.tab} onClose={() => setModal(null)} onStopped={jobs.reload} />}
@@ -182,14 +194,23 @@ export function JobsPage() {
           </div>
         </header>
 
+        {jobs.data?.supported && (
+          <KpiStrip label="Tổng hợp job">
+            <Kpi label="Job" value={list.length} sub={`${list.filter((j) => j.kind === 'dev').length} dev · ${list.filter((j) => j.kind === 'test').length} test`} />
+            <Kpi label="RAM" value={mb(total)} valueColor={ramColor(total)} sub="tổng các job đang xem" />
+            <Kpi label="Test đang chạy" value={testing.length} sub={testing.length ? 'có tiến độ file' : 'không có tiến độ'} />
+            <Kpi label="Cổng đang mở" value={ports} sub="của dev server và con" />
+          </KpiStrip>
+        )}
+
         {jobs.error && <ErrorBanner onRetry={jobs.reload}>Không đọc được danh sách job: {jobs.error}</ErrorBanner>}
         {jobs.data && !jobs.data.supported && <div className="banner">Theo dõi job hiện chỉ hỗ trợ Windows.</div>}
         {jobs.loading && !jobs.data && <Spinner label="Đang quét tiến trình…" />}
         {jobs.data?.supported && !list.length && <div className="banner">Không có job nào đang chạy trong {filter ? 'thư mục đã chọn' : 'các thư mục theo dõi'}.</div>}
 
         {groups.map((g) => (
-          <section key={g.repo} className="flex flex-col gap-2.5">
-            <div className="flex items-baseline gap-2">
+          <section key={g.repo} className="overflow-hidden rounded-[10px] border border-border bg-surface">
+            <div className="flex items-baseline gap-2 border-b border-line bg-raised px-3.5 py-2">
               <h2 className="text-[13px] font-semibold" title={g.repo}>{baseName(g.repo)}</h2>
               <BranchChip branch={g.items[0]?.branch ?? null} />
               <span className="truncate text-[12px] text-fg-mute">{g.repo}</span>
