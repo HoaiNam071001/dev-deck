@@ -1,3 +1,4 @@
+import { JiraChips } from './JiraChip'
 import { useEffect, useState } from 'react'
 import { api, useLoad } from '../api'
 import { runAction } from '../lib/actions'
@@ -97,6 +98,7 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
             <Icon name="git" size={12} />{data.branch ?? 'detached @ ' + data.head} ▾
           </button>
           <span className="truncate text-fg-mute">→ {data.upstream ?? 'chưa có upstream'}</span>
+          <JiraChips texts={[data.branch]} />
         </div>
 
         {data.branch && tokens.get(data.branch) && (

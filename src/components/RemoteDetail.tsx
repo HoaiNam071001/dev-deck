@@ -1,3 +1,4 @@
+import { JiraChips } from './JiraChip'
 import { useState } from 'react'
 import { api, useLoad } from '../api'
 import { relTime } from '../lib/format'
@@ -164,6 +165,7 @@ export function RemoteDetailModal({ cr, onClose }: { cr: ChangeRequest; onClose:
         <ProviderTag provider={cr.provider} />
         <span className="truncate">{cr.title}</span>
         <span className="mono flex-none text-[12px] font-normal text-fg-mute">{crRef(cr)}</span>
+        <JiraChips texts={[cr.title, cr.source]} />
       </h2>
     }>
       <div className="flex flex-col">

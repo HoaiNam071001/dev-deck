@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { api, useLoad } from '../api'
+import { JiraModal } from '../components/JiraModal'
 import { RemoteAccountModal } from '../components/RemoteAccountModal'
 import { RemoteBranches } from '../components/RemoteBranches'
 import { RemoteQueue } from '../components/RemoteQueue'
@@ -115,6 +116,7 @@ export function RemotesPage() {
   const [expandedGroups, setExpandedGroups] = useState<string[]>([])
   const [query, setQuery] = usePersisted<string>('remotes.query', '', (v) => typeof v === 'string')
   const [adding, setAdding] = useState(false)
+  const [jiraOpen, setJiraOpen] = useState(false)
   const [openKey, setOpenKey] = useState<string | null>(null)
   const [confirmDel, setConfirmDel] = useState<string | null>(null)
   const [confirmWrite, setConfirmWrite] = useState<string | null>(null)
@@ -284,6 +286,7 @@ export function RemotesPage() {
         )}
       </SideSlot>
 
+      {jiraOpen && <JiraModal onClose={() => setJiraOpen(false)} />}
       {adding && <RemoteAccountModal onClose={() => setAdding(false)} onAdded={(a) => { accounts.reload(); setAccount(a.id) }} />}
       {picked && <RemoteDetailModal key={picked.key} cr={picked} onClose={() => setOpenKey(null)} />}
 
@@ -302,6 +305,7 @@ export function RemotesPage() {
           </div>
           <div className="flex flex-none items-center gap-2">
             <button className="btn whitespace-nowrap" onClick={() => setAdding(true)}><Icon name="plus" size={13} />Thêm account</button>
+            <button className="btn whitespace-nowrap" onClick={() => setJiraOpen(true)}>Jira</button>
             <button className="btn whitespace-nowrap" onClick={crs.reload} disabled={crs.loading || !hasAccounts}><Icon name="refresh" size={13} spin={crs.loading} />Làm mới</button>
           </div>
         </header>

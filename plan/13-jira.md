@@ -16,12 +16,12 @@ Lưu account giống Remotes (`server/remotes/store.js`): token mã hóa bằng 
 
 ## Giai đoạn 13a — Chỉ đọc
 
-- [~] Thêm account Jira (base URL + email + API token / PAT), kiểm bằng `/myself` — server + API xong; còn mục Jira trong modal Accounts
-- [~] Nhận mã ticket từ tên nhánh, tiêu đề và mô tả MR / PR: regex `[A-Z][A-Z0-9]+-\d+`, chỉ giữ project key có thật (lấy danh sách key từ `/project` một lần, cache) — server xong (`/api/jira/extract`), chưa gắn UI
+- [x] Thêm account Jira (base URL + email + API token / PAT), kiểm bằng `/myself` — xong (nút Jira ở trang Remotes mở `JiraModal`)
+- [~] Nhận mã ticket từ tên nhánh, tiêu đề và mô tả MR / PR: regex `[A-Z][A-Z0-9]+-\d+`, chỉ giữ project key có thật (lấy danh sách key từ `/project` một lần, cache) — server xong (`/api/jira/extract`), đã gắn chip
 - [x] Lấy nhiều ticket trong một lần gọi: JQL `key in (...)`, chỉ lấy `summary, status, assignee, priority, issuetype, sprint` (`/api/jira/issues`)
-- [ ] Chip ticket (màu theo nhóm trạng thái: To Do / In Progress / Done) ở: danh sách repo (nhánh hiện tại), tab Nhánh, danh sách MR, chi tiết MR
-- [ ] Panel chi tiết: tiêu đề, trạng thái, người nhận, ưu tiên, sprint, link mở Jira (chỉ `http(s)`), mô tả hiển thị chữ thuần
-- [~] "Việc của tôi" (server `/api/jira/mine` xong, chưa có UI): JQL `assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC` — mục mới ở Tổng quan hoặc sidebar Remotes, kèm nhánh local / MR đã nối với từng ticket
+- [~] Chip ticket — đã có ở đầu chi tiết repo (nhánh hiện tại) và chi tiết MR; còn tab Nhánh, danh sách MR, danh sách repo (màu theo nhóm trạng thái: To Do / In Progress / Done) ở: danh sách repo (nhánh hiện tại), tab Nhánh, danh sách MR, chi tiết MR
+- [x] Panel chi tiết: tiêu đề, trạng thái, người nhận, ưu tiên, sprint, link mở Jira (chỉ `http(s)`), mô tả hiển thị chữ thuần
+- [~] "Việc của tôi" (đã có trong `JiraModal`; chưa nối nhánh local / MR với từng ticket): JQL `assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC` — mục mới ở Tổng quan hoặc sidebar Remotes, kèm nhánh local / MR đã nối với từng ticket
 - [~] Test: đã có `server/jira/test.js` (regex, ADF, chuẩn hóa, giấu token); chưa có fetch giả Cloud / DC
 
 ## Giai đoạn 13b — Từ ticket sang nhánh
