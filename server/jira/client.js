@@ -66,7 +66,8 @@ async function projectKeys(acc) {
 }
 async function search(acc, jql, max = 50) {
   const q = new URLSearchParams({ jql, fields: FIELDS, maxResults: String(max) })
-  const r = await get(acc, '/search?' + q)
+  // Jira Cloud đã gỡ /search (HTTP 410), thay bằng /search/jql; Server / DC vẫn dùng /search
+  const r = await get(acc, (acc.kind === 'cloud' ? '/search/jql?' : '/search?') + q)
   return (r?.issues || []).map((i) => normalize(acc, i))
 }
 

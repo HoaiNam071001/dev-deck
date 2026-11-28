@@ -50,7 +50,7 @@ export function JiraPage() {
       <header className="page-h !items-start">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <h1>Jira</h1>
-          <span className="text-[12px] text-fg-mute">Ticket giao cho bạn và ticket đã ghim, kèm thay đổi chưa xem. Chỉ đọc, không ghi gì lên Jira</span>
+          <span className="text-[12px] text-fg-mute">Ticket giao cho bạn và ticket đã ghim, kèm thay đổi chưa xem. Mặc định chỉ đọc; muốn chuyển trạng thái, comment, ghi giờ thì bật ghi cho account</span>
         </div>
       </header>
       {askWrite && (
@@ -107,7 +107,7 @@ export function JiraPage() {
             <input value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" required /></label>}
           <label className="flex flex-col gap-1.5 text-[12px]"><span className="text-fg-mute">{kind === 'cloud' ? 'API token' : 'Personal Access Token'}</span>
             <input type="password" className="mono" value={token} onChange={(e) => setToken(e.target.value)} autoComplete="off" spellCheck={false} required /></label>
-          <p className="text-[11.5px] leading-relaxed text-fg-mute">Chỉ đọc ticket. Token được mã hóa bằng khóa của hệ điều hành và chỉ gửi tới chính máy chủ Jira trên.</p>
+          <p className="text-[11.5px] leading-relaxed text-fg-mute">Token được mã hóa bằng khóa của hệ điều hành và chỉ gửi tới chính máy chủ Jira trên.</p>
           {err && <div className="banner err" role="alert">{err}</div>}
           <div className="flex items-center justify-end gap-2">
             {busy && <Spinner label="Đang kiểm tra…" />}
