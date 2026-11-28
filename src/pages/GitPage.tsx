@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api, useLoad } from '../api'
 import { FolderPicker } from '../components/FolderPicker'
+import { ErrorBoundary } from '../components/ErrorBoundary'
 import { RepoDetail } from '../components/RepoDetail'
 import { RepoList } from '../components/RepoList'
 import { CloneDialog, DeleteRepoDialog, NewRepoDialog } from '../components/RepoDialogs'
@@ -249,14 +250,14 @@ export function GitPage() {
             <span className="h-7 w-0.5 rounded-sm bg-border-pop group-hover:bg-accent group-focus-visible:bg-accent" />
           </div>
           <section aria-label={'Chi tiết repo ' + current.name} className="flex h-full flex-col border-l border-border bg-surface-2">
-            <RepoDetail key={current!.path} repo={current!} tab={tab} setTab={setTab} mode={mode} onMode={setMode} onClose={() => setState({ selected: null })} onDelete={() => setDeleting(current!)} />
+            <ErrorBoundary resetKey={current.path} label="Không hiển thị được chi tiết repo"><RepoDetail key={current!.path} repo={current!} tab={tab} setTab={setTab} mode={mode} onMode={setMode} onClose={() => setState({ selected: null })} onDelete={() => setDeleting(current!)} /></ErrorBoundary>
           </section>
         </div>}
         {current && mode === 'modal' && (
           <div className="absolute inset-0 z-20 flex items-center justify-center p-8">
             <button className="absolute inset-0 border-0 bg-[rgba(8,9,10,.6)]" aria-label="Đóng chi tiết" tabIndex={-1} onClick={() => setState({ selected: null })} />
             <section role="dialog" aria-modal="true" aria-label={'Chi tiết repo ' + current.name} className="relative flex h-full max-h-[620px] w-full max-w-[860px] flex-col overflow-hidden rounded-xl border border-border-pop bg-surface-2 shadow-[0_24px_64px_rgba(0,0,0,.6)]">
-              <RepoDetail key={current!.path} repo={current!} tab={tab} setTab={setTab} mode={mode} onMode={setMode} onClose={() => setState({ selected: null })} onDelete={() => setDeleting(current!)} />
+              <ErrorBoundary resetKey={current.path} label="Không hiển thị được chi tiết repo"><RepoDetail key={current!.path} repo={current!} tab={tab} setTab={setTab} mode={mode} onMode={setMode} onClose={() => setState({ selected: null })} onDelete={() => setDeleting(current!)} /></ErrorBoundary>
             </section>
           </div>
         )}

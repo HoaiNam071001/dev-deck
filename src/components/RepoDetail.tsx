@@ -23,7 +23,9 @@ type BranchDialog = { kind: 'delete' | 'rename' | 'deleteRemote'; name: string }
 export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCommit, onDelete }: { onDelete?: () => void; mode?: 'panel' | 'modal'; onMode?: (m: 'panel' | 'modal') => void; repo: RepoSummary; tab: Tab; setTab: (t: Tab) => void; onClose?: () => void; onFocusCommit?: (focus: () => void) => void }) {
   const rev = useStore((s) => s.rev)
   const isPinned = useStore((s) => s.pinned.includes(repo.path))
-  const { data, error, reload } = useLoad(() => api.repo(repo.path), [repo.path, rev], 0, 'repo:' + repo.path)
+  const { data: raw, error, reload } = useLoad(() => api.repo(repo.path), [repo.path, rev], 0, 'repo:' + repo.path)
+  // Server cũ (chưa khởi động lại sau khi nâng cấp) hoặc cache cũ có thể thiếu stashes / worktrees: coi như rỗng để UI không crash
+  const data = raw && { ...raw, stashes: raw.stashes ?? [], worktrees: raw.worktrees ?? [] }
   const [busy, setBusy] = useState<string | null>(null)
   const [message, setMessage] = useState('')
   const [amend, setAmend] = useState(false)
