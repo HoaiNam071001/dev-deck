@@ -14,6 +14,7 @@ const gitBulk = require('./git-bulk')
 const gitDiff = require('./git-diff')
 const jobs = require('./jobs')
 const reporter = require('./jobs/reporter')
+const runner = require('./jobs/runner')
 const remotes = require('./remotes')
 
 const PORT = Number(process.env.PORT) || 4317
@@ -144,6 +145,15 @@ async function api(req, res, url) {
       if (req.method !== 'POST') return json(res, 405, { error: 'Chỉ nhận POST' })
       if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
       return json(res, 200, jobs.installReporter(String((await readBody(req)).repo || '')))
+    }
+    if (url.pathname === '/api/jobs/scripts') return json(res, 200, runner.listPackages(url.searchParams.get('path') || ''))
+    if (url.pathname === '/api/jobs/runs') return json(res, 200, runner.list())
+    if (url.pathname === '/api/jobs/log') return json(res, 200, runner.log(url.searchParams.get('id') || '', url.searchParams.get('since') || '0'))
+    if (url.pathname === '/api/jobs/run' || url.pathname === '/api/jobs/run-stop') {
+      if (req.method !== 'POST') return json(res, 405, { error: 'Chỉ nhận POST' })
+      if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
+      const body = await readBody(req)
+      return json(res, 200, url.pathname === '/api/jobs/run' ? runner.run(body) : await runner.stop(String(body.id || '')))
     }
     if (url.pathname === '/api/jobs') return json(res, 200, await jobs.scan())
     if (url.pathname === '/api/jobs/stop') {

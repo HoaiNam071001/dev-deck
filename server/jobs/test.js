@@ -19,3 +19,19 @@ const l = t.parseLsof('p501\nfcwd\nn/Users/bob/app\np777\nf20\nn*:5173\nn[::1]:5
 assert.deepStrictEqual(l.get(501), ['/Users/bob/app'])
 assert.deepStrictEqual(l.get(777).map(t.parseListenAddr), [{ port: 5173, host: '0.0.0.0' }, { port: 5173, host: '[::1]' }, { port: 3000, host: '127.0.0.1' }])
 console.log('ok jobs unix')
+
+// Chạy script npm (giai đoạn 12)
+const { _test: rt } = require('./runner')
+assert.deepStrictEqual(rt.parseArgs('  a.test.ts  -t foo '), ['a.test.ts', '-t', 'foo'])
+for (const bad of ['a&b', 'x|y', '$(id)', 'a;b', '"q"', '`x`', '%PATH%']) assert.throws(() => rt.parseArgs(bad), /không cho phép/, bad)
+assert.deepStrictEqual(rt.parseArgs(''), [])
+console.log('ok jobs runner')
+
+const { _test: rt2 } = require('./runner')
+assert.strictEqual(rt2.PORT_RE.exec('  ➜  Local:   \u001b[36mhttp://localhost:5183/\u001b[0m'.replace(/\u001b\[[0-9;]*[A-Za-z]/g, ''))[1], '5183')
+assert.strictEqual(rt2.PORT_RE.exec('listening on http://127.0.0.1:3000')[1], '3000')
+console.log('ok jobs port')
+
+const { _test: rt3 } = require('./runner')
+assert.ok(!rt3.NAME_RE.test('-rf') && rt3.NAME_RE.test('test:unit') && rt3.NAME_RE.test('build-all'))
+console.log('ok jobs name')

@@ -1,6 +1,7 @@
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { Shell } from './components/Shell'
 import { useAiDoneWatch } from './lib/aiWatch'
+import { useScriptDoneWatch } from './lib/scriptWatch'
 import { useRemoteWatch } from './lib/remoteWatch'
 import { useRoute } from './lib/router'
 import { GitPage } from './pages/GitPage'
@@ -13,5 +14,6 @@ export function App() {
   const route = useRoute()
   useRemoteWatch()
   useAiDoneWatch()
+  useScriptDoneWatch()
   return <Shell><ErrorBoundary resetKey={route}>{route === '/git' ? <GitPage /> : route === '/jobs' ? <JobsPage /> : route === '/remotes' ? <RemotesPage /> : route === '/ai' ? <TokenPage /> : <HomePage />}</ErrorBoundary></Shell>
 }

@@ -6,6 +6,7 @@ import { bridge, copyText, MOD, revealLabel } from '../lib/platform'
 import { pinRepo, toast, unpinRepo, useStore } from '../lib/store'
 import type { FileChange, RepoSummary } from '../types'
 import { RepoChanges } from './RepoChanges'
+import { RepoScripts } from './RepoScripts'
 import { RepoStash } from './RepoStash'
 import { RepoWorktrees } from './RepoWorktrees'
 import { Spinner, Icon } from './ui'
@@ -16,7 +17,7 @@ import { ShortNum } from './ShortNum'
 import { useBranchTokens } from '../lib/useBranchTokens'
 import { DeleteBranchDialog, DeleteRemoteBranchDialog, RenameBranchDialog } from './BranchDialogs'
 
-type Tab = 'changes' | 'stash' | 'worktree' | 'branches' | 'commits' | 'remotes'
+type Tab = 'changes' | 'stash' | 'worktree' | 'branches' | 'commits' | 'remotes' | 'scripts'
 
 const isStaged = (f: FileChange) => f.kind === 'change' && f.x !== '.'
 
@@ -62,7 +63,7 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
   const staged = data.files.filter(isStaged)
   const tabs: [Tab, string, number][] = [
     ['changes', 'Thay đổi', data.files.length], ['stash', 'Stash', data.stashes.length], ['worktree', 'Worktree', Math.max(0, data.worktrees.length - 1)], ['branches', 'Nhánh', data.branches.filter((x) => !x.remote).length],
-    ['commits', 'Lịch sử', data.commits.length], ['remotes', 'Remote', data.remotes.length],
+    ['commits', 'Lịch sử', data.commits.length], ['remotes', 'Remote', data.remotes.length], ['scripts', 'Script', 0],
   ]
   const trackedDirty = data.files.some((f) => f.kind !== 'untracked')
   const bkey = (x: { remote: boolean; name: string }) => (x.remote ? 'r:' : 'l:') + x.name
@@ -122,12 +123,14 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
         {tabs.map(([id, label, n]) => (
           <button key={id} role="tab" aria-selected={tab === id}
             className={'h-9 cursor-pointer border-0 border-b-2 bg-transparent px-2 text-[12px] font-medium whitespace-nowrap ' + (tab === id ? 'border-accent text-fg' : 'border-transparent text-fg-mute hover:text-fg')}
-            onClick={() => setTab(id)}>{label} <span className="font-mono text-fg-mute">{n}</span></button>
+            onClick={() => setTab(id)}>{label}{id !== 'scripts' && <span className="font-mono text-fg-mute"> {n}</span>}</button>
         ))}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {tab === 'changes' && <RepoChanges data={data} busy={busy} act={act} />}
+
+        {tab === 'scripts' && <RepoScripts repoPath={repo.path} />}
 
         {tab === 'stash' && <RepoStash data={data} busy={busy} act={act} />}
 

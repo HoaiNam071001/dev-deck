@@ -5,7 +5,7 @@ import { navigate } from '../lib/router'
 import { openPalette, setState, useStore } from '../lib/store'
 import { Icon } from './ui'
 
-interface Item { id: string; group: 'Lệnh' | 'Repo'; label: string; hint?: string; dot?: string; run: () => void }
+interface Item { only?: boolean; id: string; group: 'Lệnh' | 'Repo'; label: string; hint?: string; dot?: string; run: () => void }
 
 /** Bảng lệnh Ctrl+K: chuyển trang, mở repo, quét lại, fetch tất cả. */
 export function CommandPalette() {
@@ -41,12 +41,16 @@ function Palette() {
     for (const r of [...known].sort((a, b) => rank(a.path) - rank(b.path) || a.name.localeCompare(b.name))) {
       list.push({ id: 'r:' + r.path, group: 'Repo', label: r.name, hint: shortPath(r.path), dot: r.dot, run: () => { openPalette(false); setState({ selected: r.path }); navigate('/git') } })
     }
+    // Mục chạy script chỉ hiện khi đang gõ tìm, để không đẩy repo ra khỏi 40 mục đầu
+    for (const r of known) {
+      list.push({ id: 's:' + r.path, group: 'Lệnh', only: true, label: 'Chạy script: ' + r.name, hint: 'package.json', run: () => { openPalette(false); setState({ selected: r.path, wantTab: 'scripts' }); navigate('/git') } })
+    }
     return list
   }, [repos, pinned])
 
   const shown = useMemo(() => {
     const t = q.trim().toLowerCase()
-    return (t ? items.filter((i) => (i.label + ' ' + (i.hint ?? '')).toLowerCase().includes(t)) : items).slice(0, 40)
+    return (t ? items.filter((i) => (i.label + ' ' + (i.hint ?? '')).toLowerCase().includes(t)) : items.filter((i) => !i.only)).slice(0, 40)
   }, [items, q])
 
   useEffect(() => { input.current?.focus() }, [])

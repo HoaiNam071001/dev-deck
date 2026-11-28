@@ -212,4 +212,4 @@ app.whenReady().then(async () => {
   setupUpdater()
 })
 app.on('window-all-closed', () => app.quit())
-app.on('before-quit', () => { httpServer?.close() })
+app.on('before-quit', () => { try { require('../server/jobs/runner').stopAll() } catch { /* chưa nạp */ } httpServer?.close() })

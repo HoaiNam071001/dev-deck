@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ActionResult, CloneJob, DeleteRepoInfo, ChangeRequest, ChangeRequestDetail, RemoteBranchesResponse, RemoteLocalJobs, PipelineRun, PipelineJob, CrListResponse, CrScope, CrState, RemoteAccount, ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, DiffKind, FileDiff, StashFile, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource, AiNotifyConfig, AiNotifyState, AiDoneEvent } from './types'
+import type { ScriptPackages, ScriptRun, ScriptLog, ActionResult, CloneJob, DeleteRepoInfo, ChangeRequest, ChangeRequestDetail, RemoteBranchesResponse, RemoteLocalJobs, PipelineRun, PipelineJob, CrListResponse, CrScope, CrState, RemoteAccount, ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, DiffKind, FileDiff, StashFile, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource, AiNotifyConfig, AiNotifyState, AiDoneEvent } from './types'
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
@@ -40,6 +40,13 @@ export const api = {
   cloneCancel: (id: string) =>
     request<CloneJob>('/api/git/clone', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'cancel', id }) }),
   jobs: () => request<JobsResponse>('/api/jobs'),
+  scripts: (path: string) => request<ScriptPackages>('/api/jobs/scripts?' + new URLSearchParams({ path })),
+  scriptRuns: () => request<ScriptRun[]>('/api/jobs/runs'),
+  scriptLog: (id: string, since: number) => request<ScriptLog>('/api/jobs/log?' + new URLSearchParams({ id, since: String(since) })),
+  runScript: (path: string, dir: string, script: string, args: string) =>
+    request<ScriptRun>('/api/jobs/run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path, dir, script, args }) }),
+  stopScript: (id: string) =>
+    request<ScriptRun>('/api/jobs/run-stop', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id }) }),
   reporterStatus: () => request<ReporterStatus>('/api/jobs/reporter'),
   reporterSetup: (body: { action: 'install' | 'uninstall'; folders: string[] } | { action: 'enable' | 'disable' }) =>
     request<ReporterStatus>('/api/jobs/reporter', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),

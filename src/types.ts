@@ -277,3 +277,9 @@ export interface BulkPullPlan { path: string; eligible: boolean; reason?: string
 export interface BulkPullResult { path: string; status: 'ok' | 'skipped' | 'error'; message: string }
 export interface BulkCleanupPlan { path: string; base: string | null; branches: string[]; reason?: string }
 export interface BulkCleanupResult { path: string; done: string[]; failed: { branch: string; message: string }[] }
+
+// Chạy script npm (giai đoạn 12)
+export interface ScriptPackage { rel: string; name: string; manager: 'npm' | 'pnpm' | 'yarn'; scripts: Record<string, string> }
+export interface ScriptPackages { root: string; packages: ScriptPackage[] }
+export interface ScriptRun { id: string; repo: string; rel: string; script: string; args: string[]; manager: string; pid: number; start: string; end: string | null; code: number | null; port: number; running: boolean; seq: number }
+export interface ScriptLog { run: ScriptRun; from: number; lines: string[] }

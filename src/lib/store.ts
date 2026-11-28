@@ -24,6 +24,7 @@ interface State {
   pinned: string[]
   /** Lệnh chờ trang Git xử lý khi mở (từ bảng lệnh / phím tắt ở trang khác) */
   pending: 'rescan' | 'fetchAll' | 'pullAll' | 'cleanup' | null
+  wantTab: string | null // palette xin mở một tab của chi tiết repo
   /** Khóa MR / PR cần mở chi tiết khi vào trang Remotes (từ thông báo); trang Remotes nhận rồi xóa */
   openRemote: string | null
 }
@@ -32,7 +33,7 @@ const loadPinned = (): string[] => {
   try { const v = JSON.parse(localStorage.getItem('git.pinned') || '[]'); return Array.isArray(v) ? v.filter((x) => typeof x === 'string') : [] } catch { return [] }
 }
 
-let state: State = { repos: [], scannedAt: null, scanMs: null, scanning: false, attention: 0, remoteUnread: 0, reviewQueue: { waiting: 0, late: 0 }, selected: null, rev: 0, palette: false, toasts: [], pinned: loadPinned(), pending: null, openRemote: null }
+let state: State = { repos: [], scannedAt: null, scanMs: null, scanning: false, attention: 0, remoteUnread: 0, reviewQueue: { waiting: 0, late: 0 }, selected: null, rev: 0, palette: false, toasts: [], pinned: loadPinned(), pending: null, wantTab: null, openRemote: null }
 const subs = new Set<() => void>()
 
 export const getState = () => state

@@ -19,7 +19,7 @@ import type { RepoSummary } from '../types'
 
 type Filter = 'all' | 'dirty' | 'sync' | 'clean'
 type Sort = 'name' | 'recent' | 'changes'
-type Tab = 'changes' | 'stash' | 'worktree' | 'branches' | 'commits' | 'remotes'
+type Tab = 'changes' | 'stash' | 'worktree' | 'branches' | 'commits' | 'remotes' | 'scripts'
 const SORTS: { id: Sort; label: string }[] = [{ id: 'name', label: 'tên' }, { id: 'recent', label: 'commit mới nhất' }, { id: 'changes', label: 'nhiều thay đổi nhất' }]
 const p2 = (n: number) => String(n).padStart(2, '0')
 const clock = (iso: string) => { const d = new Date(iso); return `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}` }
@@ -35,6 +35,7 @@ export function GitPage() {
   const pinned = useStore((s) => s.pinned)
   const rev = useStore((s) => s.rev)
   const pending = useStore((s) => s.pending)
+  const wantTab = useStore((s) => s.wantTab)
 
   const force = useRef(false)
   const repos = useLoad(async () => {
@@ -78,7 +79,8 @@ export function GitPage() {
   const [filter, setFilter] = usePersisted<Filter>('git.filter', 'all', (v) => ['all', 'dirty', 'sync', 'clean'].includes(v as string))
   const [sort, setSort] = usePersisted<Sort>('git.sort', 'name', (v) => ['name', 'recent', 'changes'].includes(v as string))
   const [rootFilter, setRootFilter] = usePersisted<string>('git.root', '', (v) => typeof v === 'string')
-  const [tab, setTab] = usePersisted<Tab>('git.tab', 'changes', (v) => ['changes', 'stash', 'worktree', 'branches', 'commits', 'remotes'].includes(v as string))
+  const [tab, setTab] = usePersisted<Tab>('git.tab', 'changes', (v) => ['changes', 'stash', 'worktree', 'branches', 'commits', 'remotes', 'scripts'].includes(v as string))
+  useEffect(() => { if (wantTab) { setTab(wantTab as Tab); setState({ wantTab: null }) } }, [wantTab]) // eslint-disable-line react-hooks/exhaustive-deps
   const [menu, setMenu] = useState<string | null>(null)
   const [dialog, setDialog] = useState<'new' | 'clone' | null>(null)
   const [deleting, setDeleting] = useState<RepoSummary | null>(null)
