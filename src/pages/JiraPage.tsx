@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, useLoad } from '../api'
 import { ticketKey } from '../lib/jiraKey'
 import { forgetNotified } from '../lib/jiraWatch'
@@ -7,7 +7,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog'
 import { JiraAccountModal } from '../components/JiraAccountModal'
 import { JiraFollows } from '../components/JiraFollows'
 import { JiraKey, JiraStatus } from '../components/JiraChip'
-import { ErrorBanner, Spinner } from '../components/ui'
+import { ErrorBanner, Segmented, Spinner } from '../components/ui'
 
 /** Trang Jira: ticket của tôi và đã ghim kèm thay đổi, account Jira. Chỉ đọc. */
 export function JiraPage() {
@@ -16,7 +16,18 @@ export function JiraPage() {
   const hasAcc = (accounts.data?.length ?? 0) > 0
   const news = useLoad(async () => (hasAcc ? api.jiraNew() : { items: [], follows: [], errors: [] }), [hasAcc], 0)
   const [askWrite, setAskWrite] = useState<string | null>(null)
-  const [pinKey, setPinKey] = useState('')
+  const [q, setQ] = useState('')
+  const [view, setView] = useState<'new' | 'pinned' | 'all'>('all')
+  const search = useRef<HTMLInputElement>(null)
+  // Phím "/" nhảy vào ô tìm (bỏ qua khi đang gõ ở ô khác)
+  useEffect(() => {
+    const on = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement
+      if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) && !t.isContentEditable) { e.preventDefault(); search.current?.focus() }
+    }
+    window.addEventListener('keydown', on)
+    return () => window.removeEventListener('keydown', on)
+  }, [])
   const pin = async (key: string, on: boolean) => {
     try { await api.jiraPin(key, on); news.reload() } catch (x) { toast({ kind: 'err', title: 'Không ghim được', detail: (x as Error).message }) }
   }
@@ -25,6 +36,12 @@ export function JiraPage() {
     try { await api.jiraSeen(marks); forgetNotified(key); news.reload(); setState({ jiraUnread: 0 }) } catch (x) { toast({ kind: 'err', title: 'Không đánh dấu được', detail: (x as Error).message }) }
   }
   const [adding, setAdding] = useState(false)
+  const all = news.data?.items ?? []
+  const needle = q.trim().toLowerCase()
+  const shown = all.filter((x) => (view === 'new' ? x.events.length > 0 : view === 'pinned' ? x.pinned : true) &&
+    (!needle || `${x.issue.key} ${x.issue.summary} ${x.issue.assignee ?? ''} ${x.issue.status ?? ''}`.toLowerCase().includes(needle)))
+  const qKey = ticketKey(q)
+  const canPin = !!qKey && !all.some((x) => x.issue.key === qKey)
   const setWrite = async (id: string, on: boolean) => {
     try { await api.setJiraWrite(id, on); accounts.reload(); toast({ kind: 'ok', title: on ? 'Đã bật thao tác ghi' : 'Đã tắt thao tác ghi' }) }
     catch (x) { toast({ kind: 'err', title: 'Không đổi được', detail: (x as Error).message }); return false }
@@ -68,16 +85,17 @@ export function JiraPage() {
               <h3 className="text-[13px] font-semibold">Có gì mới · việc của tôi, ticket đã ghim và người đang theo dõi</h3>
               {(news.data?.items.some((i) => i.events.length)) && <button className="btn sm ml-auto" onClick={() => void seen()}>Đã xem tất cả</button>}
             </div>
-            <form className="flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); const k = ticketKey(pinKey); if (k) void pin(k, true).then(() => setPinKey('')) }}>
-              <input className="mono w-72 max-w-full" value={pinKey} onChange={(e) => setPinKey(e.target.value)} placeholder="Dán link hoặc mã ticket (ABC-123)" aria-label="Link hoặc mã ticket cần ghim" spellCheck={false} />
-              <button className="btn sm" type="submit" disabled={!ticketKey(pinKey)}>Ghim</button>
-            </form>
+            <Segmented label="Xem" value={view} onChange={setView} options={[
+              { id: 'all', label: 'Tất cả', count: all.length }, { id: 'new', label: 'Có gì mới', count: all.filter((x) => x.events.length).length }, { id: 'pinned', label: 'Đã ghim', count: all.filter((x) => x.pinned).length }]} />
+            <input ref={search} type="search" className="!h-8 w-full" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm theo mã, tiêu đề, người, trạng thái — hoặc dán link / mã ticket để ghim  ( / )" aria-label="Tìm ticket"
+              onKeyDown={(e) => { if (e.key === 'Enter' && canPin && qKey) void pin(qKey, true).then(() => setQ('')) }} />
+            {canPin && qKey && <button className="btn sm self-start" onClick={() => void pin(qKey, true).then(() => setQ(''))}>Ghim {qKey} (Enter)</button>}
             <JiraFollows accounts={accounts.data ?? []} follows={news.data?.follows ?? []} onChanged={news.reload} />
             {news.loading && !news.data && <Spinner label="Đang tải ticket…" />}
             {news.error && <ErrorBanner onRetry={news.reload}>{news.error}</ErrorBanner>}
             {news.data?.errors.map((e) => <div key={e.accountId} className="banner err">{e.name}: {e.error}</div>)}
-            {news.data && !news.data.items.length && !news.data.errors.length && <span className="text-[12.5px] text-fg-mute">Không có ticket nào đang giao cho bạn hoặc đã ghim.</span>}
-            {news.data?.items.map(({ issue: i, pinned, via, events }) => (
+            {news.data && !shown.length && !news.data.errors.length && !canPin && <span className="text-[12.5px] text-fg-mute">Không có ticket nào khớp.</span>}
+            {shown.map(({ issue: i, pinned, via, events }) => (
               <div key={i.key} className="flex flex-col gap-1 border-t border-border py-2 first:border-t-0">
                 <div className="grid grid-cols-[84px_minmax(0,1fr)_auto_26px] items-center gap-3 text-[13px]">
                   <JiraKey issue={i} />
