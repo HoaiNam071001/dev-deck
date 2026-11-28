@@ -13,3 +13,10 @@ export function parseDuration(text: string): number | null {
   s = Math.round(s)
   return s >= 60 && s <= 86400 ? s : null
 }
+
+/** Giây → "1h30m" (ngược với parseDuration). */
+export function fmtDuration(sec: number): string {
+  const m = Math.round(sec / 60)
+  const h = Math.floor(m / 60), r = m % 60
+  return (h ? h + 'h' : '') + (r || !h ? r + 'm' : '')
+}

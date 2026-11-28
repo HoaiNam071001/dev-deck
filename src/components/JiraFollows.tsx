@@ -3,6 +3,11 @@ import { api } from '../api'
 import { toast } from '../lib/store'
 import type { JiraAccount, JiraFollow } from '../types'
 
+const KINDS: { id: string; label: string }[] = [
+  { id: 'status', label: 'Trạng thái' }, { id: 'comment', label: 'Comment' }, { id: 'assignee', label: 'Người nhận' }, { id: 'priority', label: 'Ưu tiên' }, { id: 'sprint', label: 'Sprint' },
+]
+const KIND_LABEL = Object.fromEntries(KINDS.map((k) => [k.id, k.label]))
+
 /** Theo dõi việc của người khác: chọn người (tìm trong Jira) hoặc dán JQL. Chỉ lưu cục bộ, người kia không biết. */
 export function JiraFollows({ accounts, follows, onChanged }: { accounts: JiraAccount[]; follows: JiraFollow[]; onChanged: () => void }) {
   const [open, setOpen] = useState(false)
@@ -11,6 +16,7 @@ export function JiraFollows({ accounts, follows, onChanged }: { accounts: JiraAc
   const [q, setQ] = useState('')
   const [jql, setJql] = useState('')
   const [found, setFound] = useState<{ id: string; name: string }[] | null>(null)
+  const [events, setEvents] = useState<string[]>(['status', 'comment'])
   const [busy, setBusy] = useState(false)
   const acc = account || accounts[0]?.id || ''
 
@@ -22,7 +28,7 @@ export function JiraFollows({ accounts, follows, onChanged }: { accounts: JiraAc
   }
   const add = async (body: Parameters<typeof api.jiraFollow>[0]) => {
     setBusy(true)
-    try { await api.jiraFollow({ ...body, account: acc }); toast({ kind: 'ok', title: 'Đã thêm theo dõi', detail: body.label || body.jql }); setFound(null); setQ(''); setJql(''); setOpen(false); onChanged() }
+    try { await api.jiraFollow({ ...body, account: acc, events }); toast({ kind: 'ok', title: 'Đã thêm theo dõi', detail: body.label || body.jql }); setFound(null); setQ(''); setJql(''); setOpen(false); onChanged() }
     catch (e) { fail('Không thêm được', e) }
     setBusy(false)
   }
@@ -35,7 +41,7 @@ export function JiraFollows({ accounts, follows, onChanged }: { accounts: JiraAc
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-fg-mute">Đang theo dõi:</span>
         {follows.map((f) => (
-          <span key={f.id} className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5" title={f.jql}>
+          <span key={f.id} className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5" title={`${f.jql}\nBáo: ${f.events.map((k) => KIND_LABEL[k] ?? k).join(', ')}`}>
             {f.label}
             <button className="ghost flex size-4 items-center justify-center text-fg-mute" aria-label={'Bỏ theo dõi ' + f.label} onClick={() => void remove(f.id)}>×</button>
           </span>
@@ -49,6 +55,12 @@ export function JiraFollows({ accounts, follows, onChanged }: { accounts: JiraAc
             {(['user', 'jql'] as const).map((m) => <button key={m} type="button" aria-pressed={mode === m} className={mode === m ? 'on' : ''} onClick={() => setMode(m)}>{m === 'user' ? 'Theo người' : 'Theo JQL'}</button>)}
           </div>
           {accounts.length > 1 && <select value={acc} onChange={(e) => { setAccount(e.target.value); setFound(null) }} aria-label="Account Jira">{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>}
+          <fieldset className="flex flex-wrap items-center gap-x-3 gap-y-1 border-0 p-0">
+            <legend className="float-left mr-2 text-fg-mute">Báo khi đổi:</legend>
+            {KINDS.map((k) => (
+              <label key={k.id} className="flex items-center gap-1"><input type="checkbox" checked={events.includes(k.id)} onChange={(e) => setEvents(e.target.checked ? [...events, k.id] : events.filter((x) => x !== k.id))} />{k.label}</label>
+            ))}
+          </fieldset>
           {mode === 'user'
             ? <>
                 <form className="flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); void search() }}>
@@ -56,12 +68,12 @@ export function JiraFollows({ accounts, follows, onChanged }: { accounts: JiraAc
                   <button className="btn sm" type="submit" disabled={busy || q.trim().length < 2}>Tìm</button>
                 </form>
                 {found?.length === 0 && <span className="text-fg-mute">Không thấy ai khớp.</span>}
-                {found?.map((u) => <button key={u.id} className="btn sm justify-start" disabled={busy} onClick={() => void add({ userId: u.id, label: u.name })}>Theo dõi việc của {u.name}</button>)}
+                {found?.map((u) => <button key={u.id} className="btn sm justify-start" disabled={busy || !events.length} onClick={() => void add({ userId: u.id, label: u.name })}>Theo dõi việc của {u.name}</button>)}
                 <span className="text-[11.5px] text-fg-mute">Lấy các ticket giao cho người đó mà chưa Done.</span>
               </>
             : <>
                 <textarea className="mono" rows={2} value={jql} onChange={(e) => setJql(e.target.value)} placeholder='sprint in openSprints() AND project = PG' aria-label="JQL" maxLength={500} spellCheck={false} />
-                <button className="btn sm self-start" disabled={busy || !jql.trim()} onClick={() => void add({ jql: jql.trim(), label: jql.trim().slice(0, 40) })}>Theo dõi JQL này</button>
+                <button className="btn sm self-start" disabled={busy || !jql.trim() || !events.length} onClick={() => void add({ jql: jql.trim(), label: jql.trim().slice(0, 40) })}>Theo dõi JQL này</button>
                 <span className="text-[11.5px] text-fg-mute">Tối đa 30 ticket mỗi nhóm. JQL của Jira Cloud cần có điều kiện lọc (không để trống hoàn toàn).</span>
               </>}
         </div>

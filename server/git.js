@@ -338,6 +338,20 @@ async function localBranchNames(p) {
   return ((await git(p, ['for-each-ref', '--format=%(refname:short)', 'refs/heads'])) || '').split('\n').filter(Boolean)
 }
 
+/** Thời điểm (unix giây) các commit của chính người dùng chỉ có trên `branch` so với nhánh gốc (main / master / develop). */
+async function branchCommitTimes(p, branch) {
+  knownRepo(p)
+  if (!branch || branch.startsWith('-')) return []
+  const email = ((await git(p, ['config', 'user.email'])) || '').trim()
+  let base = null
+  for (const b of ['origin/HEAD', 'main', 'master', 'develop']) {
+    if ((await git(p, ['rev-parse', '--verify', '-q', b + '^{commit}'])) !== null) { base = b; break }
+  }
+  const args = ['log', branch, ...(base ? ['^' + base] : []), ...(email ? ['--author=' + email] : []), '--format=%ct', '-n', '300', '--']
+  return ((await git(p, args)) || '').split('\n').map((x) => parseInt(x, 10)).filter(Number.isFinite)
+}
+
+module.exports.branchCommitTimes = branchCommitTimes
 module.exports.remoteUrlMap = remoteUrlMap
 module.exports.localBranchNames = localBranchNames
 module.exports.invalidate = invalidate

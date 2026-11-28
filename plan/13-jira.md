@@ -33,14 +33,14 @@ Lưu account giống Remotes (`server/remotes/store.js`): token mã hóa bằng 
 
 - [x] Chuyển trạng thái (gợi ý "In Review" khi có MR đang mở, "Done" khi MR đã merge, so theo từ khóa tên trạng thái đích; chỉ MR của tôi): lấy `/issue/{key}/transitions`, chọn một bước; gợi ý "chuyển sang In Review" khi tạo MR, "Done" khi MR merge (chỉ gợi ý, người dùng bấm mới làm)
 - [x] Comment lên ticket (soạn rồi Gửi, giống trả lời thread ở 9d)
-- [~] Ghi worklog (xong thời gian `1h30m`; chưa gợi ý từ commit / phiên AI): thời gian + ghi chú; (tùy chọn) gợi ý thời gian từ khoảng commit / phiên AI trên nhánh đó ([11](11-token-by-branch.md))
+- [x] Ghi worklog (thời gian `1h30m`; nút "Gợi ý" ước lượng từ commit của tôi trên nhánh ticket, theo phiên cách nhau 2 giờ; chưa gộp phiên AI): thời gian + ghi chú; (tùy chọn) gợi ý thời gian từ khoảng commit / phiên AI trên nhánh đó ([11](11-token-by-branch.md))
 - [x] Mọi thao tác ghi vào `data/audit.log` (không ghi nội dung comment, chỉ độ dài); xác nhận hai bước khi bật ghi
 
 ## Giai đoạn 13d — Theo dõi thay đổi ticket (chỉ đọc, làm ngay sau 13a) *(người dùng yêu cầu 2026-11-27)*
 
 Mục tiêu: thấy ticket của mình, ghim thêm ticket cần để mắt, và biết khi chúng đổi để làm tiếp, không cần mở Jira.
 
-- [x] Phạm vi theo dõi = ticket "Việc của tôi" (13a, chưa Done) + ticket đã ghim. Ghim lưu cục bộ (`jira.pinned` trong cấu hình, không ghi gì lên Jira); nút ghim trên chip / panel, ô nhập mã để ghim ticket của người khác
+- [x] Phạm vi theo dõi = ticket "Việc của tôi" (13a, chưa Done) + ticket đã ghim. Ghim lưu cục bộ (`jira.pinned` trong cấu hình, không ghi gì lên Jira); nút ghim trên chip / panel, ô dán link hoặc mã để ghim ticket của người khác (nhận `/browse/KEY`, `?selectedIssue=KEY`)
 - [x] (làm khác: so sánh ảnh chụp trạng thái / người nhận / ưu tiên / sprint / comment cuối ở `server/jira/watch.js`, không gọi changelog; mốc lưu ở `data/jira-watch.json`, không phải cấu hình) Server: một lần gọi JQL `key in (...)` lấy `status, assignee, priority, sprint, summary, updated, comment` (giới hạn 50 key, dùng chung cache 60 giây của 13a); với ticket có `updated` mới hơn mốc đã xem mới gọi `/issue/{key}?fields=comment&expand=changelog` để biết cái gì đổi
 - [x] Sự kiện báo: **trạng thái đổi**, **comment mới** (tên người viết + vài dòng đầu, bỏ comment của chính mình), **đổi người nhận / ưu tiên / sprint**. Không báo sửa mô tả / tiêu đề (đã loại khỏi phạm vi)
 - [x] Mốc "đã xem" theo từng ticket (`jira.seen[key] = {updated, commentId}`), lưu cục bộ; mở panel ticket hoặc bấm "đánh dấu đã xem" thì cập nhật mốc
@@ -53,7 +53,7 @@ Mục tiêu: thấy ticket của mình, ghim thêm ticket cần để mắt, và
 
 - [x] Theo dõi theo người (tìm user trong Jira, lấy ticket giao cho họ chưa Done) hoặc theo JQL tự viết; tối đa 10 nhóm, mỗi nhóm 30 ticket; lưu cục bộ ở `data/jira-watch.json`, người kia không biết
 - [x] Ticket của nhóm theo dõi vào chung "Có gì mới" và dùng chung cơ chế báo thay đổi / thông báo; dòng ticket ghi "Theo dõi: tên"
-- [ ] Phạm vi báo riêng từng nhóm (vd chỉ báo đổi trạng thái), hiện báo mọi sự kiện như ticket của tôi
+- [x] Phạm vi báo riêng từng nhóm (tick loại thay đổi khi thêm; mặc định trạng thái + comment; ticket của tôi / đã ghim vẫn báo đủ)
 - [ ] Kiểm bằng mắt, thử trên Jira thật (tìm user Cloud `/user/search?query=`, DC `?username=`)
 
 ## Tiêu chí xong

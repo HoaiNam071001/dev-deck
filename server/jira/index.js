@@ -70,6 +70,8 @@ async function whatsNew() {
   const extra = await byKeys(pins.filter((k) => !have.has(k)))
   const items = [...m.items, ...extra].slice(0, 50)
   const via = new Map()
+  const scope = new Map() // KEY → loại sự kiện được báo (chỉ ticket không phải của tôi / đã ghim)
+  const own = new Set([...items.map((i) => i.key)])
   for (const f of follows) {
     try {
       const acc = store.get(f.account)
@@ -77,6 +79,7 @@ async function whatsNew() {
       for (const i of list) {
         if (!via.has(i.key)) via.set(i.key, [])
         via.get(i.key).push(f.label)
+        if (!own.has(i.key)) scope.set(i.key, new Set([...(scope.get(i.key) || []), ...(f.events || watch.KINDS)]))
         if (!items.some((x) => x.key === i.key)) items.push({ ...i, accountId: acc.id })
       }
     } catch (e) { errors.push({ accountId: f.account, name: 'Theo dõi “' + f.label + '”', error: e.message }) }
@@ -84,8 +87,8 @@ async function whatsNew() {
   const capped = items.slice(0, 150)
   const ev = new Map(watch.compare(capped).map((e) => [e.key, e.events]))
   return {
-    items: capped.map((i) => ({ issue: i, pinned: pins.includes(i.key), via: via.get(i.key) || [], events: ev.get(i.key) || [] })),
-    follows: follows.map((f) => ({ id: f.id, label: f.label, jql: f.jql, account: f.account })),
+    items: capped.map((i) => ({ issue: i, pinned: pins.includes(i.key), via: via.get(i.key) || [], events: (ev.get(i.key) || []).filter((e) => !scope.has(i.key) || scope.get(i.key).has(e.kind)) })),
+    follows: follows.map((f) => ({ id: f.id, label: f.label, jql: f.jql, account: f.account, events: f.events || watch.KINDS })),
     errors,
   }
 }
@@ -102,7 +105,7 @@ function follow(input) {
   const acc = store.get(String(input.account || ''))
   const jql = input.userId ? client.jqlOfUser(acc, input.userId) : String(input.jql || '')
   const label = input.userId ? String(input.label || input.userId) : String(input.label || jql)
-  return { follow: watch.addFollow({ account: acc.id, label, jql }) }
+  return { follow: watch.addFollow({ account: acc.id, label, jql, events: input.events }) }
 }
 
 /** Đánh dấu đã xem: `marks` = { KEY: updated } lúc người dùng nhìn thấy. Ticket đã đổi tiếp sau đó (updated khác) thì giữ nguyên, kẻo nuốt thay đổi chưa xem. */
@@ -128,6 +131,14 @@ async function links({ key }) {
     } catch { return null } // repo lỗi: bỏ qua
   })
   return out.filter((r) => r && (r.branches.length || r.suggested))
+}
+
+/** Gợi ý thời gian làm: từ commit của tôi trên các nhánh local có mã ticket. Chỉ gợi ý, người dùng sửa rồi mới ghi. */
+async function worktime({ key }) {
+  const repos = await links({ key })
+  const git = require('../git')
+  const times = (await pool(repos.flatMap((r) => r.branches.map((b) => [r.path, b])), 6, ([p, b]) => git.branchCommitTimes(p, b))).flat()
+  return require('./worktime').estimate(times)
 }
 
 const KEY_OK = /^[A-Z][A-Z0-9]+-\d+$/
@@ -179,4 +190,4 @@ async function act(input) {
 
 const pin = ({ key, on }) => ({ pinned: watch.pin(String(key || ''), on === true) })
 
-module.exports = { users, follow, transitionsOf, act, setWrite, links, whatsNew, seen, pin, accounts, addAccount, removeAccount, testAccount, issues }
+module.exports = { worktime, users, follow, transitionsOf, act, setWrite, links, whatsNew, seen, pin, accounts, addAccount, removeAccount, testAccount, issues }

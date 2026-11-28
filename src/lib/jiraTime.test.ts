@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseDuration } from './jiraTime'
+import { fmtDuration, parseDuration } from './jiraTime'
 
 describe('parseDuration', () => {
   it('hiểu h / m', () => {
@@ -11,5 +11,12 @@ describe('parseDuration', () => {
   })
   it('từ chối giá trị sai hoặc ngoài khoảng', () => {
     for (const x of ['', 'abc', '0m', '30s', '25h', '-1h', 'h']) expect(parseDuration(x)).toBeNull()
+  })
+})
+
+describe('fmtDuration', () => {
+  it('định dạng và đọc lại được', () => {
+    expect(fmtDuration(5400)).toBe('1h30m'); expect(fmtDuration(7200)).toBe('2h'); expect(fmtDuration(2700)).toBe('45m')
+    for (const x of [900, 5400, 7200, 86400]) expect(parseDuration(fmtDuration(x))).toBe(x)
   })
 })

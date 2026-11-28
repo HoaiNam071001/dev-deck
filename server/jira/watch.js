@@ -63,18 +63,21 @@ const MAX_FOLLOWS = 10
 const follows = () => read().follows
 
 /** Theo dõi một nhóm ticket theo JQL (theo người hoặc JQL tự viết). Chỉ lưu cục bộ. */
-function addFollow({ account, label, jql }) {
+const KINDS = ['status', 'assignee', 'priority', 'sprint', 'comment']
+function addFollow({ account, label, jql, events }) {
   const q = String(jql || '').trim()
   if (!q) throw new Error('Cần nhập JQL')
   if (q.length > 500) throw new Error('JQL quá dài (tối đa 500 ký tự)')
+  const scope = Array.isArray(events) ? KINDS.filter((k) => events.includes(k)) : KINDS
+  if (!scope.length) throw new Error('Chọn ít nhất một loại thay đổi cần báo')
   const d = read()
   if (d.follows.length >= MAX_FOLLOWS) throw new Error('Theo dõi tối đa ' + MAX_FOLLOWS + ' nhóm')
   if (d.follows.some((f) => f.account === account && f.jql === q)) throw new Error('Đã theo dõi nhóm này')
-  const f = { id: require('crypto').randomUUID(), account: String(account), label: String(label || q).trim().slice(0, 80), jql: q }
+  const f = { id: require('crypto').randomUUID(), account: String(account), label: String(label || q).trim().slice(0, 80), jql: q, events: scope }
   d.follows.push(f)
   write(d)
   return f
 }
 function removeFollow(id) { const d = read(); d.follows = d.follows.filter((f) => f.id !== id); write(d); return d.follows }
 
-module.exports = { follows, addFollow, removeFollow, pin, pinned, compare, markSeen, diff, snapshot }
+module.exports = { KINDS, follows, addFollow, removeFollow, pin, pinned, compare, markSeen, diff, snapshot }

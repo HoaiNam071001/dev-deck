@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api, useLoad } from '../api'
+import { ticketKey } from '../lib/jiraKey'
 import { forgetNotified } from '../lib/jiraWatch'
 import { setState, toast } from '../lib/store'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -67,9 +68,9 @@ export function JiraPage() {
               <h3 className="text-[13px] font-semibold">Có gì mới · việc của tôi, ticket đã ghim và người đang theo dõi</h3>
               {(news.data?.items.some((i) => i.events.length)) && <button className="btn sm ml-auto" onClick={() => void seen()}>Đã xem tất cả</button>}
             </div>
-            <form className="flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); void pin(pinKey.trim().toUpperCase(), true).then(() => setPinKey('')) }}>
-              <input className="mono w-40" value={pinKey} onChange={(e) => setPinKey(e.target.value)} placeholder="ABC-123" aria-label="Mã ticket cần ghim" spellCheck={false} />
-              <button className="btn sm" type="submit" disabled={!/^[A-Za-z][A-Za-z0-9]+-\d+$/.test(pinKey.trim())}>Ghim</button>
+            <form className="flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); const k = ticketKey(pinKey); if (k) void pin(k, true).then(() => setPinKey('')) }}>
+              <input className="mono w-72 max-w-full" value={pinKey} onChange={(e) => setPinKey(e.target.value)} placeholder="Dán link hoặc mã ticket (ABC-123)" aria-label="Link hoặc mã ticket cần ghim" spellCheck={false} />
+              <button className="btn sm" type="submit" disabled={!ticketKey(pinKey)}>Ghim</button>
             </form>
             <JiraFollows accounts={accounts.data ?? []} follows={news.data?.follows ?? []} onChanged={news.reload} />
             {news.loading && !news.data && <Spinner label="Đang tải ticket…" />}

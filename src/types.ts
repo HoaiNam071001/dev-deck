@@ -293,7 +293,8 @@ export interface JiraIssue {
 }
 export interface JiraEvent { kind: 'status' | 'assignee' | 'priority' | 'sprint' | 'comment'; text: string }
 export interface JiraNewItem { issue: JiraIssue; pinned: boolean; via: string[]; events: JiraEvent[] }
-export interface JiraFollow { id: string; label: string; jql: string; account: string }
+export interface JiraFollow { id: string; label: string; jql: string; account: string; events: JiraEvent['kind'][] }
 export interface JiraNew { items: JiraNewItem[]; follows: JiraFollow[]; errors: { accountId: string; name: string; error: string }[] }
 export interface JiraRepoLink { path: string; name: string; branches: string[]; suggested: boolean }
 export interface JiraTransition { id: string; name: string; to: string }
+export interface JiraWorktime { seconds: number; commits: number; sessions: number }

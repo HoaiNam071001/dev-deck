@@ -62,7 +62,9 @@ console.log('jira: ok')
   assert.ok(!log.includes('bí mật') && log.includes('jira.comment'))
   // theo dõi người / JQL
   assert.strictEqual(require('./client').jqlOfUser({}, 'ab"c\\d'), 'assignee = "abcd" AND statusCategory != Done ORDER BY updated DESC')
-  const f = jira.follow({ account: acc2.id, userId: 'u1', label: 'An' }).follow
+  assert.throws(() => jira.follow({ account: acc2.id, userId: 'u9', events: [] }), /ít nhất một/)
+  const f = jira.follow({ account: acc2.id, userId: 'u1', label: 'An', events: ['status', 'comment'] }).follow
+  assert.deepStrictEqual(f.events, ['status', 'comment'])
   await assert.rejects(async () => jira.follow({ account: acc2.id, userId: 'u1', label: 'An' }), /Đã theo dõi/)
   await assert.rejects(async () => jira.follow({ account: acc2.id, jql: '  ' }), /JQL/)
   const wn = await jira.whatsNew()
@@ -104,4 +106,17 @@ console.log('jira: ok')
   // ticket chưa có comment trước đó: comment đầu tiên của người khác vẫn được báo
   assert.strictEqual(diff(snapshot(mk()), mk({ comments: [{ id: '9', author: 'B', mine: false, body: 'hi' }] })).length, 1)
   console.log('jira watch: ok')
+})()
+
+;(() => {
+  const { estimate } = require('./worktime')
+  assert.deepStrictEqual(estimate([]), { seconds: 0, commits: 0, sessions: 0 })
+  assert.deepStrictEqual(estimate([1000]), { seconds: 1800, commits: 1, sessions: 1 })
+  // hai commit cách 1 giờ cùng phiên: 30' + 60' = 90' → 1h30
+  assert.strictEqual(estimate([0, 3600]).seconds, 5400)
+  // cách 5 giờ = hai phiên: 30' + 30' = 1h
+  const two = estimate([0, 5 * 3600]); assert.strictEqual(two.sessions, 2); assert.strictEqual(two.seconds, 3600)
+  assert.strictEqual(estimate([0, 100, 100, NaN]).commits, 2) // trùng / lỗi bị bỏ
+  assert.strictEqual(estimate(Array.from({ length: 200 }, (_, i) => i * 3600)).seconds, 86400) // chặn 24 giờ
+  console.log('jira worktime: ok')
 })()

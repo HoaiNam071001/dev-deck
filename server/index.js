@@ -178,6 +178,7 @@ async function api(req, res, url) {
       if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
       return json(res, 200, await jira.act(await readBody(req)))
     }
+    if (url.pathname === '/api/jira/worktime') return json(res, 200, await jira.worktime({ key: url.searchParams.get('key') || '' }))
     if (url.pathname === '/api/jira/links') return json(res, 200, await jira.links({ key: url.searchParams.get('key') || '' }))
     if (url.pathname === '/api/jira/users') return json(res, 200, await jira.users({ account: url.searchParams.get('account') || '', q: url.searchParams.get('q') || '' }))
     if (url.pathname === '/api/jira/follow') {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ScriptPackages, ScriptRun, ScriptLog, ActionResult, CloneJob, DeleteRepoInfo, ChangeRequest, ChangeRequestDetail, RemoteBranchesResponse, RemoteLocalJobs, PipelineRun, PipelineJob, CrListResponse, CrScope, CrState, RemoteAccount, ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, DiffKind, FileDiff, StashFile, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource, AiNotifyConfig, AiNotifyState, AiDoneEvent, JiraAccount, JiraIssue, JiraNew, JiraRepoLink, JiraTransition, JiraFollow } from './types'
+import type { ScriptPackages, ScriptRun, ScriptLog, ActionResult, CloneJob, DeleteRepoInfo, ChangeRequest, ChangeRequestDetail, RemoteBranchesResponse, RemoteLocalJobs, PipelineRun, PipelineJob, CrListResponse, CrScope, CrState, RemoteAccount, ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, DiffKind, FileDiff, StashFile, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource, AiNotifyConfig, AiNotifyState, AiDoneEvent, JiraAccount, JiraIssue, JiraNew, JiraRepoLink, JiraTransition, JiraFollow, JiraWorktime } from './types'
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
@@ -95,8 +95,9 @@ export const api = {
   jiraAct: (body: { action: 'transition' | 'comment' | 'worklog'; key: string; account: string; transitionId?: string; body?: string; seconds?: number }) =>
     request<{ ok: true }>('/api/jira/act', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),
   jiraUsers: (account: string, q: string) => request<{ id: string; name: string }[]>('/api/jira/users?' + new URLSearchParams({ account, q })),
-  jiraFollow: (body: { action?: 'remove'; id?: string; account?: string; userId?: string; label?: string; jql?: string }) =>
+  jiraFollow: (body: { action?: 'remove'; id?: string; account?: string; userId?: string; label?: string; jql?: string; events?: string[] }) =>
     request<{ follow?: JiraFollow; follows?: JiraFollow[] }>('/api/jira/follow', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),
+  jiraWorktime: (key: string) => request<JiraWorktime>('/api/jira/worktime?key=' + encodeURIComponent(key)),
   jiraNew: () => request<JiraNew>('/api/jira/new'),
   jiraPin: (key: string, on: boolean) =>
     request<{ pinned: string[] }>('/api/jira/pin', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key, on }) }),

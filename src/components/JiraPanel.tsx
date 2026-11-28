@@ -3,7 +3,7 @@ import { api, useLoad } from '../api'
 import { branchName, DEFAULT_BRANCH_TEMPLATE } from '../lib/jiraBranch'
 import { usePersisted } from '../lib/persist'
 import { suggestTransition } from '../lib/jiraSuggest'
-import { parseDuration } from '../lib/jiraTime'
+import { fmtDuration, parseDuration } from '../lib/jiraTime'
 import { JIRA_TONE } from '../lib/useJiraIssues'
 import { navigate } from '../lib/router'
 import { openRemoteCr } from '../lib/remoteWatch'
@@ -106,6 +106,7 @@ function JiraWrite({ issue }: { issue: JiraIssue }) {
   const [busy, setBusy] = useState(false)
   if (!acc) return null
   if (!acc.write) return <div className="border-t border-border pt-2 text-[12px] text-fg-mute">Account này đang chỉ đọc. Bật "cho phép ghi" ở trang Jira để chuyển trạng thái, comment, ghi thời gian.</div>
+  const wt = useLoad(() => api.jiraWorktime(issue.key), [issue.key], 0).data
   const secs = parseDuration(dur)
   const run = async (label: string, body: Parameters<typeof api.jiraAct>[0], done?: () => void) => {
     setBusy(true)
@@ -133,7 +134,8 @@ function JiraWrite({ issue }: { issue: JiraIssue }) {
       <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} placeholder="Viết comment…" aria-label="Comment" maxLength={20000} />
       <div className="flex items-center gap-2">
         <button className="btn sm" disabled={busy || !text.trim()} onClick={() => void run('Đã gửi comment', { action: 'comment', key: issue.key, account: issue.accountId, body: text }, () => setText(''))}>Gửi comment</button>
-        <input className="mono ml-auto w-24" value={dur} onChange={(e) => setDur(e.target.value)} placeholder="1h30m" aria-label="Thời gian làm" spellCheck={false} />
+        {wt && wt.seconds > 0 && <button className="btn sm ml-auto" title={`Ước lượng từ ${wt.commits} commit của bạn trên nhánh ticket (${wt.sessions} phiên làm việc); sửa lại nếu không đúng`} onClick={() => setDur(fmtDuration(wt.seconds))}>Gợi ý {fmtDuration(wt.seconds)}</button>}
+        <input className={'mono w-24 ' + (wt && wt.seconds > 0 ? '' : 'ml-auto')} value={dur} onChange={(e) => setDur(e.target.value)} placeholder="1h30m" aria-label="Thời gian làm" spellCheck={false} />
         <button className="btn sm" disabled={busy || secs === null} title={secs === null ? 'Nhập dạng 1h30m, 45m, 2h (1 phút – 24 giờ)' : undefined} onClick={() => void run('Đã ghi thời gian', { action: 'worklog', key: issue.key, account: issue.accountId, seconds: secs! }, () => setDur(''))}>Ghi giờ</button>
       </div>
     </div>
