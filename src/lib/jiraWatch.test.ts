@@ -3,7 +3,7 @@ import { freshEvents } from './jiraWatch'
 import type { JiraNewItem } from '../types'
 
 const item = (key: string, texts: string[]): JiraNewItem => ({
-  issue: { key } as JiraNewItem['issue'], pinned: false, events: texts.map((text) => ({ kind: 'status', text })),
+  issue: { key } as JiraNewItem['issue'], pinned: false, via: [], events: texts.map((text) => ({ kind: 'status', text })),
 })
 
 describe('freshEvents', () => {

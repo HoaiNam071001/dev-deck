@@ -85,4 +85,11 @@ const transition = (acc, key, id) => send(acc, `/issue/${key}/transitions`, 'POS
 const comment = (acc, key, text) => send(acc, `/issue/${key}/comment`, 'POST', { body: rich(acc, text) })
 const worklog = (acc, key, seconds, text) => send(acc, `/issue/${key}/worklog`, 'POST', { timeSpentSeconds: seconds, ...(text ? { comment: rich(acc, text) } : {}) })
 
-module.exports = { transitions, transition, comment, worklog, rich, extractKeys, adfText, normalize, whoami, projectKeys, search, KEY_RE }
+/** Tìm người theo tên (Cloud: query → accountId; Server / DC: username). Dùng để theo dõi việc của người đó. */
+async function findUsers(acc, q) {
+  const r = await get(acc, '/user/search?' + new URLSearchParams(acc.kind === 'cloud' ? { query: q, maxResults: '10' } : { username: q, maxResults: '10' }))
+  return (Array.isArray(r) ? r : []).filter((u) => u.active !== false).map((u) => ({ id: acc.kind === 'cloud' ? u.accountId : u.name || u.key, name: u.displayName || u.name || '' })).filter((u) => u.id)
+}
+const jqlOfUser = (acc, id) => `assignee = "${String(id).replace(/["\\]/g, '')}" AND statusCategory != Done ORDER BY updated DESC`
+
+module.exports = { findUsers, jqlOfUser, transitions, transition, comment, worklog, rich, extractKeys, adfText, normalize, whoami, projectKeys, search, KEY_RE }

@@ -179,6 +179,12 @@ async function api(req, res, url) {
       return json(res, 200, await jira.act(await readBody(req)))
     }
     if (url.pathname === '/api/jira/links') return json(res, 200, await jira.links({ key: url.searchParams.get('key') || '' }))
+    if (url.pathname === '/api/jira/users') return json(res, 200, await jira.users({ account: url.searchParams.get('account') || '', q: url.searchParams.get('q') || '' }))
+    if (url.pathname === '/api/jira/follow') {
+      if (req.method !== 'POST') return json(res, 405, { error: 'Chỉ nhận POST' })
+      if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
+      return json(res, 200, jira.follow(await readBody(req)))
+    }
     if (url.pathname === '/api/jira/new') return json(res, 200, await jira.whatsNew())
     if (url.pathname === '/api/jira/pins') return json(res, 200, { pinned: require('./jira/watch').pinned() })
     if (url.pathname === '/api/jira/pin' || url.pathname === '/api/jira/seen') {

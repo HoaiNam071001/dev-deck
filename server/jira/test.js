@@ -61,6 +61,15 @@ console.log('jira: ok')
   await assert.rejects(jira.act({ action: 'transition', key: 'ZZZ-1', account: acc2.id, transitionId: '1' }), /không thuộc/)
   const log = fs.readFileSync(path.join(process.env.DEVDECK_DATA, 'audit.log'), 'utf8')
   assert.ok(!log.includes('bí mật') && log.includes('jira.comment'))
+  // theo dõi người / JQL
+  assert.strictEqual(require('./client').jqlOfUser({}, 'ab"c\\d'), 'assignee = "abcd" AND statusCategory != Done ORDER BY updated DESC')
+  const f = jira.follow({ account: acc2.id, userId: 'u1', label: 'An' }).follow
+  await assert.rejects(async () => jira.follow({ account: acc2.id, userId: 'u1', label: 'An' }), /Đã theo dõi/)
+  await assert.rejects(async () => jira.follow({ account: acc2.id, jql: '  ' }), /JQL/)
+  const wn = await jira.whatsNew()
+  assert.ok(wn.items.some((x) => x.issue.key === 'ABC-1' && x.via.includes('An')))
+  assert.strictEqual(wn.follows.length, 1)
+  assert.deepStrictEqual(jira.follow({ action: 'remove', id: f.id }).follows, [])
   console.log('jira fetch: ok')
 })().catch((e) => { console.error(e); process.exit(1) })
 

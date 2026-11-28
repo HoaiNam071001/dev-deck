@@ -8,7 +8,7 @@ const KEY = /^[A-Z][A-Z0-9]+-\d+$/
 const MAX_PINS = 50
 
 function read() {
-  try { const d = JSON.parse(fs.readFileSync(FILE, 'utf8')); return { pinned: Array.isArray(d.pinned) ? d.pinned.filter((k) => KEY.test(k)) : [], seen: d.seen && typeof d.seen === 'object' ? d.seen : {} } } catch { return { pinned: [], seen: {} } }
+  try { const d = JSON.parse(fs.readFileSync(FILE, 'utf8')); return { follows: Array.isArray(d.follows) ? d.follows.filter((f) => f && f.id && f.jql && f.account) : [], pinned: Array.isArray(d.pinned) ? d.pinned.filter((k) => KEY.test(k)) : [], seen: d.seen && typeof d.seen === 'object' ? d.seen : {} } } catch { return { follows: [], pinned: [], seen: {} } }
 }
 function write(d) { fs.mkdirSync(path.dirname(FILE), { recursive: true }); fs.writeFileSync(FILE, JSON.stringify(d, null, 2)) }
 
@@ -59,4 +59,22 @@ function markSeen(issues) {
   write(d)
 }
 
-module.exports = { pin, pinned, compare, markSeen, diff, snapshot }
+const MAX_FOLLOWS = 10
+const follows = () => read().follows
+
+/** Theo dõi một nhóm ticket theo JQL (theo người hoặc JQL tự viết). Chỉ lưu cục bộ. */
+function addFollow({ account, label, jql }) {
+  const q = String(jql || '').trim()
+  if (!q) throw new Error('Cần nhập JQL')
+  if (q.length > 500) throw new Error('JQL quá dài (tối đa 500 ký tự)')
+  const d = read()
+  if (d.follows.length >= MAX_FOLLOWS) throw new Error('Theo dõi tối đa ' + MAX_FOLLOWS + ' nhóm')
+  if (d.follows.some((f) => f.account === account && f.jql === q)) throw new Error('Đã theo dõi nhóm này')
+  const f = { id: require('crypto').randomUUID(), account: String(account), label: String(label || q).trim().slice(0, 80), jql: q }
+  d.follows.push(f)
+  write(d)
+  return f
+}
+function removeFollow(id) { const d = read(); d.follows = d.follows.filter((f) => f.id !== id); write(d); return d.follows }
+
+module.exports = { follows, addFollow, removeFollow, pin, pinned, compare, markSeen, diff, snapshot }

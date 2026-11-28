@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { api, useLoad } from '../api'
 import { setState, toast } from '../lib/store'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { JiraFollows } from '../components/JiraFollows'
 import { JiraKey, JiraStatus } from '../components/JiraChip'
 import { ErrorBanner, Spinner } from '../components/ui'
 
@@ -10,7 +11,7 @@ export function JiraPage() {
   const accounts = useLoad(api.jiraAccounts, [], 0, 'jiraAccounts')
   const writable = new Set((accounts.data ?? []).filter((a) => a.write).map((a) => a.id))
   const hasAcc = (accounts.data?.length ?? 0) > 0
-  const news = useLoad(async () => (hasAcc ? api.jiraNew() : { items: [], errors: [] }), [hasAcc], 0)
+  const news = useLoad(async () => (hasAcc ? api.jiraNew() : { items: [], follows: [], errors: [] }), [hasAcc], 0)
   const [askWrite, setAskWrite] = useState<string | null>(null)
   const [pinKey, setPinKey] = useState('')
   const pin = async (key: string, on: boolean) => {
@@ -73,18 +74,19 @@ export function JiraPage() {
         {hasAcc && (
           <section className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <h3 className="text-[13px] font-semibold">Có gì mới · việc của tôi và ticket đã ghim</h3>
+              <h3 className="text-[13px] font-semibold">Có gì mới · việc của tôi, ticket đã ghim và người đang theo dõi</h3>
               {(news.data?.items.some((i) => i.events.length)) && <button className="btn sm ml-auto" onClick={() => void seen()}>Đã xem tất cả</button>}
             </div>
             <form className="flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); void pin(pinKey.trim().toUpperCase(), true).then(() => setPinKey('')) }}>
               <input className="mono w-40" value={pinKey} onChange={(e) => setPinKey(e.target.value)} placeholder="ABC-123" aria-label="Mã ticket cần ghim" spellCheck={false} />
               <button className="btn sm" type="submit" disabled={!/^[A-Za-z][A-Za-z0-9]+-\d+$/.test(pinKey.trim())}>Ghim</button>
             </form>
+            <JiraFollows accounts={accounts.data ?? []} follows={news.data?.follows ?? []} onChanged={news.reload} />
             {news.loading && !news.data && <Spinner label="Đang tải ticket…" />}
             {news.error && <ErrorBanner onRetry={news.reload}>{news.error}</ErrorBanner>}
             {news.data?.errors.map((e) => <div key={e.accountId} className="banner err">{e.name}: {e.error}</div>)}
             {news.data && !news.data.items.length && !news.data.errors.length && <span className="text-[12.5px] text-fg-mute">Không có ticket nào đang giao cho bạn hoặc đã ghim.</span>}
-            {news.data?.items.map(({ issue: i, pinned, events }) => (
+            {news.data?.items.map(({ issue: i, pinned, via, events }) => (
               <div key={i.key} className="flex flex-col gap-1 border-t border-border py-2 first:border-t-0">
                 <div className="grid grid-cols-[84px_minmax(0,1fr)_auto_26px] items-center gap-3 text-[13px]">
                   <JiraKey issue={i} />
@@ -92,7 +94,7 @@ export function JiraPage() {
                   <JiraStatus issue={i} writable={writable.has(i.accountId)} onChanged={news.reload} />
                   <button className={'ghost flex size-6 items-center justify-center ' + (pinned ? 'text-behind' : 'text-fg-mute')} aria-pressed={pinned} title={pinned ? 'Bỏ ghim' : 'Ghim để theo dõi'} aria-label={(pinned ? 'Bỏ ghim ' : 'Ghim ') + i.key} onClick={() => void pin(i.key, !pinned)}>{pinned ? '★' : '☆'}</button>
                 </div>
-                {(i.assignee || i.priority || i.sprint) && <div className="pl-[96px] text-[11.5px] text-fg-mute">{[i.priority, i.sprint].filter(Boolean).join(' · ')}</div>}
+                {(i.assignee || i.priority || i.sprint || via.length > 0) && <div className="pl-[96px] text-[11.5px] text-fg-mute">{[via.length ? 'Theo dõi: ' + via.join(', ') : '', i.assignee, i.priority, i.sprint].filter(Boolean).join(' · ')}</div>}
                 {events.map((e, n) => <div key={n} className="pl-[96px] text-[12px] text-fg-soft">{e.kind === 'comment' ? '💬 ' : '• '}{e.text}</div>)}
                 {events.length > 0 && <button className="btn sm ml-[96px] self-start" onClick={() => void seen(i.key)}>Đánh dấu đã xem</button>}
               </div>

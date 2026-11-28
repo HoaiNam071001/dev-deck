@@ -49,6 +49,13 @@ Mục tiêu: thấy ticket của mình, ghim thêm ticket cần để mắt, và
 - [x] "Làm tiếp" (panel ticket: nhánh local từ `/api/jira/links`, MR / PR của tôi / cần review có mã trong tiêu đề hoặc nhánh): từ ticket mở nhánh local đã nối (mã trong tên nhánh) hoặc MR / PR đã nối; chưa có nhánh thì nút "Tạo nhánh" (13b)
 - [x] Test: so sánh trước / sau ra đúng sự kiện, bỏ comment của mình, lần đầu không báo dồn, ADF → chữ thuần cho comment Cloud
 
+## Giai đoạn 13e — Theo dõi việc của người khác *(người dùng yêu cầu 2026-11-28)*
+
+- [x] Theo dõi theo người (tìm user trong Jira, lấy ticket giao cho họ chưa Done) hoặc theo JQL tự viết; tối đa 10 nhóm, mỗi nhóm 30 ticket; lưu cục bộ ở `data/jira-watch.json`, người kia không biết
+- [x] Ticket của nhóm theo dõi vào chung "Có gì mới" và dùng chung cơ chế báo thay đổi / thông báo; dòng ticket ghi "Theo dõi: tên"
+- [ ] Phạm vi báo riêng từng nhóm (vd chỉ báo đổi trạng thái), hiện báo mọi sự kiện như ticket của tôi
+- [ ] Kiểm bằng mắt, thử trên Jira thật (tìm user Cloud `/user/search?query=`, DC `?username=`)
+
 ## Tiêu chí xong
 
 - Nhánh `feature/ABC-123-...` hiện chip ABC-123 đúng trạng thái trên Jira.

@@ -68,18 +68,49 @@ const watch = require('./watch')
 /** Ticket lấy theo account, không lọc theo project key của ai; dùng cho ghim (mã đã hợp lệ). */
 const byKeys = (keys) => issues({ keys })
 
-/** Có gì mới: ticket của tôi + ticket đã ghim, kèm sự kiện đổi kể từ lần xem cuối. */
+/** Có gì mới: ticket của tôi + đã ghim + nhóm đang theo dõi (theo người / JQL), kèm sự kiện đổi kể từ lần xem cuối. */
 async function whatsNew() {
   const m = await mine()
+  const errors = [...m.errors]
   const pins = watch.pinned()
+  const follows = watch.follows()
   const have = new Set(m.items.map((i) => i.key))
   const extra = await byKeys(pins.filter((k) => !have.has(k)))
   const items = [...m.items, ...extra].slice(0, 50)
-  const ev = new Map(watch.compare(items).map((e) => [e.key, e.events]))
-  return {
-    items: items.map((i) => ({ issue: i, pinned: pins.includes(i.key), events: ev.get(i.key) || [] })),
-    errors: m.errors,
+  const via = new Map()
+  for (const f of follows) {
+    try {
+      const acc = store.get(f.account)
+      const list = await cached(`jira:follow:${f.id}`, 60000, () => client.search(acc, f.jql, 30))
+      for (const i of list) {
+        if (!via.has(i.key)) via.set(i.key, [])
+        via.get(i.key).push(f.label)
+        if (!items.some((x) => x.key === i.key)) items.push({ ...i, accountId: acc.id })
+      }
+    } catch (e) { errors.push({ accountId: f.account, name: 'Theo dõi “' + f.label + '”', error: e.message }) }
   }
+  const capped = items.slice(0, 150)
+  const ev = new Map(watch.compare(capped).map((e) => [e.key, e.events]))
+  return {
+    items: capped.map((i) => ({ issue: i, pinned: pins.includes(i.key), via: via.get(i.key) || [], events: ev.get(i.key) || [] })),
+    follows: follows.map((f) => ({ id: f.id, label: f.label, jql: f.jql, account: f.account })),
+    errors,
+  }
+}
+
+async function users({ account, q }) {
+  const text = String(q || '').trim()
+  if (text.length < 2) return []
+  return client.findUsers(store.get(String(account || '')), text.slice(0, 80))
+}
+
+/** Thêm nhóm theo dõi: `userId` (theo người) hoặc `jql` tự viết. */
+function follow(input) {
+  if (input.action === 'remove') { dropCache('jira:follow:'); return { follows: watch.removeFollow(String(input.id || '')) } }
+  const acc = store.get(String(input.account || ''))
+  const jql = input.userId ? client.jqlOfUser(acc, input.userId) : String(input.jql || '')
+  const label = input.userId ? String(input.label || input.userId) : String(input.label || jql)
+  return { follow: watch.addFollow({ account: acc.id, label, jql }) }
 }
 
 /** Đánh dấu đã xem một ticket (key) hoặc tất cả (không key). */
@@ -156,4 +187,4 @@ async function act(input) {
 
 const pin = ({ key, on }) => ({ pinned: watch.pin(String(key || ''), on === true) })
 
-module.exports = { transitionsOf, act, setWrite, links, whatsNew, seen, pin, accounts, addAccount, removeAccount, testAccount, issues, extract, mine }
+module.exports = { users, follow, transitionsOf, act, setWrite, links, whatsNew, seen, pin, accounts, addAccount, removeAccount, testAccount, issues, extract, mine }
