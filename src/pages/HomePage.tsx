@@ -5,7 +5,8 @@ import { SideSlot, StatusSlot } from '../components/Shell'
 import { Chip, ErrorBanner, Icon, Kbd, Kpi, KpiStrip, NavLabel, Spinner, type Tone } from '../components/ui'
 import { buildInbox } from '../lib/inbox'
 import { usePersisted } from '../lib/persist'
-import { relTime } from '../lib/format'
+import { effective } from '../lib/limits'
+import { relTime, short } from '../lib/format'
 import { bridge, MOD, notifyEnabled } from '../lib/platform'
 import { baseName } from '../lib/repo'
 import { Link, navigate } from '../lib/router'
@@ -46,12 +47,17 @@ export function HomePage() {
   const ov = useLoad(api.overview, [], 30000, 'overview')
   const pinned = useStore((s) => s.pinned)
   const rq = useStore((s) => s.reviewQueue)
+  const usage = useLoad(api.usage, [], 0, 'usage')
+  const jobs = useLoad(api.jobs, [], 0, 'jobs')
   const repos = useStore((s) => s.repos)
   const attention = useStore((s) => s.attention)
   const remoteUnread = useStore((s) => s.remoteUnread)
   const jiraUnread = useStore((s) => s.jiraUnread)
   const [done, setDone] = usePersisted<string[]>('home.inboxDone', [], Array.isArray)
   const inbox = buildInbox({ repos, reviewQueue: rq, remoteUnread, jiraUnread }).filter((i) => !done.includes(i.id))
+  const midnight = new Date().setHours(0, 0, 0, 0)
+  const aiToday = usage.data ? usage.data.reduce((n, r) => (new Date(r.t).getTime() >= midnight ? n + effective(r) : n), 0) : null
+  const jobList = jobs.data?.jobs ?? []
   const dirty = repos.filter((r) => r.staged + r.modified + r.untracked + r.conflicts > 0).length
   const [picking, setPicking] = useState(false)
   const b = bridge()
@@ -127,8 +133,8 @@ export function HomePage() {
           <Link to="/git" className="!text-fg"><Kpi label="Git" value={repos.length ? attention : '—'} sub={repos.length ? `${dirty} repo có thay đổi · ${repos.filter((r) => r.ahead > 0).length} chờ push` : 'Mở Git để quét'} /></Link>
           <Link to="/remotes" className="!text-fg"><Kpi label="Remotes" value={rq.waiting} sub={rq.late ? `${rq.late} trễ hơn 24 giờ` : 'chờ bạn review'} valueColor={rq.late ? 'var(--danger)' : undefined} /></Link>
           <Link to="/jira" className="!text-fg"><Kpi label="Jira" value={jiraUnread} sub="ticket có thay đổi mới" /></Link>
-          <Link to="/ai" className="!text-fg"><Kpi label="AI" value="→" sub="Xem token và hạn mức" /></Link>
-          <Link to="/jobs" className="!text-fg"><Kpi label="Job" value="→" sub="Dev server, test đang chạy" /></Link>
+          <Link to="/ai" className="!text-fg"><Kpi label="AI" value={aiToday === null ? (usage.error ? '!' : '…') : short(aiToday)} sub="token hôm nay" /></Link>
+          <Link to="/jobs" className="!text-fg"><Kpi label="Job" value={jobs.data ? jobList.length : (jobs.error ? '!' : '…')} sub={jobs.data && !jobs.data.supported ? 'chưa hỗ trợ hệ điều hành này' : `${jobList.filter((j) => j.kind === 'dev').length} dev · ${jobList.filter((j) => j.kind === 'test').length} test`} /></Link>
         </KpiStrip>
 
         <Panel title={`Cần xử lý${inbox.length ? ` · ${inbox.length}` : ''}`} action={done.length ? <button className="link-btn pr-0" onClick={() => setDone([])}>Hiện lại {done.length} mục đã ẩn</button> : undefined}>
