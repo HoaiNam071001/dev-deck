@@ -55,7 +55,7 @@ export function TokenPage() {
   const [range, setRange] = usePersisted<string>('ai.range', '1', (v) => typeof v === 'string' && RANGES.some((r) => r.id === v))
   const [gran, setGran] = usePersisted<number>('ai.gran', 0, (v) => typeof v === 'number')
   const [tab, setTab] = usePersisted<'chart' | 'detail'>('ai.tab', 'chart', (v) => v === 'chart' || v === 'detail')
-  const [stack, setStack] = usePersisted<'type' | 'provider' | 'project'>('ai.stack', 'type', (v) => v === 'type' || v === 'provider' || v === 'project')
+  const [stack, setStack] = usePersisted<'type' | 'provider' | 'project' | 'line'>('ai.stack', 'type', (v) => v === 'type' || v === 'provider' || v === 'project' || v === 'line')
   const [project, setProject] = usePersisted<string>('ai.project', '', (v) => typeof v === 'string')
   const [provider, setProvider] = usePersisted<string>('ai.provider', '', (v) => typeof v === 'string')
   const [notifyOpen, setNotifyOpen] = useState(false)
@@ -77,9 +77,10 @@ export function TokenPage() {
   const rows = useMemo(() => (project && branch !== '' ? inProject.filter((r) => (r.branch ?? '') === branch) : inProject), [inProject, project, branch])
   const s = useMemo(() => sum(rows), [rows])
   const g = granOf(gran, range)
-  const projSeries = useMemo(() => (stack === 'project' ? topSeries(rows) : []), [rows, stack])
+  const [hiddenSeries, setHiddenSeries] = useState<string[]>([])
+  const projSeries = useMemo(() => (stack === 'project' || stack === 'line' ? topSeries(rows) : []), [rows, stack])
   const series = useMemo(
-    () => (stack === 'project' ? buckets(rows, g, (r) => r.project, new Set(projSeries.map((s) => s.k))) : buckets(rows, g)),
+    () => (stack === 'project' || stack === 'line' ? buckets(rows, g, (r) => r.project, new Set(projSeries.map((s) => s.k))) : buckets(rows, g)),
     [rows, g, stack, projSeries],
   )
   const byTotal = (a: Totals, b: Totals) => totalOf(b) - totalOf(a)
@@ -132,7 +133,7 @@ export function TokenPage() {
       downloadCsv(`ai-token-chi-tiet-${stamp}.csv`, [head, ...body])
       return
     }
-    const cols = stack === 'project' ? projSeries : []
+    const cols = stack === 'project' || stack === 'line' ? projSeries : []
     const head = ['Thời điểm', 'Input', 'Output', 'Cache ghi', 'Cache đọc', 'Tổng', 'Tin nhắn', ...cols.map((c) => 'Dự án: ' + c.label)]
     const body = series.map((x) => [`${dayKey(new Date(x.b))} ${x.time}`, ...num(x), ...cols.map((c) => x.bySeries[c.k] ?? 0)])
     downloadCsv(`ai-token-${stamp}.csv`, [head, ...body])
@@ -197,8 +198,8 @@ ${s.files} file · ${s.rows} tin` : `Chưa thấy log${s.root ? ' tại ' + s.ro
               <option value="0">Tự động</option><option value="1">1 phút</option><option value="5">5 phút</option>
               <option value="15">15 phút</option><option value="60">Theo giờ</option><option value="1440">Theo ngày</option>
             </select>
-            <select value={stack} onChange={(e) => setStack(e.target.value as 'type' | 'provider' | 'project')} aria-label="Chia biểu đồ theo">
-              <option value="type">Theo loại token</option><option value="provider">Theo nhà cung cấp</option><option value="project">So sánh dự án</option>
+            <select value={stack} onChange={(e) => setStack(e.target.value as 'type' | 'provider' | 'project' | 'line')} aria-label="Chia biểu đồ theo">
+              <option value="type">Theo loại token</option><option value="provider">Theo nhà cung cấp</option><option value="project">So sánh dự án</option><option value="line">Đường theo repo</option>
             </select>
             </>}
             <button className="icon-btn" aria-label="Thông báo khi AI xong" title="Thông báo khi AI chạy xong" onClick={() => setNotifyOpen(true)}><Icon name="bell" size={13} /></button>
@@ -232,9 +233,11 @@ ${s.files} file · ${s.rows} tin` : `Chưa thấy log${s.root ? ' tại ' + s.ro
         <section className="panel pad">
           <div className="panel-bar">
             <h2>Token theo {g >= 1440 ? 'ngày' : g === 60 ? 'giờ' : g + ' phút'}</h2>
-            <div className="legend">{(stack === 'project' ? projSeries : stack === 'provider' ? PROVIDERS.map((p) => ({ k: p.id, label: p.label, color: p.color })) : KEYS).map(({ k, label, color }) => <span key={k}><i style={{ background: color }} />{label}</span>)}</div>
+            <div className="legend">{(stack === 'project' || stack === 'line' ? projSeries : stack === 'provider' ? PROVIDERS.map((p) => ({ k: p.id, label: p.label, color: p.color })) : KEYS).map(({ k, label, color }) => stack === 'line'
+              ? <button key={k} type="button" className="ghost" aria-pressed={!hiddenSeries.includes(k)} title="Bấm để ẩn / hiện đường" style={{ opacity: hiddenSeries.includes(k) ? 0.4 : 1 }} onClick={() => setHiddenSeries((h) => (h.includes(k) ? h.filter((x) => x !== k) : [...h, k]))}><i style={{ background: color }} />{label}</button>
+              : <span key={k}><i style={{ background: color }} />{label}</span>)}</div>
           </div>
-          <StackedChart data={series} g={g} by={stack} series={projSeries} />
+          <StackedChart data={series} g={g} by={stack} series={stack === 'line' ? projSeries.filter((x) => !hiddenSeries.includes(x.k)) : projSeries} />
         </section>
         </>}
 

@@ -54,7 +54,7 @@ API:
 - KPI "Tỉ lệ cache đọc": gộp chung nhưng nếu một provider không có cache ghi thì không làm sai mẫu số.
 - `projName`: bỏ regex đặc thù Claude (`c--Users-…`), để mỗi adapter tự trả tên project đã chuẩn hoá.
 - Cập nhật `Shell`, `router`, `CommandPalette`, `HomePage`, `App` theo bảng ở mục 1; ghi nhớ provider đang chọn qua `persist`.
-- [ ] Biểu đồ đường "Theo repo" *(người dùng yêu cầu 2026-11-28)*: mỗi repo / dự án một đường token theo thời gian để so xu hướng giữa các repo (bổ sung cho "So sánh dự án" dạng cột chồng). Mặc định 5 repo nhiều token nhất trong khoảng đang xem, còn lại gộp "Khác"; bấm chú thích để ẩn / hiện từng đường; tooltip theo mốc liệt kê token từng repo; đang lọc một dự án thì chỉ còn đường của dự án đó. Dùng lại `buckets(rows, g, (r) => r.project, …)` đã có, chỉ thêm cách vẽ đường trong `StackedChart` (hoặc component `LineChart` riêng), CSV giữ nguyên cột dự án. Bản vẽ: `design/desktop/v2/AI.html` (nút "Theo repo")
+- [x] (làm: lựa chọn "Đường theo repo" ở ô chia biểu đồ; `StackedChart` có chế độ `line`; top 6 dự án + Khác, bấm chú thích để ẩn / hiện; chưa kiểm bằng mắt) Biểu đồ đường "Theo repo" *(người dùng yêu cầu 2026-11-28)*: mỗi repo / dự án một đường token theo thời gian để so xu hướng giữa các repo (bổ sung cho "So sánh dự án" dạng cột chồng). Mặc định 5 repo nhiều token nhất trong khoảng đang xem, còn lại gộp "Khác"; bấm chú thích để ẩn / hiện từng đường; tooltip theo mốc liệt kê token từng repo; đang lọc một dự án thì chỉ còn đường của dự án đó. Dùng lại `buckets(rows, g, (r) => r.project, …)` đã có, chỉ thêm cách vẽ đường trong `StackedChart` (hoặc component `LineChart` riêng), CSV giữ nguyên cột dự án. Bản vẽ: `design/desktop/v2/AI.html` (nút "Theo repo")
 
 ## 4. Thứ tự làm
 

@@ -7,10 +7,10 @@ export interface Series { k: string; label: string; color: string }
 const H = 220
 const PAD = { l: 48, r: 8, t: 8, b: 42 }
 
-export function StackedChart({ data, g, by = 'type', series }: { data: Bucket[]; g: number; by?: 'type' | 'provider' | 'project'; series?: Series[] }) {
+export function StackedChart({ data, g, by = 'type', series }: { data: Bucket[]; g: number; by?: 'type' | 'provider' | 'project' | 'line'; series?: Series[] }) {
   const keys: Series[] =
-    by === 'project' && series ? series : by === 'provider' ? PROVIDERS.map((p) => ({ k: p.id, label: p.label, color: p.color })) : [...KEYS]
-  const val = (d: Bucket, k: string) => by === 'project' ? (d.bySeries[k] ?? 0) : (k in d.byProvider ? d.byProvider[k as keyof Bucket['byProvider']] : (d as unknown as Record<string, number>)[k])
+    (by === 'project' || by === 'line') && series ? series : by === 'provider' ? PROVIDERS.map((p) => ({ k: p.id, label: p.label, color: p.color })) : [...KEYS]
+  const val = (d: Bucket, k: string) => by === 'project' || by === 'line' ? (d.bySeries[k] ?? 0) : (k in d.byProvider ? d.byProvider[k as keyof Bucket['byProvider']] : (d as unknown as Record<string, number>)[k])
   const wrap = useRef<HTMLDivElement>(null)
   const [W, setW] = useState(800)
   const [hover, setHover] = useState<{ i: number; x: number; y: number } | null>(null)
@@ -24,7 +24,7 @@ export function StackedChart({ data, g, by = 'type', series }: { data: Bucket[];
     return () => ro.disconnect()
   }, [])
 
-  const max = useMemo(() => Math.max(1, ...data.map(totalOf)), [data])
+  const max = useMemo(() => Math.max(1, ...(by === 'line' ? data.flatMap((d) => keys.map(({ k }) => d.bySeries[k] ?? 0)) : data.map(totalOf))), [data, by, series]) // eslint-disable-line react-hooks/exhaustive-deps
   if (!data.length) return <div className="empty">Không có dữ liệu trong khoảng này</div>
 
   const bw = (W - PAD.l - PAD.r) / data.length
@@ -32,6 +32,8 @@ export function StackedChart({ data, g, by = 'type', series }: { data: Bucket[];
   const step = Math.ceil(data.length / 8)
   const dayMode = g >= 1440
   const h = hover ? data[hover.i] : null
+  const line = by === 'line'
+  const cxOf = (i: number) => PAD.l + i * bw + bw / 2
 
   return (
     <div ref={wrap} className="chart-wrap">
@@ -48,6 +50,10 @@ export function StackedChart({ data, g, by = 'type', series }: { data: Bucket[];
             </g>
           )
         })}
+        {line && keys.map(({ k, color }) => (
+          <polyline key={k} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" points={data.map((d, i) => `${cxOf(i)},${y(d.bySeries[k] ?? 0)}`).join(' ')} />
+        ))}
+        {line && hover && <line x1={cxOf(hover.i)} x2={cxOf(hover.i)} y1={PAD.t} y2={H - PAD.b} className="day-line" />}
         {data.map((d, i) => {
           let acc = 0
           const x = PAD.l + i * bw + bw * 0.12, w = bw * 0.76, cx = x + w / 2
@@ -55,7 +61,7 @@ export function StackedChart({ data, g, by = 'type', series }: { data: Bucket[];
           const showTick = i % step === 0 || (!dayMode && newDay)
           return (
             <g key={d.b}>
-              {keys.map(({ k, color }) => {
+              {!line && keys.map(({ k, color }) => {
                 const y0 = y(acc), y1 = y(acc + val(d, k))
                 acc += val(d, k)
                 return <rect key={k} x={x} y={y1} width={w} height={Math.max(0, y0 - y1)} style={{ fill: color }} />
@@ -80,7 +86,7 @@ export function StackedChart({ data, g, by = 'type', series }: { data: Bucket[];
         <div className="tip" style={{ left: Math.min(hover.x + 12, window.innerWidth - 220), top: hover.y + 12 }}>
           <b>{h.date} {dayMode ? '' : h.time}</b>
           {keys.map(({ k, label, color }) => <div key={k} className="tip-r"><span><i style={{ background: color }} />{label}</span><span className="mono">{fmt(val(h, k))}</span></div>)}
-          <div className="tip-r tip-t"><span>Tổng</span><span className="mono">{fmt(totalOf(h))}</span></div>
+          <div className="tip-r tip-t"><span>Tổng</span><span className="mono">{fmt(line ? keys.reduce((n, { k }) => n + val(h, k), 0) : totalOf(h))}</span></div>
           <div className="tip-r"><span>Tin nhắn</span><span className="mono">{fmt(h.msgs)}</span></div>
         </div>
       )}
