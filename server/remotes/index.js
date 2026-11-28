@@ -42,7 +42,15 @@ async function listChangeRequests({ account, scope, state }) {
     catch (e) { errors.push({ accountId: pub.id, name: pub.name, error: e.message }); return [] }
   }))
   const items = parts.flat().sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
-  return { items, errors, fetchedAt: new Date().toISOString() }
+  // Danh sách project của account (kể cả project chưa có MR); lỗi ở đây không chặn danh sách MR
+  const projects = (await Promise.all(picked.map(async (pub) => {
+    try {
+      const acc = store.get(pub.id)
+      const list = await cached(`repos:${acc.id}`, 300000, () => providerOf(acc).repos(acc))
+      return list.map((project) => ({ accountId: pub.id, provider: pub.provider, project }))
+    } catch { return [] }
+  }))).flat()
+  return { items, projects, errors, fetchedAt: new Date().toISOString() }
 }
 
 const PROJECT_RE = /^[\w.-]+(\/[\w.-]+)+$/

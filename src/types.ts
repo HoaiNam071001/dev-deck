@@ -203,7 +203,7 @@ export interface ChangeRequestDetail extends ChangeRequest {
   mergeStatus: string
   pipelineUrl: string | null
 }
-export interface CrListResponse { items: ChangeRequest[]; errors: { accountId: string; name: string; error: string }[]; fetchedAt: string }
+export interface CrListResponse { items: ChangeRequest[]; projects?: { accountId: string; provider: 'gitlab' | 'github'; project: string }[]; errors: { accountId: string; name: string; error: string }[]; fetchedAt: string }
 export interface RemoteBranch {
   name: string
   isDefault: boolean

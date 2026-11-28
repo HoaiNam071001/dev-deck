@@ -101,6 +101,17 @@ function enrich(acc, m, me) {
 
 const SCOPES = { mine: 'scope=created_by_me', assigned: 'scope=assigned_to_me' }
 
+/** Mọi project tôi là thành viên (không archived), tối đa 300, hoạt động gần nhất trước. Dạng "group/proj". */
+async function repos(acc) {
+  const out = []
+  for (let page = 1; page <= 3; page++) {
+    const { data } = await get(acc, `/projects?membership=true&simple=true&archived=false&order_by=last_activity_at&sort=desc&per_page=100&page=${page}`)
+    out.push(...(data || []).map((p) => p.path_with_namespace).filter(Boolean))
+    if ((data || []).length < 100) break
+  }
+  return out
+}
+
 /** Mọi MR (kể cả của người khác) trong các project tôi là thành viên: 40 project hoạt động gần nhất, mỗi project 20 MR, tối đa 100. */
 async function listAll(acc, state) {
   const me = acc.user
@@ -257,4 +268,4 @@ function parseKey(key) {
   return [project, iid]
 }
 
-module.exports = { whoami, list, byBranch, byProject, branches, pipelines, pipelineJobs, detail, parseKey, resolveThread, replyThread, retryPipeline, approve, merge, createChangeRequest }
+module.exports = { whoami, repos, list, byBranch, byProject, branches, pipelines, pipelineJobs, detail, parseKey, resolveThread, replyThread, retryPipeline, approve, merge, createChangeRequest }

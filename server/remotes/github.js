@@ -64,6 +64,20 @@ function toCR(acc, p, me) {
   }
 }
 
+/** Mọi repo tôi có quyền (không archived), tối đa 300, mới đẩy nhất trước. Dạng "owner/name". */
+async function repos(acc) {
+  const out = []
+  let after = null
+  for (let i = 0; i < 3; i++) {
+    const r = await gql(acc, 'query($after: String) { viewer { repositories(first: 100, after: $after, isArchived: false, orderBy: { field: PUSHED_AT, direction: DESC }, ownerAffiliations: [OWNER, COLLABORATOR, ORGANIZATION_MEMBER]) { nodes { nameWithOwner } pageInfo { hasNextPage endCursor } } } }', { after })
+    const c = r?.viewer?.repositories
+    out.push(...(c?.nodes || []).map((n) => n.nameWithOwner).filter((n) => REPO_RE.test(n)))
+    if (!c?.pageInfo?.hasNextPage) break
+    after = c.pageInfo.endCursor
+  }
+  return out
+}
+
 const SAFE_LOGIN = /^[A-Za-z0-9][A-Za-z0-9-]*(\[bot\])?$/
 
 async function list(acc, { scope, state }) {
@@ -233,4 +247,4 @@ function parseKey(key) {
   return [m[1], m[2], Number(num)]
 }
 
-module.exports = { whoami, list, byBranch, byProject, branches, pipelines, pipelineJobs, detail, parseKey, resolveThread, replyThread, retryPipeline, approve, merge, createChangeRequest }
+module.exports = { whoami, repos, list, byBranch, byProject, branches, pipelines, pipelineJobs, detail, parseKey, resolveThread, replyThread, retryPipeline, approve, merge, createChangeRequest }

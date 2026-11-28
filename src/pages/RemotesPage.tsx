@@ -11,7 +11,7 @@ import { SideSlot, StatusSlot } from '../components/Shell'
 import { Chip, ErrorBanner, Icon, Kpi, KpiStrip, NavLabel, Segmented, Select, Spinner } from '../components/ui'
 import { relTime } from '../lib/format'
 import { usePersisted } from '../lib/persist'
-import { GROUP_BYS, groupChangeRequests, projectKey, projectsOf, type CrGroup, type GroupBy, type ProjectEntry } from '../lib/remoteGroups'
+import { GROUP_BYS, groupChangeRequests, projectKey, projectsOf, splitPath, type CrGroup, type GroupBy, type ProjectEntry } from '../lib/remoteGroups'
 import { setState as setStore, toast, useStore } from '../lib/store'
 import type { ChangeRequest, CrScope, CrState } from '../types'
 
@@ -145,8 +145,10 @@ export function RemotesPage() {
   // Danh sách project cố định: chỉ thêm khi thấy project mới, không đổi thứ tự theo bộ lọc
   useEffect(() => {
     const fresh = projectsOf(all).filter((p) => !known[p.key])
-    if (fresh.length) setKnown({ ...known, ...Object.fromEntries(fresh.map((p) => [p.key, { name: p.name, parent: p.parent, provider: p.provider, accountId: p.accountId }])) })
-  }, [all, known, setKnown])
+    const extra = (crs.data?.projects ?? []).map((r) => ({ key: `${r.accountId}|${r.project}`, ...splitPath(r.project), provider: r.provider, accountId: r.accountId })).filter((p) => !known[p.key] && !fresh.some((f) => f.key === p.key))
+    const add = [...fresh, ...extra]
+    if (add.length) setKnown({ ...known, ...Object.fromEntries(add.map((p) => [p.key, { name: p.name, parent: p.parent, provider: p.provider, accountId: p.accountId }])) })
+  }, [all, crs.data?.projects, known, setKnown])
   const projects = useMemo(() => {
     const counts = new Map(present.map((p) => [p.key, p]))
     return Object.entries(known)
@@ -196,6 +198,7 @@ export function RemotesPage() {
     toast({ kind: 'ok', title: 'Đã ẩn project', detail: `${name} · xem lại ở nút "Project đã ẩn" cuối panel trái` })
   }
 
+  const dupNames = new Set(projects.filter((p, i) => projects.some((q, j) => j !== i && q.name === p.name)).map((p) => p.name))
   const ProjectItem = ({ p }: { p: (typeof projects)[number] }) => {
     const full = p.parent ? `${p.parent}/${p.name}` : p.name
     const isPinned = pinned.has(p.key)
@@ -203,7 +206,7 @@ export function RemotesPage() {
       <div className="group relative">
         <button className={'nav-item' + (activeProject === p.key ? ' on' : '')} aria-pressed={activeProject === p.key} title={full} onClick={() => setProject(activeProject === p.key ? null : p.key)}>
           <span className={'size-2 flex-none rounded-full ' + (p.provider === 'gitlab' ? 'bg-[#C9A8FF]' : 'bg-[#8FE0B0]')} />
-          <span className="truncate">{p.name}</span>
+          <span className="truncate">{dupNames.has(p.name) && p.parent ? `${p.parent}/${p.name}` : p.name}</span>
           {p.ciFail > 0 && <span className="size-1.5 flex-none rounded-full bg-danger" title={`${p.ciFail} CI lỗi`} />}
           {p.threads > 0 && <span className="size-1.5 flex-none rounded-full bg-behind" title={`${p.threads} thread chưa resolve`} />}
           <span className="nav-n group-hover:invisible">{p.count}</span>
