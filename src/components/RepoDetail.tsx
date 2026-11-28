@@ -31,9 +31,10 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
   const [amend, setAmend] = useState(false)
   const [newBranch, setNewBranch] = useState('')
   const [from, setFrom] = useState('')
+  const [branchQ, setBranchQ] = useState('')
   const [dialog, setDialog] = useState<BranchDialog | null>(null)
   const [branchMenu, setBranchMenu] = useState<string | null>(null)
-  useEffect(() => { setMessage(''); setAmend(false); setNewBranch(''); setFrom(''); setDialog(null); setBranchMenu(null) }, [repo.path])
+  useEffect(() => { setMessage(''); setAmend(false); setNewBranch(''); setFrom(''); setBranchQ(''); setDialog(null); setBranchMenu(null) }, [repo.path])
 
   const act = async (label: string, action: string, params: Record<string, unknown> = {}, quiet = false) => {
     setBusy(label)
@@ -63,6 +64,8 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
   const trackedDirty = data.files.some((f) => f.kind !== 'untracked')
   const bkey = (x: { remote: boolean; name: string }) => (x.remote ? 'r:' : 'l:') + x.name
   const localNames = data.branches.filter((x) => !x.remote).map((x) => x.name)
+  const bq = branchQ.trim().toLowerCase()
+  const shownBranches = [...data.branches.filter((x) => !x.remote), ...data.branches.filter((x) => x.remote)].filter((x) => !bq || x.name.toLowerCase().includes(bq))
   const canCommit = !busy && (amend ? !!data.commits.length : !!staged.length && !!message.trim())
   const commit = async () => { if (canCommit && await act('commit', 'commit', { message, amend })) { setMessage(''); setAmend(false) } }
   const iconBtn = 'icon-btn sm'
@@ -125,13 +128,16 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
           <div className="flex flex-col">
             <form className="flex gap-1.5 px-4 py-2.5" onSubmit={async (e) => { e.preventDefault(); if (newBranch.trim() && await act('create', 'createBranch', { name: newBranch.trim(), from: from || undefined })) { setNewBranch(''); setFrom('') } }}>
               <input className="min-w-0 flex-1 font-mono" value={newBranch} onChange={(e) => setNewBranch(e.target.value)} placeholder="Tên nhánh mới" aria-label="Tên nhánh mới" />
-              <select className="max-w-[40%] font-mono" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="Tạo từ" title="Điểm bắt đầu của nhánh mới">
-                <option value="">từ HEAD</option>
-                {data.branches.filter((x) => !x.current).map((x) => <option key={(x.remote ? 'r:' : 'l:') + x.name} value={x.name}>từ {x.name}</option>)}
-              </select>
+              <input className="max-w-[40%] min-w-0 flex-1 font-mono" list="branch-from-options" value={from} onChange={(e) => setFrom(e.target.value)} placeholder="Từ HEAD (gõ để tìm nhánh)" aria-label="Tạo từ" title="Điểm bắt đầu của nhánh mới: gõ để tìm nhánh, để trống = HEAD" spellCheck={false} />
+              <datalist id="branch-from-options">
+                {data.branches.map((x) => <option key={(x.remote ? 'r:' : 'l:') + x.name} value={x.name}>{x.remote ? 'remote' : 'local'}</option>)}
+              </datalist>
               <button type="submit" className="btn" disabled={!!busy || !newBranch.trim()}>Tạo nhánh</button>
             </form>
-            {[...data.branches.filter((x) => !x.remote), ...data.branches.filter((x) => x.remote)].map((x) => (
+            <div className="px-4 pb-2">
+              <input type="search" className="w-full font-mono" value={branchQ} onChange={(e) => setBranchQ(e.target.value)} placeholder="Lọc nhánh…" aria-label="Lọc nhánh" spellCheck={false} />
+            </div>
+            {shownBranches.map((x) => (
               <div key={(x.remote ? 'r:' : 'l:') + x.name} className="flex items-center gap-2 border-t border-line px-4 py-[7px] hover:bg-selected">
                 <span className={'size-1.5 flex-none rounded-full ' + (x.current ? 'bg-accent' : 'bg-transparent')} />
                 <span className="flex min-w-0 flex-1 flex-col">
@@ -156,6 +162,7 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
               </div>
             ))}
             {!data.branches.length && <p className="empty">Chưa có nhánh nào (repo chưa có commit)</p>}
+            {!!data.branches.length && !shownBranches.length && <p className="empty">Không có nhánh khớp “{branchQ}”</p>}
           </div>
         )}
 
