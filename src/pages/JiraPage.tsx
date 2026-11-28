@@ -1,7 +1,8 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { api, useLoad } from '../api'
 import { setState, toast } from '../lib/store'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { JiraAccountModal } from '../components/JiraAccountModal'
 import { JiraFollows } from '../components/JiraFollows'
 import { JiraKey, JiraStatus } from '../components/JiraChip'
 import { ErrorBanner, Spinner } from '../components/ui'
@@ -20,23 +21,7 @@ export function JiraPage() {
   const seen = async (key?: string) => {
     try { await api.jiraSeen(key); news.reload(); setState({ jiraUnread: 0 }) } catch (x) { toast({ kind: 'err', title: 'Không đánh dấu được', detail: (x as Error).message }) }
   }
-  const [kind, setKind] = useState<'cloud' | 'server'>('cloud')
-  const [baseUrl, setBaseUrl] = useState('')
-  const [email, setEmail] = useState('')
-  const [token, setToken] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [err, setErr] = useState<string | null>(null)
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault()
-    setBusy(true); setErr(null)
-    try {
-      const a = await api.addJiraAccount({ baseUrl: baseUrl.trim(), kind, email: email.trim(), token: token.trim() })
-      toast({ kind: 'ok', title: 'Đã thêm Jira', detail: `${a.name} · đăng nhập là ${a.user}` })
-      setToken(''); accounts.reload()
-    } catch (x) { setErr((x as Error).message) }
-    setBusy(false)
-  }
+  const [adding, setAdding] = useState(false)
   const setWrite = async (id: string, on: boolean) => {
     try { await api.setJiraWrite(id, on); accounts.reload(); toast({ kind: 'ok', title: on ? 'Đã bật thao tác ghi' : 'Đã tắt thao tác ghi' }) }
     catch (x) { toast({ kind: 'err', title: 'Không đổi được', detail: (x as Error).message }); return false }
@@ -54,7 +39,9 @@ export function JiraPage() {
           <h1>Jira</h1>
           <span className="text-[12px] text-fg-mute">Ticket giao cho bạn và ticket đã ghim, kèm thay đổi chưa xem. Mặc định chỉ đọc; muốn chuyển trạng thái, comment, ghi giờ thì bật ghi cho account</span>
         </div>
+        <button className="btn flex-none whitespace-nowrap" onClick={() => setAdding(true)}>+ Thêm account</button>
       </header>
+      {adding && <JiraAccountModal onClose={() => setAdding(false)} onAdded={() => accounts.reload()} />}
       {askWrite && (
         <ConfirmDialog title="Cho phép ghi lên Jira?" confirmLabel="Bật ghi" danger={false} onClose={() => setAskWrite(null)} onConfirm={async () => { const ok = await setWrite(askWrite, true); if (ok) setAskWrite(null); return ok }}>
           <p className="text-[12.5px] leading-relaxed">DevDeck sẽ được chuyển trạng thái, gửi comment và ghi giờ làm trên ticket bằng token của account này. Mỗi thao tác đều ghi vào nhật ký (không lưu nội dung comment). Token cần quyền ghi trên Jira.</p>
@@ -62,6 +49,7 @@ export function JiraPage() {
       )}
       <div className="flex max-w-[860px] flex-col gap-4">
         {accounts.error && <ErrorBanner onRetry={accounts.reload}>{accounts.error}</ErrorBanner>}
+        {accounts.data && !accounts.data.length && <p className="empty">Chưa có account Jira. Bấm “+ Thêm account” để kết nối.</p>}
         {(accounts.data ?? []).map((a) => (
           <div key={a.id} className="flex items-center gap-2 text-[12.5px]">
             <span className="font-semibold">{a.name}</span>
@@ -101,25 +89,6 @@ export function JiraPage() {
             ))}
           </section>
         )}
-
-        <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-3 border-t border-border pt-3">
-          <h3 className="text-[13px] font-semibold">Thêm account Jira</h3>
-          <div className="seg" role="group" aria-label="Loại Jira">
-            {(['cloud', 'server'] as const).map((k) => <button key={k} type="button" aria-pressed={kind === k} className={kind === k ? 'on' : ''} onClick={() => setKind(k)}>{k === 'cloud' ? 'Cloud' : 'Server / Data Center'}</button>)}
-          </div>
-          <label className="flex flex-col gap-1.5 text-[12px]"><span className="text-fg-mute">Base URL</span>
-            <input className="mono" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder={kind === 'cloud' ? 'https://ten.atlassian.net' : 'https://jira.congty.com'} spellCheck={false} required /></label>
-          {kind === 'cloud' && <label className="flex flex-col gap-1.5 text-[12px]"><span className="text-fg-mute">Email</span>
-            <input value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" required /></label>}
-          <label className="flex flex-col gap-1.5 text-[12px]"><span className="text-fg-mute">{kind === 'cloud' ? 'API token' : 'Personal Access Token'}</span>
-            <input type="password" className="mono" value={token} onChange={(e) => setToken(e.target.value)} autoComplete="off" spellCheck={false} required /></label>
-          <p className="text-[11.5px] leading-relaxed text-fg-mute">Token được mã hóa bằng khóa của hệ điều hành và chỉ gửi tới chính máy chủ Jira trên.</p>
-          {err && <div className="banner err" role="alert">{err}</div>}
-          <div className="flex items-center justify-end gap-2">
-            {busy && <Spinner label="Đang kiểm tra…" />}
-            <button type="submit" className="btn primary" disabled={busy || !token.trim() || !baseUrl.trim()}>Kiểm tra &amp; lưu</button>
-          </div>
-        </form>
       </div>
     </div>
   )
