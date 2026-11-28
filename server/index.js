@@ -16,6 +16,7 @@ const jobs = require('./jobs')
 const reporter = require('./jobs/reporter')
 const runner = require('./jobs/runner')
 const remotes = require('./remotes')
+const jira = require('./jira')
 
 const PORT = Number(process.env.PORT) || 4317
 const DIST = path.join(__dirname, '..', 'dist')
@@ -160,6 +161,21 @@ async function api(req, res, url) {
       if (req.method !== 'POST') return json(res, 405, { error: 'Chỉ nhận POST' })
       if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
       return json(res, 200, await jobs.stop(await readBody(req)))
+    }
+    if (url.pathname === '/api/jira/accounts') {
+      if (req.method !== 'POST') return json(res, 200, jira.accounts())
+      if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
+      const body = await readBody(req)
+      if (body.action === 'remove') return json(res, 200, jira.removeAccount(String(body.id || '')))
+      if (body.action === 'test') return json(res, 200, await jira.testAccount(String(body.id || '')))
+      return json(res, 200, await jira.addAccount(body))
+    }
+    if (url.pathname === '/api/jira/issues') return json(res, 200, await jira.issues({ keys: url.searchParams.getAll('key') }))
+    if (url.pathname === '/api/jira/mine') return json(res, 200, await jira.mine())
+    if (url.pathname === '/api/jira/extract') {
+      if (req.method !== 'POST') return json(res, 405, { error: 'Chỉ nhận POST' })
+      if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
+      return json(res, 200, await jira.extract(await readBody(req)))
     }
     if (url.pathname === '/api/remotes/accounts') {
       if (req.method !== 'POST') return json(res, 200, remotes.accounts())

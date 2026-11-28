@@ -54,4 +54,4 @@ function setWrite(id, on) {
 }
 function remove(id) { writeAll(readAll().filter((a) => a.id !== id)); return list() }
 
-module.exports = { setCrypto, list, get, add, remove, setWrite }
+module.exports = { setCrypto, seal, unseal, list, get, add, remove, setWrite }

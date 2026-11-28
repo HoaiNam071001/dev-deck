@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ScriptPackages, ScriptRun, ScriptLog, ActionResult, CloneJob, DeleteRepoInfo, ChangeRequest, ChangeRequestDetail, RemoteBranchesResponse, RemoteLocalJobs, PipelineRun, PipelineJob, CrListResponse, CrScope, CrState, RemoteAccount, ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, DiffKind, FileDiff, StashFile, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource, AiNotifyConfig, AiNotifyState, AiDoneEvent } from './types'
+import type { ScriptPackages, ScriptRun, ScriptLog, ActionResult, CloneJob, DeleteRepoInfo, ChangeRequest, ChangeRequestDetail, RemoteBranchesResponse, RemoteLocalJobs, PipelineRun, PipelineJob, CrListResponse, CrScope, CrState, RemoteAccount, ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, DiffKind, FileDiff, StashFile, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource, AiNotifyConfig, AiNotifyState, AiDoneEvent, JiraAccount, JiraIssue, JiraMine } from './types'
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
@@ -80,6 +80,17 @@ export const api = {
     request<RemoteAccount>('/api/remotes/accounts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'setWrite', id, on }) }),
   remoteAct: (body: { action: 'resolve' | 'unresolve' | 'reply' | 'retry' | 'approve' | 'unapprove' | 'merge' | 'create'; key?: string; threadId?: string; body?: string; account?: string; project?: string; id?: string; source?: string; target?: string; title?: string; description?: string }) =>
     request<{ ok: true; url: string | null; number: number | null }>('/api/remotes/act', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),
+  jiraAccounts: () => request<JiraAccount[]>('/api/jira/accounts'),
+  addJiraAccount: (a: { name?: string; baseUrl: string; kind?: 'cloud' | 'server'; email?: string; token: string }) =>
+    request<JiraAccount>('/api/jira/accounts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'add', ...a }) }),
+  removeJiraAccount: (id: string) =>
+    request<JiraAccount[]>('/api/jira/accounts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'remove', id }) }),
+  testJiraAccount: (id: string) =>
+    request<{ ok: true; user: string }>('/api/jira/accounts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'test', id }) }),
+  jiraIssues: (keys: string[]) => request<JiraIssue[]>('/api/jira/issues?' + new URLSearchParams(keys.map((k) => ['key', k]))),
+  jiraMine: () => request<JiraMine>('/api/jira/mine'),
+  jiraExtract: (texts: string[]) =>
+    request<string[][]>('/api/jira/extract', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ texts }) }),
   changeRequest: (key: string) => request<ChangeRequestDetail>('/api/remotes/cr?key=' + encodeURIComponent(key)),
   config: () => request<GitConfig>('/api/git/config'),
   overview: () => request<Overview>('/api/overview'),

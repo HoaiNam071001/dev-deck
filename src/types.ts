@@ -285,3 +285,10 @@ export interface ScriptPackage { rel: string; name: string; manager: 'npm' | 'pn
 export interface ScriptPackages { root: string; packages: ScriptPackage[] }
 export interface ScriptRun { id: string; repo: string; rel: string; script: string; args: string[]; manager: string; pid: number; start: string; end: string | null; code: number | null; port: number; running: boolean; seq: number }
 export interface ScriptLog { run: ScriptRun; from: number; lines: string[] }
+
+export interface JiraAccount { id: string; name: string; baseUrl: string; kind: 'cloud' | 'server'; email: string; user: string; tokenHint: string; write: boolean }
+export interface JiraIssue {
+  key: string; summary: string; status: string; category: 'todo' | 'doing' | 'done'
+  assignee: string; priority: string; type: string; sprint: string; description: string; url: string; accountId: string
+}
+export interface JiraMine { items: JiraIssue[]; errors: { accountId: string; name: string; error: string }[] }
