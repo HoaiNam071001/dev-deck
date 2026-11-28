@@ -93,7 +93,7 @@ function TitleBar() {
         </button>
       </div>
       <div className="tb-state"><span className={'dot ' + (scanning ? 'busy' : 'ok')} />{scanning ? 'Đang quét…' : 'Sẵn sàng'}</div>
-      {b?.close && (
+      {b?.close && b.platform !== 'darwin' && (   // macOS đã có 3 nút tròn hệ thống ở góc trái
         <div className="wc-group">
           <button className="wc" aria-label="Thu nhỏ" onClick={() => b.minimize?.()}><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0 5h10" stroke="currentColor" /></svg></button>
           <button className="wc" aria-label="Phóng to" onClick={() => b.maximize?.()}><svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><rect x=".5" y=".5" width="9" height="9" stroke="currentColor" /></svg></button>
