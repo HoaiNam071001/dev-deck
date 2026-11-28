@@ -1,5 +1,6 @@
 import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { api, useLoad } from '../api'
+import { DetailDock, useDockMode } from '../components/DetailDock'
 import { FolderPicker } from '../components/FolderPicker'
 import { BranchChip, BUSY, CopyBtn, isVitest, JobDetailModal, KIND, mb, PortLinks, ProgressBar, ProgressTop, ramColor, relDir, runtime, shortCmd } from '../components/JobDetail'
 import { ReporterSetup } from '../components/ReporterSetup'
@@ -84,6 +85,7 @@ function JobCard({ j, now, onOpen, confirm, setConfirm, busy, onStop }: {
 export function JobsPage() {
   const [modal, setModal] = useState<{ pid: number; tab: 'procs' | 'test' } | null>(null)
   const [setupOpen, setSetupOpen] = useState(false)
+  const [dockMode, setDockMode] = useDockMode('jobs', 'modal')
   // Mở chi tiết thì quét nhanh hơn để thấy tiến trình con chạy / xong
   const [rms, sec, setSec] = useRefreshMs('jobs', 10)
   const jobs = useLoad(api.jobs, [], rms && modal ? Math.min(rms, 5000) : rms, 'jobs')
@@ -170,7 +172,6 @@ export function JobsPage() {
         </div>
       </SideSlot>
 
-      {mj && modal && <JobDetailModal key={mj.pid} job={mj} now={now} initialTab={modal.tab} onClose={() => setModal(null)} onStopped={jobs.reload} />}
       {setupOpen && <ReporterSetup onClose={() => setSetupOpen(false)} />}
       {picking && <FolderPicker start={folders[folders.length - 1] ?? ''} selected={folders} recent={cfg.data?.recent ?? []} onClose={() => setPicking(false)}
         onToggle={(p) => { if (folders.includes(p)) removeFolder(p); else void saveFolders([...folders, p]) }} />}
@@ -181,7 +182,8 @@ export function JobsPage() {
         <RefreshInfo at={jobs.at} ms={jobs.ms} loading={jobs.loading} sec={sec} onSec={setSec} />
       </StatusSlot>
 
-      <div className="page" style={{ padding: '24px 28px', gap: 16 }}>
+      <div className="relative flex min-h-0 flex-1">
+      <div className="page min-w-0" style={{ padding: '24px 28px', gap: 16 }}>
         <header className="page-h !items-start">
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <h1>Job</h1>
@@ -222,6 +224,12 @@ export function JobsPage() {
             ))}
           </section>
         ))}
+      </div>
+      {mj && modal && (
+        <DetailDock pageKey="jobs" mode={dockMode} open onClose={() => setModal(null)} label={'Chi tiết job ' + mj.name} minW={380} maxW={720} defW={460}>
+          <JobDetailModal key={mj.pid} job={mj} now={now} initialTab={modal.tab} onClose={() => setModal(null)} onStopped={jobs.reload} dock={{ mode: dockMode, onMode: setDockMode }} />
+        </DetailDock>
+      )}
       </div>
     </>
   )

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, useLoad } from '../api'
 import { ReporterSetup } from './ReporterSetup'
+import { DockButtons, type DockMode } from './DetailDock'
 import { Modal } from './Modal'
 import { Chip, Icon, Segmented, type Tone } from './ui'
 import { baseName } from '../lib/repo'
@@ -266,7 +267,7 @@ export function BranchChip({ branch }: { branch: string | null }) {
 }
 
 /** Modal chi tiết một job, dùng chung cho trang Job và trang Git. `job` nên là bản mới nhất theo PID để tự cập nhật khi quét lại. */
-export function JobDetailModal({ job: j, now, onClose, onStopped, initialTab = 'procs' }: { job: Job; now: number; onClose: () => void; onStopped?: () => void; initialTab?: DetailTab }) {
+export function JobDetailModal({ job: j, now, onClose, onStopped, initialTab = 'procs', dock }: { job: Job; now: number; onClose: () => void; onStopped?: () => void; initialTab?: DetailTab; /** Có = hiện trong khung `DetailDock` (không bọc Modal), kèm nút chuyển chế độ */ dock?: { mode: DockMode; onMode: (m: DockMode) => void } }) {
   const [tab, setTab] = useState<DetailTab>(initialTab)
   const [confirm, setConfirm] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -284,8 +285,7 @@ export function JobDetailModal({ job: j, now, onClose, onStopped, initialTab = '
     } catch (e) { toast({ kind: 'err', title: 'Không dừng được', detail: (e as Error).message }) }
     setBusy(false)
   }
-  return (
-    <Modal onClose={onClose} titleId="job-detail-title" header={
+  const title = (
       <h2 id="job-detail-title" className="flex min-w-0 items-center gap-2">
         <span className="truncate">{baseName(j.repo)}</span>
         <span className="text-[12px] font-normal text-fg-mute">{relDir(j)}</span>
@@ -293,7 +293,8 @@ export function JobDetailModal({ job: j, now, onClose, onStopped, initialTab = '
         {kind && <Chip tone={kind.tone}>{kind.label}</Chip>}
         {j.runId && <Chip tone="info">chạy từ app</Chip>}
       </h2>
-    }>
+  )
+  const body = (
       <div className="flex flex-col">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-3.5 py-2 text-[12px] text-fg-mute">
           <span className="inline-flex min-w-0 items-center gap-1"><span className="mono truncate text-fg-soft" title={j.cmd}>{shortCmd(j.cmd) || j.name}</span><CopyBtn text={j.cmd} title="Chép lệnh đầy đủ" /></span>
@@ -331,6 +332,21 @@ export function JobDetailModal({ job: j, now, onClose, onStopped, initialTab = '
           </span>
         </div>
       </div>
+  )
+  if (dock) {
+    return (
+      <>
+        <div className="flex flex-none items-center gap-2 border-b border-border px-3.5 py-2.5 text-[14px] font-semibold">
+          <div className="min-w-0 flex-1">{title}</div>
+          <DockButtons mode={dock.mode} onMode={dock.onMode} onClose={onClose} />
+        </div>
+        <div className="min-h-0 flex-1 overflow-auto">{body}</div>
+      </>
+    )
+  }
+  return (
+    <Modal onClose={onClose} titleId="job-detail-title" header={title}>
+      {body}
     </Modal>
   )
 }
