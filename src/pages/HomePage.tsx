@@ -36,6 +36,10 @@ export function HomePage() {
   const rq = useStore((s) => s.reviewQueue)
   const usage = useLoad(api.usage, [], 0, 'usage')
   const jobs = useLoad(api.jobs, [], 0, 'jobs')
+  const jiraAcc = useLoad(api.jiraAccounts, [], 0, 'jiraAccounts')
+  const remoteAcc = useLoad(api.remoteAccounts, [], 0, 'remoteAccounts')
+  const hasJira = (jiraAcc.data?.length ?? 0) > 0
+  const tickets = useLoad(async () => (hasJira ? api.jiraNew() : null), [hasJira], 0, 'homeJira')
   const repos = useStore((s) => s.repos)
   const attention = useStore((s) => s.attention)
   const remoteUnread = useStore((s) => s.remoteUnread)
@@ -86,6 +90,15 @@ export function HomePage() {
           ))}
           {!pinned.length && <span className="px-2 text-sm text-fg-mute">Chưa ghim repo nào</span>}
         </div>
+        {hasJira && (
+          <div className="side-group">
+            <NavLabel>Ticket đã ghim</NavLabel>
+            {(tickets.data?.items ?? []).filter((x) => x.pinned).slice(0, 8).map(({ issue: i }) => (
+              <button key={i.key} className="nav-item" title={i.summary} onClick={() => navigate('/jira')}><span className="truncate font-mono text-sm">{i.key}</span></button>
+            ))}
+            {tickets.data && !tickets.data.items.some((x) => x.pinned) && <span className="px-2 text-sm text-fg-mute">Chưa ghim ticket nào</span>}
+          </div>
+        )}
       </SideSlot>
       <StatusSlot>
         <span className="sb-item"><span className="dot" />Rảnh · không có tác vụ nền</span>
@@ -155,6 +168,25 @@ export function HomePage() {
           </Panel>
           </div>
           <div className="flex min-w-0 flex-col gap-3.5">
+          <Panel title="Ticket của tôi" action={<Link to="/jira" className="text-[12px]">Mở Jira →</Link>}>
+            {(tickets.data?.items ?? []).slice(0, 5).map(({ issue: i, events }) => (
+              <div key={i.key} className="flex items-center gap-2.5 border-t border-line px-3.5 py-2 text-[12px]">
+                <span className="font-mono text-fg-mute">{i.key}</span>
+                <span className="min-w-0 flex-1 truncate" title={i.summary}>{i.summary}</span>
+                {events.length > 0 && <Chip tone="behind">{events.length} mới</Chip>}
+              </div>
+            ))}
+            {jiraAcc.data && !hasJira && <p className="empty border-t border-line">Chưa có account Jira. <Link to="/jira">Thêm account</Link> để thấy ticket tại đây.</p>}
+            {hasJira && tickets.data && !tickets.data.items.length && <p className="empty border-t border-line">Không có ticket nào giao cho bạn hoặc đã ghim.</p>}
+            {hasJira && tickets.loading && !tickets.data && <div className="border-t border-line"><div className="spinner-wrap compact"><span className="spinner" aria-hidden="true" /></div></div>}
+          </Panel>
+
+          <Panel title="MR / PR" action={<Link to="/remotes" className="text-[12px]">Mở Remotes →</Link>}>
+            {remoteAcc.data && !remoteAcc.data.length
+              ? <p className="empty border-t border-line">Chưa có account GitLab / GitHub. <Link to="/remotes">Thêm account</Link> để theo dõi MR / PR.</p>
+              : <p className="border-t border-line px-3.5 py-2.5 text-[12px] text-fg-soft"><b>{rq.waiting}</b> đang chờ bạn review{rq.late > 0 && <> · <span className="text-danger">{rq.late} trễ hơn 24 giờ</span></>}{remoteUnread > 0 && <> · {remoteUnread} thread mới</>}</p>}
+          </Panel>
+
           <Panel title="Job đang chạy" action={<Link to="/jobs" className="text-[12px]">Mở Job →</Link>}>
             {jobList.slice(0, 5).map((j) => (
               <div key={j.pid} className="flex items-center gap-2.5 border-t border-line px-3.5 py-2 text-[12px]">

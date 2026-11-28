@@ -269,7 +269,7 @@ dialog.modal::backdrop { background: rgba(8,9,10,.6); }
 .src { display: flex; align-items: center; color: var(--fg-soft); }
 
 /* Mức dùng 5h / tuần */
-.usage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.usage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
 .usage-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .usage-h { display: flex; align-items: center; gap: 6px; font-weight: 600; }
 .usage-group { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
