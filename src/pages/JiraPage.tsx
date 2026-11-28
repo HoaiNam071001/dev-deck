@@ -5,6 +5,8 @@ import { forgetNotified } from '../lib/jiraWatch'
 import { setState, toast } from '../lib/store'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { JiraAccountModal } from '../components/JiraAccountModal'
+import { DetailDock, useDockMode } from '../components/DetailDock'
+import { JiraPanel } from '../components/JiraPanel'
 import { JiraFollows } from '../components/JiraFollows'
 import { JiraKey, JiraStatus } from '../components/JiraChip'
 import { ErrorBanner, Segmented, Spinner } from '../components/ui'
@@ -17,6 +19,8 @@ export function JiraPage() {
   const news = useLoad(async () => (hasAcc ? api.jiraNew() : { items: [], follows: [], errors: [] }), [hasAcc], 0)
   const [askWrite, setAskWrite] = useState<string | null>(null)
   const [q, setQ] = useState('')
+  const [dockMode, setDockMode] = useDockMode('jira', 'panel')
+  const [openKey, setOpenKey] = useState<string | null>(null)
   const [view, setView] = useState<'new' | 'pinned' | 'all'>('all')
   const search = useRef<HTMLInputElement>(null)
   // Phím "/" nhảy vào ô tìm (bỏ qua khi đang gõ ở ô khác)
@@ -40,6 +44,22 @@ export function JiraPage() {
   const needle = q.trim().toLowerCase()
   const shown = all.filter((x) => (view === 'new' ? x.events.length > 0 : view === 'pinned' ? x.pinned : true) &&
     (!needle || `${x.issue.key} ${x.issue.summary} ${x.issue.assignee ?? ''} ${x.issue.status ?? ''}`.toLowerCase().includes(needle)))
+  const openItem = openKey ? all.find((x) => x.issue.key === openKey) : undefined
+  // J / K chọn ticket kế / trước, P ghim, E đã xem (bỏ qua khi đang gõ)
+  useEffect(() => {
+    const on = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement
+      if (e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable || !shown.length) return
+      const i = shown.findIndex((x) => x.issue.key === openKey)
+      const cur = shown[i]
+      const k = e.key.toLowerCase()
+      if (k === 'j' || k === 'k') { e.preventDefault(); setOpenKey(shown[Math.max(0, Math.min(shown.length - 1, i < 0 ? 0 : i + (k === 'j' ? 1 : -1)))].issue.key) }
+      else if (k === 'p' && cur) { e.preventDefault(); void pin(cur.issue.key, !cur.pinned) }
+      else if (k === 'e' && cur) { e.preventDefault(); void seen(cur.issue.key) }
+    }
+    window.addEventListener('keydown', on)
+    return () => window.removeEventListener('keydown', on)
+  })
   const qKey = ticketKey(q)
   const canPin = !!qKey && !all.some((x) => x.issue.key === qKey)
   const setWrite = async (id: string, on: boolean) => {
@@ -53,7 +73,8 @@ export function JiraPage() {
   }
 
   return (
-    <div className="page" style={{ padding: '24px 28px', gap: 16 }}>
+    <div className="relative flex min-h-0 flex-1">
+    <div className="page min-w-0" style={{ padding: '24px 28px', gap: 16 }}>
       <header className="page-h !items-start">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <h1>Jira</h1>
@@ -99,7 +120,7 @@ export function JiraPage() {
               <div key={i.key} className="flex flex-col gap-1 border-t border-border py-2 first:border-t-0">
                 <div className="grid grid-cols-[84px_minmax(0,1fr)_auto_26px] items-center gap-3 text-[13px]">
                   <JiraKey issue={i} />
-                  <span className="truncate" title={i.summary}>{i.summary}</span>
+                  <button className="ghost min-w-0 truncate text-left !text-fg" title={i.summary + ' — xem chi tiết'} onClick={() => setOpenKey(i.key)}>{i.summary}</button>
                   <JiraStatus issue={i} writable={writable.has(i.accountId)} onChanged={news.reload} />
                   <button className={'ghost flex size-6 items-center justify-center ' + (pinned ? 'text-behind' : 'text-fg-mute')} aria-pressed={pinned} title={pinned ? 'Bỏ ghim' : 'Ghim để theo dõi'} aria-label={(pinned ? 'Bỏ ghim ' : 'Ghim ') + i.key} onClick={() => void pin(i.key, !pinned)}>{pinned ? '★' : '☆'}</button>
                 </div>
@@ -111,6 +132,12 @@ export function JiraPage() {
           </section>
         )}
       </div>
+    </div>
+    {openItem && (
+      <DetailDock pageKey="jira" mode={dockMode} open onClose={() => setOpenKey(null)} label={'Chi tiết ' + openItem.issue.key} minW={380} maxW={720} defW={460}>
+        <JiraPanel key={openItem.issue.key} issue={openItem.issue} events={openItem.events} onSeen={() => void seen(openItem.issue.key)} onClose={() => setOpenKey(null)} dock={{ mode: dockMode, onMode: setDockMode }} />
+      </DetailDock>
+    )}
     </div>
   )
 }

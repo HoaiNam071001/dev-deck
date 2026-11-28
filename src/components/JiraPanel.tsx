@@ -8,26 +8,66 @@ import { JIRA_TONE } from '../lib/useJiraIssues'
 import { navigate } from '../lib/router'
 import { openRemoteCr } from '../lib/remoteWatch'
 import { setState, toast } from '../lib/store'
-import type { JiraIssue } from '../types'
+import type { JiraEvent, JiraIssue } from '../types'
+import { DockButtons, type DockMode } from './DetailDock'
 import { Modal } from './Modal'
 import { Chip } from './ui'
 
 const safeUrl = (u: string) => /^https?:\/\//i.test(u) ? u : undefined
 
-export function JiraPanel({ issue, onClose }: { issue: JiraIssue; onClose: () => void }) {
+export function JiraPanel({ issue, onClose, dock, events, onSeen }: {
+  issue: JiraIssue; onClose: () => void
+  /** Có = hiện trong khung `DetailDock` (không bọc Modal), chia tab */
+  dock?: { mode: DockMode; onMode: (m: DockMode) => void }
+  /** Thay đổi chưa xem của ticket (chỉ dùng ở khung dock) */
+  events?: JiraEvent[]; onSeen?: () => void
+}) {
+  const [tab, setTab] = useState<'changes' | 'info' | 'continue' | 'update'>(events?.length ? 'changes' : 'info')
   const row = (k: string, v: string) => v ? <div className="flex gap-2 text-[12.5px]"><span className="w-20 flex-none text-fg-mute">{k}</span><span className="min-w-0">{v}</span></div> : null
+  const info = (
+    <>
+      <div><Chip tone={JIRA_TONE[issue.category]}>{issue.status}</Chip></div>
+      {row('Người nhận', issue.assignee || 'Chưa giao')}
+      {row('Ưu tiên', issue.priority)}
+      {row('Loại', issue.type)}
+      {row('Sprint', issue.sprint)}
+      {issue.description && <pre className="max-h-[40vh] overflow-auto whitespace-pre-wrap border-t border-border pt-2 font-sans text-[12.5px] text-fg-soft">{issue.description}</pre>}
+      {safeUrl(issue.url) && <a href={safeUrl(issue.url)} target="_blank" rel="noreferrer noopener" className="text-[12.5px] text-primary">Mở trong Jira ↗</a>}
+    </>
+  )
+  if (dock) {
+    const tabs = [['changes', 'Thay đổi'], ['info', 'Chi tiết'], ['continue', 'Làm tiếp'], ['update', 'Cập nhật']] as const
+    return (
+      <>
+        <div className="flex flex-none items-center gap-2 border-b border-border px-3.5 py-2.5 text-[14px] font-semibold">
+          <div className="flex min-w-0 flex-1 items-center gap-2"><span className="mono flex-none">{issue.key}</span><span className="truncate">{issue.summary}</span></div>
+          <DockButtons mode={dock.mode} onMode={dock.onMode} onClose={onClose} />
+        </div>
+        <div role="tablist" className="flex flex-none gap-0.5 border-b border-border px-2.5">
+          {tabs.map(([id, label]) => (
+            <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
+              className={'h-9 cursor-pointer border-0 border-b-2 bg-transparent px-2 text-[12px] font-medium whitespace-nowrap ' + (tab === id ? 'border-primary text-fg' : 'border-transparent text-fg-mute hover:text-fg')}>
+              {label}{id === 'changes' && !!events?.length && <span className="font-mono text-fg-mute"> {events.length}</span>}
+            </button>
+          ))}
+        </div>
+        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-4">
+          {tab === 'changes' && (events?.length
+            ? <>{events.map((e, n) => <div key={n} className="text-[12.5px] text-fg-soft">{e.kind === 'comment' ? '💬 ' : '• '}{e.text}</div>)}{onSeen && <button className="btn sm self-start" onClick={onSeen}>Đánh dấu đã xem</button>}</>
+            : <span className="text-[12.5px] text-fg-mute">Không có thay đổi chưa xem.</span>)}
+          {tab === 'info' && info}
+          {tab === 'continue' && <JiraContinue issue={issue} onDone={onClose} />}
+          {tab === 'update' && <JiraWrite issue={issue} />}
+        </div>
+      </>
+    )
+  }
   return (
     <Modal onClose={onClose} titleId="jira-title" header={<h2 id="jira-title" className="flex min-w-0 items-center gap-2"><span className="mono flex-none">{issue.key}</span><span className="truncate">{issue.summary}</span></h2>}>
       <div className="flex flex-col gap-2 p-4">
-        <div><Chip tone={JIRA_TONE[issue.category]}>{issue.status}</Chip></div>
-        {row('Người nhận', issue.assignee || 'Chưa giao')}
-        {row('Ưu tiên', issue.priority)}
-        {row('Loại', issue.type)}
-        {row('Sprint', issue.sprint)}
-        {issue.description && <pre className="max-h-[40vh] overflow-auto whitespace-pre-wrap border-t border-border pt-2 font-sans text-[12.5px] text-fg-soft">{issue.description}</pre>}
+        {info}
         <JiraContinue issue={issue} onDone={onClose} />
         <JiraWrite issue={issue} />
-        {safeUrl(issue.url) && <a href={safeUrl(issue.url)} target="_blank" rel="noreferrer noopener" className="text-[12.5px] text-primary">Mở trong Jira ↗</a>}
       </div>
     </Modal>
   )
