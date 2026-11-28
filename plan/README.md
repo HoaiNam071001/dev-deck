@@ -21,6 +21,7 @@ Việc phát sinh: thêm vào [00-backlog.md](00-backlog.md) bất cứ lúc nà
 | 11 | Token AI theo nhánh git / theo MR | [11-token-by-branch.md](11-token-by-branch.md) | chưa |
 | 12 | Chạy script npm ngay trong app | [12-npm-scripts.md](12-npm-scripts.md) | chưa |
 | 13 | Tích hợp Jira: chip ticket, tạo nhánh từ ticket, chuyển trạng thái, theo dõi thay đổi ticket | [13-jira.md](13-jira.md) | chưa |
+| 14 | Thông báo khi AI chạy xong một câu hỏi (4 nguồn qua log, Claude thêm hook Stop) | [14-ai-done-notify.md](14-ai-done-notify.md) | xong code (server + panel tab AI); chưa kiểm bằng mắt, chưa thử trên log thật của Codex / Gemini / Antigravity |
 
 ## Nguyên tắc xuyên suốt
 

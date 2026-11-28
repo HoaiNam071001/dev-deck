@@ -1,5 +1,6 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { api, useLoad } from '../api'
+import { AiNotifyPanel } from '../components/AiNotifyPanel'
 import { RefreshInfo, useRefreshMs } from '../components/RefreshInfo'
 import { SideSlot, StatusSlot } from '../components/Shell'
 import { StackedChart } from '../components/StackedChart'
@@ -54,6 +55,7 @@ export function TokenPage() {
   const [stack, setStack] = usePersisted<'type' | 'provider' | 'project'>('ai.stack', 'type', (v) => v === 'type' || v === 'provider' || v === 'project')
   const [project, setProject] = usePersisted<string>('ai.project', '', (v) => typeof v === 'string')
   const [provider, setProvider] = usePersisted<string>('ai.provider', '', (v) => typeof v === 'string')
+  const [notifyOpen, setNotifyOpen] = useState(false)
   const sources = useLoad(api.usageSources, [], ms, 'usageSources').data ?? []
 
   const all = data ?? []
@@ -163,11 +165,13 @@ ${s.files} file · ${s.rows} tin` : `Chưa thấy log${s.root ? ' tại ' + s.ro
               <option value="type">Theo loại token</option><option value="provider">Theo nhà cung cấp</option><option value="project">So sánh dự án</option>
             </select>
             </>}
+            <button className="icon-btn" aria-label="Thông báo khi AI xong" title="Thông báo khi AI chạy xong" onClick={() => setNotifyOpen(true)}><Icon name="bell" size={13} /></button>
             <button className="icon-btn" aria-label="Tải lại" title="Tải lại" onClick={reload} disabled={loading}><Icon name="refresh" size={13} spin={loading} /></button>
             <button className="icon-btn" aria-label="Xuất CSV" title={tab === 'detail' ? 'Xuất CSV (bảng chi tiết)' : 'Xuất CSV (theo thời gian)'} onClick={exportCsv} disabled={!series.length}><Icon name="download" size={13} /></button>
           </div>
         </header>
 
+        {notifyOpen && <AiNotifyPanel onClose={() => setNotifyOpen(false)} />}
         {error && <ErrorBanner onRetry={reload}>Không đọc được dữ liệu: {error}</ErrorBanner>}
 
         <UsageWindows rows={provider ? all.filter((r) => r.provider === provider) : all} />

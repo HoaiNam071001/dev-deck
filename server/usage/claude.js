@@ -37,10 +37,25 @@ function parse(text, file) {
   return rows
 }
 
+/** Cuối log là lời đáp của model không kèm tool_use (và không phải subagent) thì lượt đã xong; trả về dòng đó làm chữ ký (để không báo lại khi chỉ có dòng system ghi thêm), '' nếu chưa xong. `tail` có thể bắt đầu giữa dòng. */
+function isDone(tail) {
+  const lines = tail.split('\n')
+  for (let i = lines.length - 1; i >= 0; i--) {
+    let o
+    try { o = JSON.parse(lines[i]) } catch { continue }
+    if (o.type !== 'assistant' && o.type !== 'user') continue
+    if (o.type !== 'assistant' || o.isSidechain) return ''
+    const c = o.message && o.message.content
+    return Array.isArray(c) && c.some((b) => b && b.type === 'tool_use') ? '' : lines[i]
+  }
+  return ''
+}
+
 module.exports = {
   id: 'claude',
   label: 'Claude Code',
   root: ROOT,
   files: () => roots().flatMap((r) => walk(r.root, ['.jsonl'])),
   parse,
+  isDone,
 }

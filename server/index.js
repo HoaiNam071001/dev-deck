@@ -2,6 +2,9 @@ const http = require('http')
 const fs = require('fs')
 const path = require('path')
 const usage = require('./usage')
+const aiDone = require('./usage/done')
+const notifyConfig = require('./usage/notify-config')
+const claudeHook = require('./usage/claude-hook')
 const { claudeAccount } = require('./usage/account')
 const profiles = require('./usage/profiles')
 const git = require('./git')
@@ -27,6 +30,23 @@ const readBody = (req) => new Promise((resolve, reject) => {
 })
 
 async function api(req, res, url) {
+/** Cấu hình thông báo + các thư mục đã thấy trong log AI (để bật / tắt từng cái) + trạng thái hook Claude. */
+function aiNotifyState(req) {
+  const config = notifyConfig.load()
+  const seen = new Map()
+  for (const r of usage.collect()) {
+    if (!r.projectPath) continue
+    const k = notifyConfig.normPath(r.projectPath)
+    const e = seen.get(k) || { path: r.projectPath, name: r.project, providers: new Set(), last: '' }
+    e.providers.add(r.provider)
+    if (r.t > e.last) e.last = r.t
+    seen.set(k, e)
+  }
+  const projects = [...seen.values()].sort((a, b) => (a.last < b.last ? 1 : -1)).slice(0, 300)
+    .map((e) => ({ path: e.path, name: e.name, providers: [...e.providers], last: e.last }))
+  return { config, projects, hooks: claudeHook.status(req.socket.localPort) }
+}
+
   try {
     if (url.pathname === '/api/usage') return json(res, 200, usage.collect())
     if (url.pathname === '/api/account/claude') return json(res, 200, await claudeAccount(url.searchParams.get('dir') || ''))
@@ -39,6 +59,34 @@ async function api(req, res, url) {
       return json(res, 200, out)
     }
     if (url.pathname === '/api/usage/sources') return json(res, 200, usage.sources())
+    if (url.pathname === '/api/ai/done') return json(res, 200, aiDone.since(Number(url.searchParams.get('since')) || 0))
+    if (url.pathname === '/api/ai/notify') {
+      if (req.method === 'PUT') {
+        if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
+        const c = notifyConfig.save(await readBody(req))
+        gitActions.audit({ action: 'ai.notify.save', params: { enabled: c.enabled, rules: c.rules.length } })
+      }
+      return json(res, 200, aiNotifyState(req))
+    }
+    if (url.pathname === '/api/ai/hook/install') {
+      if (req.method !== 'POST') return json(res, 405, { error: 'Chỉ nhận POST' })
+      if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
+      const body = await readBody(req)
+      const dirs = body.dir === undefined ? profiles.dirs() : [profiles.resolve(String(body.dir))]
+      for (const d of dirs) {
+        let error
+        try { body.action === 'uninstall' ? claudeHook.uninstall(d) : claudeHook.install(d, req.socket.localPort) } catch (e) { error = e }
+        gitActions.audit({ action: 'ai.hook.' + (body.action === 'uninstall' ? 'uninstall' : 'install'), params: { dir: d }, ok: !error, error: error?.message })
+        if (error) throw error
+      }
+      return json(res, 200, aiNotifyState(req))
+    }
+    if (url.pathname === '/api/ai/hook/stop') {
+      if (req.method !== 'POST') return json(res, 405, { error: 'Chỉ nhận POST' })
+      if (!claudeHook.tokenOk(req.headers['x-devdeck-token'])) return json(res, 403, { error: 'Sai token' })
+      aiDone.fromHook(await readBody(req))
+      return json(res, 200, { ok: true })
+    }
     if (url.pathname === '/api/git/repos') return json(res, 200, await git.listRepos(url.searchParams.get('rescan') === '1'))
     if (url.pathname === '/api/git/repo') return json(res, 200, await git.repoDetail(url.searchParams.get('path') || ''))
     if (url.pathname === '/api/git/diff') {
@@ -164,3 +212,4 @@ function start(port = PORT) {
 module.exports = { start }
 
 if (require.main === module) start().then(({ port }) => console.log(`DevDeck: http://localhost:${port}`))
+  aiDone.start()

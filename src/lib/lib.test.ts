@@ -8,7 +8,8 @@ import { buckets, OTHER_KEY, topSeries } from './usage'
 import { diffCrs, unreadThreads } from './remoteWatch'
 import { diffRows, hunkContext, hunkStats, stepIndex } from './diff'
 import { authorQueue, queueCounts, reviewQueue, reviewState, reviewerWait, sizeLines, waitAlerts, waitHours, waitLevel, waitSince } from './reviewQueue'
-import type { ChangeRequest } from '../types'
+import type { AiDoneEvent, ChangeRequest } from '../types'
+import { doneMessage, effective, setPath } from './aiNotify'
 
 const repo = (o: Partial<RepoSummary> = {}): RepoSummary => ({
   path: 'C:\\code\\a', name: 'a', branch: 'main', detached: false, head: 'abc1234', upstream: 'origin/main', ahead: 0, behind: 0,
@@ -240,5 +241,30 @@ describe("worktreeDir", () => {
   it("<repo>-wt/<nhanh>, giu kieu dau phan cach", () => {
     expect(worktreeDir('C:\\code\\app', 'feat/login')).toBe('C:\\code\\app-wt\\feat-login')
     expect(worktreeDir("/home/u/app/", "fix")).toBe("/home/u/app-wt/fix")
+  })
+})
+
+describe('aiNotify (quy tắc thông báo theo thư mục)', () => {
+  const rules = [{ path: '/work', enabled: false }, { path: '/work/app', enabled: true }]
+  it('dài nhất thắng, không khớp nhầm tên gần giống', () => {
+    expect(effective(rules, '/work/other').on).toBe(false)
+    expect(effective(rules, '/work/app/src')).toMatchObject({ on: true, from: 'parent' })
+    expect(effective(rules, '/work/app')).toMatchObject({ on: true, from: 'self' })
+    expect(effective(rules, '/work/app2').on).toBe(false)
+    expect(effective(rules, '/work2')).toMatchObject({ on: true, from: 'default' })
+    expect(effective(rules, 'C:\\Work\\X').from).toBe('default')
+    expect(effective([{ path: 'C:\\Dev', enabled: false }], 'c:/dev/x').on).toBe(false)
+  })
+  it('setPath bỏ quy tắc thừa, giữ quy tắc cần thiết', () => {
+    expect(setPath([], '/a', true)).toEqual([])
+    expect(setPath([], '/a', false)).toEqual([{ path: '/a', enabled: false }])
+    expect(setPath([{ path: '/a', enabled: false }], '/a/b', true)).toEqual([{ path: '/a', enabled: false }, { path: '/a/b', enabled: true }])
+    expect(setPath([{ path: '/a', enabled: false }, { path: '/a/b', enabled: true }], '/a/b', false)).toEqual([{ path: '/a', enabled: false }])
+    expect(setPath([{ path: '/a', enabled: false }], '/a/', true)).toEqual([])
+  })
+  it('thông báo gộp nhiều sự kiện', () => {
+    const ev = (o: Partial<AiDoneEvent>): AiDoneEvent => ({ id: 1, source: 'claude', session: 's', project: 'app', projectPath: '/p', finishedAt: '', durationSec: 95, ...o })
+    expect(doneMessage([ev({})])).toEqual({ title: 'Claude Code đã xong', body: 'app · 1 phút 35 giây' })
+    expect(doneMessage([ev({ durationSec: null, project: '' }), ev({ source: 'codex' })]).title).toBe('2 phiên AI đã xong')
   })
 })

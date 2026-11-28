@@ -74,6 +74,10 @@ plan/     kế hoạch theo giai đoạn
 | Đường dẫn | Mô tả |
 |---|---|
 | `GET /api/usage` | Mỗi phản hồi của model: nhà cung cấp, thời điểm, dự án, model, 4 loại token |
+| `GET /api/ai/done?since=<id>` | Các lượt AI vừa chạy xong (đã lọc theo cấu hình thông báo) + mã mới nhất `last` |
+| `GET /api/ai/notify` · `PUT /api/ai/notify` | Cấu hình thông báo "AI xong" (công tắc, ngưỡng giây, nguồn, quy tắc bật / tắt theo thư mục) + thư mục đã thấy trong log + trạng thái hook Claude |
+| `POST /api/ai/hook/install` | `{action: 'install' \| 'uninstall', dir?}`: ghi / gỡ hook Stop của DevDeck trong `settings.json` của tài khoản Claude (sao lưu `.devdeck-bak`) |
+| `POST /api/ai/hook/stop` | Đích của hook Stop; cần header `x-devdeck-token` (token ngẫu nhiên ở `data/ai-hook-token`) |
 | `GET /api/usage/sources` | Nguồn log đã dò: có thấy không, số file, số tin |
 | `GET /api/git/repos[?rescan=1]` | Danh sách repo + nhánh hiện tại, trạng thái, ahead/behind |
 | `GET /api/git/repo?path=` | Chi tiết một repo: nhánh local/remote, file thay đổi, 20 commit, remote, stash |
@@ -104,4 +108,5 @@ Thao tác ghi:
 - Mỗi hành động là một hàm riêng trong `server/git-actions.js` (không nhận chuỗi lệnh tự do); tên nhánh qua `git check-ref-format`, chặn tên bắt đầu bằng `-`; API chỉ nhận `application/json`.
 - Thao tác phá hủy cần xác nhận hai bước: giao diện bắt gõ lại tên, server kiểm lại `confirmName`. Xóa nhánh local dùng `-d`, chỉ dùng `-D` khi người dùng tick "vẫn xóa" cho nhánh chưa merge. Không xóa nhánh đang mở và nhánh mặc định. Chuyển nhánh bị từ chối khi còn thay đổi chưa commit.
 - Tạo repo, clone, xóa repo chỉ làm trong các thư mục quét đã cấu hình (không phải chính thư mục gốc khi xóa). Clone chỉ nhận URL `https://`, `ssh://`, `git@`; tắt giao thức `ext`/`file`, không hỏi mật khẩu (dùng credential manager / ssh-agent có sẵn). Xóa repo chuyển vào Thùng rác chứ không xóa vĩnh viễn; không có Thùng rác thì từ chối.
+- Hook Stop của Claude: chỉ ghi vào `settings.json` khi người dùng bấm cài (hai bước), giữ nguyên hook khác, sao lưu bản gốc một lần, từ chối nếu file không phải JSON. Endpoint nhận hook cần token ngẫu nhiên (so sánh hằng thời gian) và chỉ đọc `transcript_path` nằm trong thư mục log của tài khoản Claude đã thêm.
 - Mọi thao tác ghi (kể cả lỗi) vào `data/audit.log`; không ghi `confirmName`, dry-run không được ghi.

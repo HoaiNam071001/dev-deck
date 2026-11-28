@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ActionResult, CloneJob, DeleteRepoInfo, ChangeRequest, ChangeRequestDetail, RemoteBranchesResponse, RemoteLocalJobs, PipelineRun, PipelineJob, CrListResponse, CrScope, CrState, RemoteAccount, ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, DiffKind, FileDiff, StashFile, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource } from './types'
+import type { ActionResult, CloneJob, DeleteRepoInfo, ChangeRequest, ChangeRequestDetail, RemoteBranchesResponse, RemoteLocalJobs, PipelineRun, PipelineJob, CrListResponse, CrScope, CrState, RemoteAccount, ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, DiffKind, FileDiff, StashFile, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource, AiNotifyConfig, AiNotifyState, AiDoneEvent } from './types'
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
@@ -14,6 +14,12 @@ export const api = {
   claudeAccounts: () => request<ClaudeProfile[]>('/api/accounts/claude'),
   claudeAccountAction: (action: 'add' | 'remove', dir: string) =>
     request<ClaudeProfile[]>('/api/accounts/claude', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action, dir }) }),
+  aiDone: (since: number) => request<{ events: AiDoneEvent[]; last: number }>('/api/ai/done?since=' + since),
+  aiNotify: () => request<AiNotifyState>('/api/ai/notify'),
+  aiNotifySave: (config: AiNotifyConfig) =>
+    request<AiNotifyState>('/api/ai/notify', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(config) }),
+  aiHook: (action: 'install' | 'uninstall', dir?: string) =>
+    request<AiNotifyState>('/api/ai/hook/install', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(dir === undefined ? { action } : { action, dir }) }),
   usageSources: () => request<UsageSource[]>('/api/usage/sources'),
   repos: (rescan = false) => request<ReposResponse>('/api/git/repos' + (rescan ? '?rescan=1' : '')),
   repo: (path: string) => request<RepoDetail>('/api/git/repo?path=' + encodeURIComponent(path)),

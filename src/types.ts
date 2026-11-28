@@ -19,6 +19,21 @@ export interface UsageSource { id: Provider; label: string; root: string; found:
 
 /** Một tài khoản Claude Code = một thư mục cấu hình. dir '' là tài khoản mặc định. */
 export interface ClaudeProfile { dir: string; path: string; email: string | null; org: string | null }
+/** Thông báo "AI chạy xong" (giai đoạn 14). Quy tắc theo thư mục: khớp tiền tố, dài nhất thắng. */
+export interface AiNotifyConfig {
+  enabled: boolean
+  minSeconds: number
+  debounceSeconds: number
+  sources: Record<string, boolean>
+  rules: { path: string; enabled: boolean }[]
+}
+export interface AiNotifyState {
+  config: AiNotifyConfig
+  projects: { path: string; name: string; providers: string[]; last: string }[]
+  hooks: { dir: string; path: string; installed: boolean; stale: boolean; error: string }[]
+}
+export interface AiDoneEvent { id: number; source: string; session: string; project: string; projectPath: string; finishedAt: string; durationSec: number | null }
+
 export interface AccountWindow { pct: number; resetsAt: string | null }
 export interface ClaudeAccount { error?: string; plan?: string | null; email?: string | null; org?: string | null; five?: AccountWindow | null; week?: AccountWindow | null; fetchedAt?: string }
 

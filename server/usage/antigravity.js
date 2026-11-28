@@ -13,7 +13,7 @@ const norm = (s) => s.toLowerCase().replace(/[\\/]+/g, '/')
 function knownProjects() {
   try {
     const o = JSON.parse(fs.readFileSync(PROJECTS, 'utf8')).projects || {}
-    return Object.entries(o).map(([p, name]) => ({ key: norm(p), name: String(name) }))
+    return Object.entries(o).map(([p, name]) => ({ key: norm(p), path: p, name: String(name) }))
   } catch { return [] }
 }
 
@@ -21,14 +21,19 @@ const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 /** Transcript không ghi project: đếm xem workspace nào được nhắc tới nhiều nhất, không có thì dùng mã hội thoại. */
 function projectOf(text, convId) {
+  const r = projectInfo(text, convId)
+  return r.name
+}
+
+function projectInfo(text, convId) {
   const t = norm(text)
   let best = null
   for (const p of knownProjects()) {
     // Phần sau đường dẫn không được là ký tự tên (tránh "goerp" khớp nhầm "goerp-web")
     const n = (t.match(new RegExp(esc(p.key) + '(?![\\w-])', 'g')) || []).length
-    if (n && (!best || n > best.n)) best = { n, name: p.name }
+    if (n && (!best || n > best.n)) best = { n, name: p.name, path: p.path }
   }
-  return best ? best.name : 'agy-' + convId.slice(0, 8)
+  return best ? { name: best.name, path: best.path } : { name: 'agy-' + convId.slice(0, 8), path: '' }
 }
 
 /**
@@ -37,7 +42,7 @@ function projectOf(text, convId) {
  */
 function parse(text, file) {
   const convId = path.basename(path.dirname(path.dirname(path.dirname(file))))
-  const project = projectOf(text, convId)
+  const { name: project, path: projectPath } = projectInfo(text, convId)
   const rows = []
   let n = 0
   for (const o of jsonLines(text, '"PLANNER_RESPONSE"')) {
@@ -48,6 +53,7 @@ function parse(text, file) {
       id: `${convId}#${o.step_index ?? n}`,
       t: o.created_at,
       project,
+      projectPath,
       model: o.model || 'unknown',
       input: num(o.input_tokens),
       output: num(o.output_tokens),
@@ -56,6 +62,17 @@ function parse(text, file) {
     })
   }
   return rows
+}
+
+/** Dòng cuối là lời đáp PLANNER_RESPONSE đã xong (bước công cụ sẽ được ghi thêm dòng khác phía sau); trả về dòng đó làm chữ ký, '' nếu chưa. */
+function isDone(tail) {
+  const lines = tail.split('\n')
+  for (let i = lines.length - 1; i >= 0; i--) {
+    let o
+    try { o = JSON.parse(lines[i]) } catch { continue }
+    return o.type === 'PLANNER_RESPONSE' && (!o.status || o.status === 'DONE') ? lines[i] : ''
+  }
+  return ''
 }
 
 /** Chỉ xem thư mục cấp 1 của brain/ để khỏi duyệt các file output lớn bên trong. */
@@ -69,4 +86,4 @@ function files() {
   return out
 }
 
-module.exports = { id: 'antigravity', label: 'Antigravity', root: ROOT, files, parse }
+module.exports = { id: 'antigravity', label: 'Antigravity', root: ROOT, files, parse, isDone }

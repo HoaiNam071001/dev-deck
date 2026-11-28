@@ -18,6 +18,7 @@ function useDesktopSync() {
   useEffect(() => { bridge()?.setReviewWaiting?.(waiting) }, [waiting])
   useEffect(() => bridge()?.onCommand?.((cmd) => {
     if (cmd === 'rescan') { setState({ pending: 'rescan' }); navigate('/git') }
+    else if (cmd === 'open:ai') navigate('/ai')
     else if (cmd.startsWith('open:')) openRemoteCr(cmd.slice(5))
   }), [])
 }

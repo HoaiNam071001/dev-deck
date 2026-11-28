@@ -16,7 +16,7 @@
     "service:status": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/autostart.ps1 status",
     "desktop:dev": "concurrently -k -n web,app -c green,blue \"vite --strictPort\" \"wait-on tcp:5183 && cross-env DEVDECK_DEV_URL=http://localhost:5183 electron .\"",
     "test": "vitest run",
-    "test:server": "node server/git-test.js && node server/usage/test.js && node server/jobs/test.js"
+    "test:server": "node server/git-test.js && node server/usage/test.js && node server/usage/done-test.js && node server/jobs/test.js"
   },
   "engines": {
     "node": ">=18"
