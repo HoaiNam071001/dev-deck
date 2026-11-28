@@ -9,8 +9,13 @@ export const RELEASE_NOTES: ReleaseNote[] = [
   {
     version: '2.9.0',
     date: '2026-11-28',
-    title: 'Giao diện mới: màu chính dễ nhìn, panel nhớ độ rộng theo trang',
+    title: 'Giao diện mới: màu chính chàm, Tổng quan gom việc, chi tiết panel hoặc cửa sổ nổi',
     items: [
+      { tag: 'new', text: 'Tổng quan là bảng tổng hợp: hàng chỉ số Git / Remotes / Jira / AI / Job và mục "Cần xử lý" gom việc từ mọi trang (review trễ, ticket có thay đổi, repo chưa push / pull / commit); bấm "Xong" để ẩn trên máy, mục tự hiện lại khi có thay đổi.' },
+      { tag: 'new', text: 'Chi tiết repo, job, MR / PR và ticket Jira mở được ở khung bên phải hoặc cửa sổ nổi; bấm nút để chuyển, kéo mép để đổi độ rộng, app nhớ lựa chọn theo từng trang.' },
+      { tag: 'new', text: 'Trang AI có biểu đồ đường theo repo để so xu hướng token giữa các repo; khoảng thời gian chọn bằng một hàng nút.' },
+      { tag: 'new', text: 'Trang Git: nút "Commit & Push", gợi ý mã ticket từ tên nhánh, nội dung commit đang gõ không bị mất khi đổi khung chi tiết.' },
+      { tag: 'new', text: 'Trang Jira: ô tìm (phím /), lọc "Có gì mới / Việc của tôi / Đã ghim", chuông thay đổi chưa xem, phím J / K / P / E; trang Job có hàng chỉ số, nhóm theo repo và lọc theo loại; trang Remotes bấm ô chỉ số để lọc nhanh.' },
       { tag: 'improve', text: 'Màu chính đổi sang chàm cho nút chính, mục đang chọn, tab và link; xanh lá giờ chỉ dùng cho trạng thái "sạch / qua / đang chạy" nên nhìn là phân biệt được ngay.' },
       { tag: 'improve', text: 'Panel trái nhớ độ rộng riêng cho từng trang (kéo mép, phím ←/→, bấm đúp để về mặc định).' },
     ],
