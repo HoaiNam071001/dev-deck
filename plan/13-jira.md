@@ -26,7 +26,7 @@ Lưu account giống Remotes (`server/remotes/store.js`): token mã hóa bằng 
 
 ## Giai đoạn 13b — Từ ticket sang nhánh
 
-- [x] Nút "Tạo nhánh" trên ticket (mẫu cố định `feature|fix/KEY-slug`, sửa tay được khi tạo; chưa có mẫu trong cài đặt): chọn repo (gợi ý repo đã có nhánh cùng project key), tên mặc định `<loại>/<KEY>-<tóm-tắt-không-dấu>` (mẫu sửa được trong cài đặt), dùng lại hành động tạo nhánh hiện có (qua `check-ref-format`)
+- [x] Nút "Tạo nhánh" trên ticket (mẫu `{type}/{key}-{slug}` sửa được ngay ở form tạo nhánh, nhớ trên máy; Bug → `fix`): chọn repo (gợi ý repo đã có nhánh cùng project key), tên mặc định `<loại>/<KEY>-<tóm-tắt-không-dấu>` (mẫu sửa được trong cài đặt), dùng lại hành động tạo nhánh hiện có (qua `check-ref-format`)
 - [x] Tạo MR / PR từ tab Branches tự điền tiêu đề `KEY: summary` và link ticket vào mô tả
 
 ## Giai đoạn 13c — Ghi (bật riêng từng account)

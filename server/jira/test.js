@@ -69,6 +69,15 @@ console.log('jira: ok')
   assert.ok(wn.items.some((x) => x.issue.key === 'ABC-1' && x.via.includes('An')))
   assert.strictEqual(wn.follows.length, 1)
   assert.deepStrictEqual(jira.follow({ action: 'remove', id: f.id }).follows, [])
+  // seen: chỉ ghi mốc khi updated khớp lúc người dùng nhìn thấy
+  const seenSpy = []
+  const w0 = require('./watch'); const orig = w0.markSeen; w0.markSeen = (l) => seenSpy.push(...l.map((i) => i.key))
+  const cur = (await jira.whatsNew()).items[0]
+  assert.ok(cur); {
+    await jira.seen({ marks: { [cur.issue.key]: 'cũ' } }); assert.deepStrictEqual(seenSpy, [])
+    await jira.seen({ marks: { [cur.issue.key]: cur.issue.updated } }); assert.deepStrictEqual(seenSpy, [cur.issue.key])
+  }
+  w0.markSeen = orig
   // ghim + mốc: ghim sai bị từ chối; lần đầu thấy ticket không có sự kiện, lần sau có
   const watch = require('./watch')
   assert.throws(() => jira.pin({ key: 'abc', on: true }), /không hợp lệ/)

@@ -100,8 +100,8 @@ export const api = {
   jiraNew: () => request<JiraNew>('/api/jira/new'),
   jiraPin: (key: string, on: boolean) =>
     request<{ pinned: string[] }>('/api/jira/pin', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key, on }) }),
-  jiraSeen: (key?: string) =>
-    request<{ ok: true }>('/api/jira/seen', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key }) }),
+  jiraSeen: (marks: Record<string, string>) =>
+    request<{ ok: true }>('/api/jira/seen', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ marks }) }),
   changeRequest: (key: string) => request<ChangeRequestDetail>('/api/remotes/cr?key=' + encodeURIComponent(key)),
   config: () => request<GitConfig>('/api/git/config'),
   overview: () => request<Overview>('/api/overview'),

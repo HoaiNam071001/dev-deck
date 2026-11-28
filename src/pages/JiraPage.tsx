@@ -20,7 +20,8 @@ export function JiraPage() {
     try { await api.jiraPin(key, on); news.reload() } catch (x) { toast({ kind: 'err', title: 'Không ghim được', detail: (x as Error).message }) }
   }
   const seen = async (key?: string) => {
-    try { await api.jiraSeen(key); forgetNotified(key); news.reload(); setState({ jiraUnread: 0 }) } catch (x) { toast({ kind: 'err', title: 'Không đánh dấu được', detail: (x as Error).message }) }
+    const marks = Object.fromEntries((news.data?.items ?? []).filter((x) => !key || x.issue.key === key).map((x) => [x.issue.key, x.issue.updated]))
+    try { await api.jiraSeen(marks); forgetNotified(key); news.reload(); setState({ jiraUnread: 0 }) } catch (x) { toast({ kind: 'err', title: 'Không đánh dấu được', detail: (x as Error).message }) }
   }
   const [adding, setAdding] = useState(false)
   const setWrite = async (id: string, on: boolean) => {

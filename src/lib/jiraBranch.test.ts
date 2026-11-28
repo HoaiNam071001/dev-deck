@@ -16,6 +16,11 @@ describe('jiraBranch', () => {
     expect(branchName({ key: 'ABC-13', summary: 'Add login', type: 'Story' })).toBe('feature/ABC-13-add-login')
     expect(branchName({ key: 'ABC-14', summary: '!!!', type: '' })).toBe('feature/ABC-14')
   })
+  it('branchName theo mẫu tùy chỉnh', () => {
+    expect(branchName({ key: 'ABC-1', summary: 'Add login', type: 'Task' }, '{key}_{slug}')).toBe('ABC-1_add-login')
+    expect(branchName({ key: 'ABC-1', summary: '', type: 'Bug' }, '{type}/{key}-{slug}')).toBe('fix/ABC-1')
+    expect(branchName({ key: 'ABC-1', summary: 'x', type: 'Bug' }, '  ')).toBe('fix/ABC-1-x')
+  })
   it('crDraft', () => {
     expect(crDraft({ key: 'A-1', summary: 'x', url: 'https://j/browse/A-1' })).toEqual({ title: 'A-1: x', description: 'Ticket: https://j/browse/A-1' })
   })

@@ -105,10 +105,11 @@ function follow(input) {
   return { follow: watch.addFollow({ account: acc.id, label, jql }) }
 }
 
-/** Đánh dấu đã xem một ticket (key) hoặc tất cả (không key). */
-async function seen({ key }) {
+/** Đánh dấu đã xem: `marks` = { KEY: updated } lúc người dùng nhìn thấy. Ticket đã đổi tiếp sau đó (updated khác) thì giữ nguyên, kẻo nuốt thay đổi chưa xem. */
+async function seen({ marks }) {
+  const m = marks && typeof marks === 'object' ? marks : {}
   const wn = await whatsNew()
-  watch.markSeen(wn.items.map((x) => x.issue).filter((i) => !key || i.key === key))
+  watch.markSeen(wn.items.map((x) => x.issue).filter((i) => Object.prototype.hasOwnProperty.call(m, i.key) && m[i.key] === i.updated))
   return { ok: true }
 }
 

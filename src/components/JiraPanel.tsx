@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api, useLoad } from '../api'
-import { branchName } from '../lib/jiraBranch'
+import { branchName, DEFAULT_BRANCH_TEMPLATE } from '../lib/jiraBranch'
+import { usePersisted } from '../lib/persist'
 import { suggestTransition } from '../lib/jiraSuggest'
 import { parseDuration } from '../lib/jiraTime'
 import { JIRA_TONE } from '../lib/useJiraIssues'
@@ -42,7 +43,10 @@ function JiraContinue({ issue, onDone }: { issue: JiraIssue; onDone: () => void 
     const seen = new Map(a.items.concat(b.items).filter((c) => re.test(c.title) || re.test(c.source)).map((c) => [c.key, c]))
     return [...seen.values()]
   }, [issue.key], 0)
-  const [name, setName] = useState(() => branchName(issue))
+  const [tpl, setTpl] = usePersisted<string>('devdeck.jira.branchTemplate', DEFAULT_BRANCH_TEMPLATE, (v) => typeof v === 'string')
+  const [typed, setTyped] = useState<string | null>(null)
+  const name = typed ?? branchName(issue, tpl)
+  const setName = setTyped
   const [repo, setRepo] = useState('')
   const [busy, setBusy] = useState(false)
   const repos = links.data ?? []
@@ -73,6 +77,9 @@ function JiraContinue({ issue, onDone }: { issue: JiraIssue; onDone: () => void 
             ? <>
                 <select value={pick} onChange={(e) => setRepo(e.target.value)} aria-label="Repo tạo nhánh">{repos.map((r) => <option key={r.path} value={r.path}>{r.name}{r.suggested ? ' (cùng project)' : ''}</option>)}</select>
                 <input className="mono" value={name} onChange={(e) => setName(e.target.value)} aria-label="Tên nhánh" spellCheck={false} />
+                <label className="flex items-center gap-2 text-[11.5px] text-fg-mute">Mẫu
+                  <input className="mono min-w-0 flex-1" value={tpl} onChange={(e) => { setTpl(e.target.value); setTyped(null) }} aria-label="Mẫu tên nhánh" title="Dùng {type} {key} {slug}; áp dụng cho mọi ticket" spellCheck={false} />
+                </label>
                 <button className="btn primary self-start" disabled={busy || !name.trim()} onClick={() => void create()}>Tạo nhánh và mở</button>
               </>
             : <span className="text-fg-mute">Chưa có repo nào có nhánh cùng project {issue.key.slice(0, issue.key.lastIndexOf('-'))}; hãy mở repo rồi tạo nhánh ở tab Nhánh với tên <span className="font-mono">{name}</span>.</span>}

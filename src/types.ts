@@ -289,7 +289,7 @@ export interface ScriptLog { run: ScriptRun; from: number; lines: string[] }
 export interface JiraAccount { id: string; name: string; baseUrl: string; kind: 'cloud' | 'server'; email: string; user: string; tokenHint: string; write: boolean }
 export interface JiraIssue {
   key: string; summary: string; status: string; category: 'todo' | 'doing' | 'done'
-  assignee: string; priority: string; type: string; sprint: string; description: string; url: string; accountId: string
+  assignee: string; priority: string; type: string; sprint: string; description: string; url: string; accountId: string; updated: string
 }
 export interface JiraEvent { kind: 'status' | 'assignee' | 'priority' | 'sprint' | 'comment'; text: string }
 export interface JiraNewItem { issue: JiraIssue; pinned: boolean; via: string[]; events: JiraEvent[] }

@@ -9,10 +9,14 @@ export function slugify(text: string, max = 40): string {
 
 const PREFIX: Record<string, string> = { bug: 'fix', defect: 'fix', 'sub-bug': 'fix', hotfix: 'hotfix', task: 'feature', story: 'feature', epic: 'feature' }
 
-/** Tên nhánh gợi ý `<loại>/<KEY>-<tóm-tắt>`: Bug → fix/, còn lại feature/. Người dùng sửa được trước khi tạo. */
-export function branchName(issue: { key: string; summary: string; type: string }): string {
-  const slug = slugify(issue.summary)
-  return `${PREFIX[issue.type.toLowerCase()] ?? 'feature'}/${issue.key}${slug ? '-' + slug : ''}`
+export const DEFAULT_BRANCH_TEMPLATE = '{type}/{key}-{slug}'
+
+/** Tên nhánh theo mẫu: {type} (Bug → fix, còn lại feature), {key} mã ticket, {slug} tóm tắt không dấu. Người dùng sửa được trước khi tạo. */
+export function branchName(issue: { key: string; summary: string; type: string }, template = DEFAULT_BRANCH_TEMPLATE): string {
+  const type = PREFIX[issue.type.toLowerCase()] ?? 'feature'
+  const t = template.trim() || DEFAULT_BRANCH_TEMPLATE
+  // Tóm tắt rỗng thì bỏ dấu gạch / gạch chéo thừa ở cuối
+  return t.replaceAll('{type}', type).replaceAll('{key}', issue.key).replaceAll('{slug}', slugify(issue.summary)).replace(/[-/]+$/, '')
 }
 
 /** Tiêu đề và mô tả MR / PR tự điền từ ticket. */
