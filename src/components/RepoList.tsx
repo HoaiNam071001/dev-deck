@@ -1,7 +1,7 @@
 import { JiraTags } from './JiraChip'
 import { useEffect, useRef, useState } from 'react'
 import { copyText, bridge, MOD, revealLabel } from '../lib/platform'
-import { isDirty } from '../lib/repo'
+import { isDirty, toneColor, toneOf } from '../lib/repo'
 import { relTime } from '../lib/format'
 import { runAction } from '../lib/actions'
 import { pinRepo, toast, unpinRepo } from '../lib/store'
@@ -67,10 +67,11 @@ const OVERSCAN = 6
 
 function RepoRow({ r, active, pinned, menuOpen, menuUp, top, onPick, onMenu, onCloseMenu, onDelete, ticked, onTick }: RowProps) {
   return (
-    <div style={top === undefined ? { contentVisibility: 'auto', containIntrinsicSize: `auto ${ROW_H - 2}px` } : { position: 'absolute', top, left: 0, right: 0, height: ROW_H, boxSizing: 'border-box' }} className={'group relative flex items-stretch border-b border-raised ' + (active ? 'bg-selected shadow-[inset_2px_0_0_var(--accent)]' : 'hover:bg-[#1F2124]')}>
+    <div style={top === undefined ? { contentVisibility: 'auto', containIntrinsicSize: `auto ${ROW_H - 2}px` } : { position: 'absolute', top, left: 0, right: 0, height: ROW_H, boxSizing: 'border-box' }} className={'group relative flex items-stretch border-b border-raised ' + (active ? 'bg-selected shadow-[inset_2px_0_0_var(--primary)]' : 'hover:bg-[#1F2124]')}>
       {onTick && <label className="flex w-8 flex-none cursor-pointer items-center justify-center pl-1"><input type="checkbox" checked={!!ticked} onChange={onTick} aria-label={'Chọn ' + r.name} /></label>}
       <button onClick={onPick} aria-current={active} className="flex min-w-0 flex-1 flex-col gap-[3px] border-0 bg-transparent py-[9px] pr-1 pl-3.5 text-left text-inherit">
         <span className="flex w-full items-center gap-2">
+          <span className="dot" style={{ background: toneColor(toneOf(r)) }} aria-hidden="true" />
           <span className="truncate font-medium">{r.name}</span>
           <span className="ml-auto flex gap-1">{!!r.worktrees && <Chip tone="info" title={r.worktrees + ' worktree phụ (đã gom vào repo này)'}>{r.worktrees} worktree</Chip>}<StatusChips r={r} /></span>
         </span>
@@ -89,7 +90,7 @@ function RepoRow({ r, active, pinned, menuOpen, menuUp, top, onPick, onMenu, onC
       </button>
       <button className={'ghost flex w-7 flex-none items-center justify-center ' + (pinned ? '!text-primary' : 'invisible group-hover:visible focus-visible:visible')} aria-label={pinned ? 'Bỏ ghim ' + r.name : 'Ghim ' + r.name} aria-pressed={pinned} title={pinned ? 'Bỏ ghim' : 'Ghim lên đầu'}
         onClick={() => (pinned ? unpinRepo(r.path) : pinRepo(r.path))}><Icon name="pin" size={12} fill={pinned} /></button>
-      <button className="ghost flex w-8 flex-none items-center justify-center" aria-label={'Thao tác cho ' + r.name} aria-haspopup="menu" aria-expanded={menuOpen} onClick={onMenu}>
+      <button className={'ghost flex w-8 flex-none items-center justify-center ' + (active || menuOpen ? '' : 'invisible group-hover:visible focus-visible:visible')} aria-label={'Thao tác cho ' + r.name} aria-haspopup="menu" aria-expanded={menuOpen} onClick={onMenu}>
         <Icon name="dots" size={14} />
       </button>
       {menuOpen && <ContextMenu label={'Thao tác cho ' + r.name} items={repoMenu(r, pinned, onDelete)} onClose={onCloseMenu} up={menuUp} />}
