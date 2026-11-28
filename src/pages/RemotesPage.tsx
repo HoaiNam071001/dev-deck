@@ -166,7 +166,9 @@ export function RemotesPage() {
   const list = useMemo(() => visible.filter((c) =>
     (!activeProject || projectKey(c) === activeProject) &&
     (!q || `${c.title} ${c.source} ${c.target} ${c.project} ${crRef(c)} ${c.author.name}`.toLowerCase().includes(q))), [visible, activeProject, q])
-  const groups = useMemo(() => groupChangeRequests(list, groupBy, pinned), [list, groupBy, pinned])
+  const [quick, setQuick] = useState<'' | 'review' | 'threads' | 'ci' | 'conflict'>('')
+  const shown = useMemo(() => !quick ? list : list.filter((c) => c.state === 'opened' && (quick === 'review' ? c.reviewMe : quick === 'threads' ? unresolved(c) > 0 : quick === 'ci' ? c.ci === 'failed' : c.conflict)), [list, quick])
+  const groups = useMemo(() => groupChangeRequests(shown, groupBy, pinned), [shown, groupBy, pinned])
 
   const opened = list.filter((c) => c.state === 'opened')
   const stats = {
@@ -332,10 +334,18 @@ export function RemotesPage() {
           <>
             <KpiStrip label="Tóm tắt MR / PR">
               <Kpi label="Đang mở" value={stats.open} />
-              <Kpi label="Cần tôi review" value={stats.review} valueColor={stats.review ? 'var(--ahead)' : undefined} />
-              <Kpi label="Thread chưa resolve" value={stats.threads} valueColor={stats.threads ? 'var(--behind)' : undefined} />
-              <Kpi label="CI lỗi" value={stats.ciFail} valueColor={stats.ciFail ? 'var(--danger)' : undefined} />
-              <Kpi label="Có conflict" value={stats.conflict} valueColor={stats.conflict ? 'var(--danger)' : undefined} />
+              <button type="button" className={'text-left' + (quick === 'review' ? ' rounded-[10px] outline outline-1 outline-primary' : '')} aria-pressed={quick === 'review'} title="Bấm để lọc nhanh" onClick={() => setQuick(quick === 'review' ? '' : 'review')}>
+                <Kpi label="Cần tôi review" value={stats.review} valueColor={stats.review ? 'var(--ahead)' : undefined} />
+              </button>
+              <button type="button" className={'text-left' + (quick === 'threads' ? ' rounded-[10px] outline outline-1 outline-primary' : '')} aria-pressed={quick === 'threads'} title="Bấm để lọc nhanh" onClick={() => setQuick(quick === 'threads' ? '' : 'threads')}>
+                <Kpi label="Thread chưa resolve" value={stats.threads} valueColor={stats.threads ? 'var(--behind)' : undefined} />
+              </button>
+              <button type="button" className={'text-left' + (quick === 'ci' ? ' rounded-[10px] outline outline-1 outline-primary' : '')} aria-pressed={quick === 'ci'} title="Bấm để lọc nhanh" onClick={() => setQuick(quick === 'ci' ? '' : 'ci')}>
+                <Kpi label="CI lỗi" value={stats.ciFail} valueColor={stats.ciFail ? 'var(--danger)' : undefined} />
+              </button>
+              <button type="button" className={'text-left' + (quick === 'conflict' ? ' rounded-[10px] outline outline-1 outline-primary' : '')} aria-pressed={quick === 'conflict'} title="Bấm để lọc nhanh" onClick={() => setQuick(quick === 'conflict' ? '' : 'conflict')}>
+                <Kpi label="Có conflict" value={stats.conflict} valueColor={stats.conflict ? 'var(--danger)' : undefined} />
+              </button>
             </KpiStrip>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -344,6 +354,13 @@ export function RemotesPage() {
               <Select<GroupBy> label="Nhóm theo" prefix="Nhóm theo" value={groupBy} onChange={setGroupBy} options={[{ id: 'project', label: 'Project' }, { id: 'target', label: 'Branch đích' }, { id: 'author', label: 'Tác giả' }, { id: 'none', label: 'Không' }]} />
               <input type="search" className="ml-auto !h-[30px] min-w-[200px] flex-1 sm:max-w-[320px]" placeholder="Tìm theo tiêu đề, branch, số, tác giả…" aria-label="Tìm MR / PR" value={query} onChange={(e) => setQuery(e.target.value)} />
             </div>
+
+            {quick && (
+              <div className="flex items-center gap-2 text-[12px]">
+                <span className="text-fg-mute">Lọc nhanh:</span>
+                <button className="chip chip-info inline-flex items-center gap-1.5" onClick={() => setQuick('')} title="Bỏ lọc nhanh"><b>{({ review: 'Cần tôi review', threads: 'Còn thread', ci: 'CI lỗi', conflict: 'Có conflict' })[quick]}</b><Icon name="x" size={11} /></button>
+              </div>
+            )}
 
             {activeEntry && (
               <div className="flex items-center gap-2 text-[12px]">
@@ -372,7 +389,7 @@ export function RemotesPage() {
                   onOpen={(c) => setOpenKey(c.key)} />
               )
             ))}
-            {list.length > 0 && <div className="text-[12px] text-fg-mute">{list.length} mục · {[...new Set(list.map((c) => PROVIDER_LABEL[c.provider]))].join(', ')} · bấm một dòng để xem thread review</div>}
+            {shown.length > 0 && <div className="text-[12px] text-fg-mute">{shown.length} mục · {[...new Set(shown.map((c) => PROVIDER_LABEL[c.provider]))].join(', ')} · bấm một dòng để xem thread review</div>}
           </>
         )}
       </div>
