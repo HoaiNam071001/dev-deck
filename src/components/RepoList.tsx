@@ -1,3 +1,4 @@
+import { JiraTags } from './JiraChip'
 import { useEffect, useRef, useState } from 'react'
 import { copyText, bridge, MOD, revealLabel } from '../lib/platform'
 import { isDirty } from '../lib/repo'
@@ -75,6 +76,7 @@ function RepoRow({ r, active, pinned, menuOpen, menuUp, top, onPick, onMenu, onC
         </span>
         <span className="flex w-full min-w-0 items-center gap-2 text-sm text-fg-mute">
           <span className={'font-mono whitespace-nowrap ' + (r.branch ? 'text-fg-soft' : 'text-behind')}>{r.branch ?? 'detached @ ' + r.head}</span>
+          {r.branch && <JiraTags texts={[r.branch]} compact />}
           {(r.ahead > 0 || r.behind > 0) && (
             <span className="font-mono whitespace-nowrap">
               {r.ahead > 0 && <span className="text-ahead">↑{r.ahead}</span>}{' '}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, useLoad } from '../api'
 import { branchName } from '../lib/jiraBranch'
+import { suggestTransition } from '../lib/jiraSuggest'
 import { parseDuration } from '../lib/jiraTime'
 import { navigate } from '../lib/router'
 import { openRemoteCr } from '../lib/remoteWatch'
@@ -51,9 +52,9 @@ export function useJiraIssues(texts: (string | null | undefined)[]): JiraIssue[]
 }
 
 /** Chip chỉ để xem (không bấm được), dùng trong hàng danh sách vốn đã là nút. */
-export function JiraTags({ texts }: { texts: (string | null | undefined)[] }) {
+export function JiraTags({ texts, compact }: { texts: (string | null | undefined)[]; compact?: boolean }) {
   const issues = useJiraIssues(texts)
-  return <>{issues.map((i) => <Chip key={i.key} tone={TONE[i.category]} title={`${i.summary} · ${i.status}`}><span className="font-mono">{i.key}</span> · {i.status}</Chip>)}</>
+  return <>{issues.map((i) => <Chip key={i.key} tone={TONE[i.category]} title={`${i.summary} · ${i.status}`}><span className="font-mono">{i.key}</span>{!compact && <> · {i.status}</>}</Chip>)}</>
 }
 
 export function JiraChip({ issue }: { issue: JiraIssue }) {
@@ -150,6 +151,13 @@ function JiraContinue({ issue, onDone }: { issue: JiraIssue; onDone: () => void 
 function JiraWrite({ issue }: { issue: JiraIssue }) {
   const acc = useLoad(api.jiraAccounts, [], 0, 'jiraAccounts').data?.find((a) => a.id === issue.accountId)
   const trans = useLoad(() => (acc?.write ? api.jiraTransitions(issue.key, issue.accountId) : Promise.resolve([])), [acc?.write, issue.key], 0)
+  const crStates = useLoad(async () => {
+    if (!acc?.write || !(await api.remoteAccounts()).length) return []
+    const re = new RegExp(`(^|[^A-Za-z0-9])${issue.key}(?!\\d)`, 'i')
+    const [o, m] = await Promise.all([api.changeRequests('all', 'mine', 'opened'), api.changeRequests('all', 'mine', 'merged')])
+    return o.items.concat(m.items).filter((c) => re.test(c.title) || re.test(c.source)).map((c) => c.state as string)
+  }, [acc?.write, issue.key], 0).data ?? []
+  const sug = suggestTransition(trans.data ?? [], issue.status, crStates)
   const [tid, setTid] = useState('')
   const [text, setText] = useState('')
   const [dur, setDur] = useState('')
@@ -167,6 +175,12 @@ function JiraWrite({ issue }: { issue: JiraIssue }) {
   return (
     <div className="flex flex-col gap-2 border-t border-border pt-2 text-[12.5px]">
       <span className="font-semibold">Cập nhật ticket</span>
+      {sug && (
+        <div className="flex items-center gap-2 rounded-md border border-accent/35 bg-accent/10 px-2.5 py-1.5">
+          <span className="min-w-0 flex-1">{sug.reason}: chuyển sang <b>{sug.transition.to || sug.transition.name}</b>?</span>
+          <button className="btn sm" disabled={busy} onClick={() => void run('Đã chuyển trạng thái', { action: 'transition', key: issue.key, account: issue.accountId, transitionId: sug.transition.id })}>Chuyển</button>
+        </div>
+      )}
       <div className="flex items-center gap-2">
         <select value={tid} onChange={(e) => setTid(e.target.value)} aria-label="Chuyển trạng thái" className="min-w-0 flex-1">
           <option value="">Chuyển trạng thái…</option>

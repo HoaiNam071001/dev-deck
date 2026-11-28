@@ -1,4 +1,6 @@
 const fs = require('fs')
+const os = require('os')
+const { execFileSync } = require('child_process')
 const path = require('path')
 const profiles = require('./profiles')
 
@@ -8,9 +10,20 @@ const TTL = 60_000
 const cache = new Map() // theo thư mục cấu hình
 
 /** Đọc token OAuth của một thư mục Claude Code. Token chỉ nằm trong bộ nhớ server, không bao giờ trả ra ngoài. */
+function readCredentials(dir) {
+  try { return JSON.parse(fs.readFileSync(path.join(dir, '.credentials.json'), 'utf8')) } catch { /* macOS: Claude Code lưu trong Keychain */ }
+  if (process.platform === 'darwin' && path.resolve(dir) === path.join(os.homedir(), '.claude')) {
+    try {
+      const out = execFileSync('security', ['find-generic-password', '-s', 'Claude Code-credentials', '-w'], { encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'ignore'] })
+      return JSON.parse(out.trim())
+    } catch { /* không có / bị từ chối */ }
+  }
+  return null
+}
+
 function readToken(dir) {
-  let j
-  try { j = JSON.parse(fs.readFileSync(path.join(dir, '.credentials.json'), 'utf8')) } catch { return { error: 'no-credentials' } }
+  const j = readCredentials(dir)
+  if (!j) return { error: 'no-credentials' }
   const o = j && j.claudeAiOauth
   if (!o || !o.accessToken) return { error: 'no-credentials' }
   if (o.expiresAt && o.expiresAt < Date.now()) return { error: 'expired' }

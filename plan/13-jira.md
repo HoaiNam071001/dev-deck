@@ -19,7 +19,7 @@ Lưu account giống Remotes (`server/remotes/store.js`): token mã hóa bằng 
 - [x] Thêm account Jira (base URL + email + API token / PAT), kiểm bằng `/myself` — xong (trang riêng Jira ở sidebar, `Ctrl/Cmd+6`, `src/pages/JiraPage.tsx`; tách khỏi Remotes theo yêu cầu 2026-11-28)
 - [~] Nhận mã ticket từ tên nhánh, tiêu đề và mô tả MR / PR: regex `[A-Z][A-Z0-9]+-\d+`, chỉ giữ project key có thật (lấy danh sách key từ `/project` một lần, cache) — server xong (`/api/jira/extract`), đã gắn chip
 - [x] Lấy nhiều ticket trong một lần gọi: JQL `key in (...)`, chỉ lấy `summary, status, assignee, priority, issuetype, sprint` (`/api/jira/issues`)
-- [x] Chip ticket — đầu chi tiết repo, tab Nhánh, danh sách MR, chi tiết MR (gom một lần gọi, cache 60 giây); chưa ở danh sách repo (màu theo nhóm trạng thái: To Do / In Progress / Done) ở: danh sách repo (nhánh hiện tại), tab Nhánh, danh sách MR, chi tiết MR
+- [x] Chip ticket — đầu chi tiết repo, tab Nhánh, danh sách MR, chi tiết MR (gom một lần gọi, cache 60 giây); danh sách repo hiện chip gọn chỉ có mã (màu theo nhóm trạng thái: To Do / In Progress / Done) ở: danh sách repo (nhánh hiện tại), tab Nhánh, danh sách MR, chi tiết MR
 - [x] Panel chi tiết: tiêu đề, trạng thái, người nhận, ưu tiên, sprint, link mở Jira (chỉ `http(s)`), mô tả hiển thị chữ thuần
 - [~] "Việc của tôi" (đã có ở trang Jira; "Làm tiếp" nối nhánh / MR trong panel ticket): JQL `assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC` — trang Jira riêng, kèm nhánh local / MR đã nối với từng ticket
 - [x] Test `server/jira/test.js`: regex, ADF, chuẩn hóa, giấu token, fetch giả Cloud (v3 Basic) + Data Center (v2 Bearer)
@@ -31,7 +31,7 @@ Lưu account giống Remotes (`server/remotes/store.js`): token mã hóa bằng 
 
 ## Giai đoạn 13c — Ghi (bật riêng từng account)
 
-- [~] Chuyển trạng thái (xong; chưa có gợi ý "In Review" / "Done" theo MR): lấy `/issue/{key}/transitions`, chọn một bước; gợi ý "chuyển sang In Review" khi tạo MR, "Done" khi MR merge (chỉ gợi ý, người dùng bấm mới làm)
+- [x] Chuyển trạng thái (gợi ý "In Review" khi có MR đang mở, "Done" khi MR đã merge, so theo từ khóa tên trạng thái đích; chỉ MR của tôi): lấy `/issue/{key}/transitions`, chọn một bước; gợi ý "chuyển sang In Review" khi tạo MR, "Done" khi MR merge (chỉ gợi ý, người dùng bấm mới làm)
 - [x] Comment lên ticket (soạn rồi Gửi, giống trả lời thread ở 9d)
 - [~] Ghi worklog (xong thời gian `1h30m`; chưa gợi ý từ commit / phiên AI): thời gian + ghi chú; (tùy chọn) gợi ý thời gian từ khoảng commit / phiên AI trên nhánh đó ([11](11-token-by-branch.md))
 - [x] Mọi thao tác ghi vào `data/audit.log` (không ghi nội dung comment, chỉ độ dài); xác nhận hai bước khi bật ghi
