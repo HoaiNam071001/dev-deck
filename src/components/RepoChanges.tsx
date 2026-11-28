@@ -107,7 +107,7 @@ export function RepoChanges({ data, busy, act }: { data: RepoDetail; busy: strin
       <SectionHead title={`Đã stage · ${staged.length}`} action={<button className="ghost h-6 text-sm disabled:opacity-40" disabled={!!busy || !staged.length} onClick={() => act('unstageAll', 'unstage', { all: true }, true)}>Bỏ stage tất cả</button>} />
       {staged.map((f) => renderRow(f, true))}
       {!staged.length && <p className="px-4 py-1 text-sm text-fg-mute">Chưa có tệp nào được stage</p>}
-      <SectionHead title={`Chưa stage · ${unstaged.length}`} action={<button className="ghost h-6 text-sm !text-accent disabled:opacity-40" disabled={!!busy || !unstaged.length} onClick={() => act('stageAll', 'stage', { all: true }, true)}>Stage tất cả</button>} />
+      <SectionHead title={`Chưa stage · ${unstaged.length}`} action={<button className="ghost h-6 text-sm !text-primary disabled:opacity-40" disabled={!!busy || !unstaged.length} onClick={() => act('stageAll', 'stage', { all: true }, true)}>Stage tất cả</button>} />
       {unstaged.map((f) => renderRow(f, false))}
       <p className="px-4 pt-2 text-[11px] text-fg-mute">Bấm tên tệp để xem diff · <Kbd>↑</Kbd><Kbd>↓</Kbd> chọn tệp · <Kbd>]</Kbd><Kbd>[</Kbd> hunk kế / trước · <Kbd>s</Kbd> stage hunk · <Kbd>u</Kbd> bỏ stage hunk</p>
     </div>

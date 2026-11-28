@@ -87,14 +87,14 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
           {b?.openTerminal && <button className={iconBtn} title="Mở Terminal" aria-label="Mở Terminal" onClick={() => b.openTerminal!(data.path)}><Icon name="terminal" size={13} /></button>}
           {b?.reveal && <button className={iconBtn} title={revealLabel} aria-label={revealLabel} onClick={() => b.reveal!(data.path)}><Icon name="folder" size={13} /></button>}
           <button className={iconBtn} title="Sao chép đường dẫn" aria-label="Sao chép đường dẫn" onClick={async () => toast(await copyText(data.path) ? { kind: 'ok', title: 'Đã sao chép đường dẫn' } : { kind: 'err', title: 'Không sao chép được' })}><Icon name="copy" size={13} /></button>
-          <button className={iconBtn + (isPinned ? ' !text-accent' : '')} title={isPinned ? 'Bỏ ghim' : 'Ghim lên đầu'} aria-label={isPinned ? 'Bỏ ghim' : 'Ghim lên đầu'} aria-pressed={isPinned} onClick={() => (isPinned ? unpinRepo(data.path) : pinRepo(data.path))}><Icon name="pin" size={13} fill={isPinned} /></button>
+          <button className={iconBtn + (isPinned ? ' !text-primary' : '')} title={isPinned ? 'Bỏ ghim' : 'Ghim lên đầu'} aria-label={isPinned ? 'Bỏ ghim' : 'Ghim lên đầu'} aria-pressed={isPinned} onClick={() => (isPinned ? unpinRepo(data.path) : pinRepo(data.path))}><Icon name="pin" size={13} fill={isPinned} /></button>
           {onDelete && <button className={iconBtn + ' hover:!text-danger'} title="Xóa repo khỏi máy…" aria-label="Xóa repo khỏi máy" onClick={onDelete}><Icon name="trash" size={13} /></button>}
           {onMode && <button className={iconBtn} title={mode === 'modal' ? 'Chuyển sang khung bên phải' : 'Chuyển sang cửa sổ nổi'} aria-label={mode === 'modal' ? 'Chuyển sang khung bên phải' : 'Chuyển sang cửa sổ nổi'} onClick={() => onMode(mode === 'modal' ? 'panel' : 'modal')}><Icon name={mode === 'modal' ? 'panel' : 'modal'} size={13} /></button>}
           {onClose && <button className={iconBtn} title="Đóng chi tiết (Esc)" aria-label="Đóng chi tiết" onClick={onClose}><Icon name="x" size={13} /></button>}
         </div>
 
         <div className="flex items-center gap-2 font-mono text-[12px]">
-          <button className="inline-flex h-[26px] cursor-pointer items-center gap-1.5 rounded-[5px] border border-accent/35 bg-accent/10 px-2 text-accent" title="Xem các nhánh" onClick={() => setTab('branches')}>
+          <button className="inline-flex h-[26px] cursor-pointer items-center gap-1.5 rounded-[5px] border border-primary/35 bg-primary/10 px-2 text-primary" title="Xem các nhánh" onClick={() => setTab('branches')}>
             <Icon name="git" size={12} />{data.branch ?? 'detached @ ' + data.head} ▾
           </button>
           <span className="truncate text-fg-mute">→ {data.upstream ?? 'chưa có upstream'}</span>
@@ -124,7 +124,7 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
       <div role="tablist" className="flex flex-none gap-0.5 border-b border-border px-2.5">
         {tabs.map(([id, label, n]) => (
           <button key={id} role="tab" aria-selected={tab === id}
-            className={'h-9 cursor-pointer border-0 border-b-2 bg-transparent px-2 text-[12px] font-medium whitespace-nowrap ' + (tab === id ? 'border-accent text-fg' : 'border-transparent text-fg-mute hover:text-fg')}
+            className={'h-9 cursor-pointer border-0 border-b-2 bg-transparent px-2 text-[12px] font-medium whitespace-nowrap ' + (tab === id ? 'border-primary text-fg' : 'border-transparent text-fg-mute hover:text-fg')}
             onClick={() => setTab(id)}>{label}{id !== 'scripts' && <span className="font-mono text-fg-mute"> {n}</span>}</button>
         ))}
       </div>

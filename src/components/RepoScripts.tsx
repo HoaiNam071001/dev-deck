@@ -120,7 +120,7 @@ export function RepoScripts({ repoPath }: { repoPath: string }) {
                 <button type="button" className="min-w-0 flex-1 cursor-pointer truncate border-0 bg-transparent p-0 text-left font-mono text-[12px] text-fg" aria-expanded={open === r.id} onClick={() => setOpen(open === r.id ? null : r.id)}>
                   {r.running ? '● ' : r.code === 0 ? '✓ ' : '✗ '}{r.rel ? r.rel + ' · ' : ''}{r.script} <span className="text-fg-mute">{new Date(r.start).toLocaleTimeString()}</span>
                 </button>
-                {r.running && r.port > 0 && <a className="font-mono text-[11px] text-accent" href={'http://localhost:' + r.port} target="_blank" rel="noreferrer">:{r.port} ↗</a>}
+                {r.running && r.port > 0 && <a className="font-mono text-[11px] text-primary" href={'http://localhost:' + r.port} target="_blank" rel="noreferrer">:{r.port} ↗</a>}
                 {r.running && <button className="btn sm" onClick={() => stop(r.id)}>Dừng</button>}
               </div>
               {open === r.id && <RunLog id={r.id} />}

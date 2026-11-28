@@ -22,6 +22,10 @@
   --fg-mute: #A3B1C6;     /* ≥ 4.5:1 trên mọi nền khối, kể cả --selected và --active */
 
   /* Điểm nhấn và trạng thái */
+  --primary: #8B93FF;     /* màu chính: nút chính, mục đang chọn, tab, link, focus (giai đoạn 15) */
+  --primary-hover: #A7ADFF;
+  --on-primary: #11143A;  /* chữ trên nền --primary: 6.5:1 */
+  --primary-soft: rgba(139,147,255,.16); /* nền nhạt của mục đang chọn */
   --accent: #30CF43;      /* nút chính, mục chọn, "sạch", "đã stage" */
   --accent-hover: #5EE070;
   --on-accent: #0C1A0E;

@@ -37,7 +37,7 @@ export function JiraKey({ issue }: { issue: JiraIssue }) {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <button type="button" className="mono cursor-pointer border-0 bg-transparent p-0 text-left text-[12.5px] font-semibold text-accent hover:underline" onClick={() => setOpen(true)} title="Xem chi tiết">{issue.key}</button>
+      <button type="button" className="mono cursor-pointer border-0 bg-transparent p-0 text-left text-[12.5px] font-semibold text-primary hover:underline" onClick={() => setOpen(true)} title="Xem chi tiết">{issue.key}</button>
       {open && <JiraPanel issue={issue} onClose={() => setOpen(false)} />}
     </>
   )

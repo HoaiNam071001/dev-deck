@@ -78,7 +78,7 @@ export function PortLinks({ ports, small }: { ports: JobPort[]; small?: boolean 
         return (
           <a key={x.port} href={`http://localhost:${x.port}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}
             title={`Mở http://localhost:${x.port} · lắng nghe ở ${x.host}${lan ? ' (máy khác trong mạng cũng truy cập được)' : ' (chỉ máy này)'}`}
-            className="mono inline-flex items-center gap-1 rounded bg-accent/10 px-1.5 py-0.5 text-accent hover:bg-accent/20">
+            className="mono inline-flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-primary hover:bg-primary/20">
             :{x.port}{lan && <span className="text-[10px] text-behind">LAN</span>}<span aria-hidden="true">↗</span>
           </a>
         )
@@ -309,7 +309,7 @@ export function JobDetailModal({ job: j, now, onClose, onStopped, initialTab = '
           <div className="flex gap-0.5 border-b border-border px-2.5" role="tablist">
             {([['procs', 'Tiến trình', j.procs.length + 1], ['test', 'Test', j.progress?.total ?? null]] as const).map(([id, label, n]) => (
               <button key={id} role="tab" aria-selected={curTab === id} onClick={() => setTab(id)}
-                className={'-mb-px border-b-2 px-3 py-2 text-[13px] ' + (curTab === id ? 'border-accent text-fg' : 'border-transparent text-fg-mute hover:text-fg')}>
+                className={'-mb-px border-b-2 px-3 py-2 text-[13px] ' + (curTab === id ? 'border-primary text-fg' : 'border-transparent text-fg-mute hover:text-fg')}>
                 {label}{n !== null && <span className="ml-1.5 text-[11px] text-fg-mute">{id === 'test' ? `${n} file` : n}</span>}
               </button>
             ))}

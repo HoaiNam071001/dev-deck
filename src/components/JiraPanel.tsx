@@ -27,7 +27,7 @@ export function JiraPanel({ issue, onClose }: { issue: JiraIssue; onClose: () =>
         {issue.description && <pre className="max-h-[40vh] overflow-auto whitespace-pre-wrap border-t border-border pt-2 font-sans text-[12.5px] text-fg-soft">{issue.description}</pre>}
         <JiraContinue issue={issue} onDone={onClose} />
         <JiraWrite issue={issue} />
-        {safeUrl(issue.url) && <a href={safeUrl(issue.url)} target="_blank" rel="noreferrer noopener" className="text-[12.5px] text-accent">Mở trong Jira ↗</a>}
+        {safeUrl(issue.url) && <a href={safeUrl(issue.url)} target="_blank" rel="noreferrer noopener" className="text-[12.5px] text-primary">Mở trong Jira ↗</a>}
       </div>
     </Modal>
   )
@@ -119,7 +119,7 @@ function JiraWrite({ issue }: { issue: JiraIssue }) {
     <div className="flex flex-col gap-2 border-t border-border pt-2 text-[12.5px]">
       <span className="font-semibold">Cập nhật ticket</span>
       {sug && (
-        <div className="flex items-center gap-2 rounded-md border border-accent/35 bg-accent/10 px-2.5 py-1.5">
+        <div className="flex items-center gap-2 rounded-md border border-primary/35 bg-primary/10 px-2.5 py-1.5">
           <span className="min-w-0 flex-1">{sug.reason}: chuyển sang <b>{sug.transition.to || sug.transition.name}</b>?</span>
           <button className="btn sm" disabled={busy} onClick={() => void run('Đã chuyển trạng thái', { action: 'transition', key: issue.key, account: issue.accountId, transitionId: sug.transition.id })}>Chuyển</button>
         </div>

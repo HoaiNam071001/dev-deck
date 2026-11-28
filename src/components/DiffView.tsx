@@ -40,7 +40,7 @@ export function DiffView({ diff, loading, error, active = -1, onActive, action }
         const st = hunkStats(h), isFolded = folded.has(h.hash), ctx = hunkContext(h)
         return (
           <div key={h.hash} ref={(el) => { refs.current[i] = el }} onClick={() => onActive?.(i)}
-            className={'overflow-hidden rounded-[5px] border ' + (i === active ? 'border-accent/60' : 'border-line')}>
+            className={'overflow-hidden rounded-[5px] border ' + (i === active ? 'border-primary/60' : 'border-line')}>
             <div className="flex items-center gap-1.5 bg-selected/60 px-2 py-0.5 font-mono text-[11px]">
               <button type="button" className="ghost size-5 flex-none text-fg-mute" aria-expanded={!isFolded} aria-label={isFolded ? 'Mở hunk' : 'Gập hunk'} onClick={(e) => { e.stopPropagation(); toggle(h.hash) }}>{isFolded ? '▸' : '▾'}</button>
               <span className="min-w-0 flex-1 truncate text-fg-mute" title={h.header}>{h.header.match(/^@@[^@]*@@/)?.[0]} {ctx}</span>

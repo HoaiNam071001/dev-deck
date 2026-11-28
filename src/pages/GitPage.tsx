@@ -269,7 +269,7 @@ export function GitPage() {
         {current && mode === 'panel' && <div className="relative flex-none" style={{ width: detailW }}>
           <div role="separator" aria-orientation="vertical" aria-label="Đổi độ rộng khung chi tiết" aria-valuenow={detailW} aria-valuemin={MIN_W} aria-valuemax={MAX_W} tabIndex={0} title="Kéo để đổi độ rộng"
             onPointerDown={drag} onKeyDown={resizeKey} className="group absolute top-0 bottom-0 -left-[3px] z-10 flex w-1.5 cursor-col-resize items-center justify-center">
-            <span className="h-7 w-0.5 rounded-sm bg-border-pop group-hover:bg-accent group-focus-visible:bg-accent" />
+            <span className="h-7 w-0.5 rounded-sm bg-border-pop group-hover:bg-primary group-focus-visible:bg-primary" />
           </div>
           <section aria-label={'Chi tiết repo ' + current.name} className="flex h-full flex-col border-l border-border bg-surface-2">
             <ErrorBoundary resetKey={current.path} label="Không hiển thị được chi tiết repo"><RepoDetail key={current!.path} repo={current!} tab={tab} setTab={setTab} mode={mode} onMode={setMode} onClose={() => setState({ selected: null })} onDelete={() => setDeleting(current!)} /></ErrorBoundary>

@@ -87,7 +87,7 @@ function RepoRow({ r, active, pinned, menuOpen, menuUp, top, onPick, onMenu, onC
           <span className="whitespace-nowrap">{r.lastCommit ? relTime(r.lastCommit.date) : ''}</span>
         </span>
       </button>
-      <button className={'ghost flex w-7 flex-none items-center justify-center ' + (pinned ? '!text-accent' : 'invisible group-hover:visible focus-visible:visible')} aria-label={pinned ? 'Bỏ ghim ' + r.name : 'Ghim ' + r.name} aria-pressed={pinned} title={pinned ? 'Bỏ ghim' : 'Ghim lên đầu'}
+      <button className={'ghost flex w-7 flex-none items-center justify-center ' + (pinned ? '!text-primary' : 'invisible group-hover:visible focus-visible:visible')} aria-label={pinned ? 'Bỏ ghim ' + r.name : 'Ghim ' + r.name} aria-pressed={pinned} title={pinned ? 'Bỏ ghim' : 'Ghim lên đầu'}
         onClick={() => (pinned ? unpinRepo(r.path) : pinRepo(r.path))}><Icon name="pin" size={12} fill={pinned} /></button>
       <button className="ghost flex w-8 flex-none items-center justify-center" aria-label={'Thao tác cho ' + r.name} aria-haspopup="menu" aria-expanded={menuOpen} onClick={onMenu}>
         <Icon name="dots" size={14} />

@@ -7,6 +7,15 @@ export interface ReleaseNote { version: string; date: string; title: string; ite
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '2.9.0',
+    date: '2026-11-28',
+    title: 'Giao diện mới: màu chính dễ nhìn, panel nhớ độ rộng theo trang',
+    items: [
+      { tag: 'improve', text: 'Màu chính đổi sang chàm cho nút chính, mục đang chọn, tab và link; xanh lá giờ chỉ dùng cho trạng thái "sạch / qua / đang chạy" nên nhìn là phân biệt được ngay.' },
+      { tag: 'improve', text: 'Panel trái nhớ độ rộng riêng cho từng trang (kéo mép, phím ←/→, bấm đúp để về mặc định).' },
+    ],
+  },
+  {
     version: '2.8.0',
     date: '2026-11-28',
     title: 'Jira, thông báo khi AI xong, token AI theo nhánh, Git hàng loạt, chạy script npm',

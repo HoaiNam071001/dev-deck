@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, navigate, useRoute, type Route } from '../lib/router'
-import { usePersisted } from '../lib/persist'
+import { useResizable } from '../lib/useResizable'
 import { bridge, MOD, type UpdateStatus } from '../lib/platform'
 import { getState, openPalette, setState, useStore } from '../lib/store'
 import { markRemotesRead, openRemoteCr } from '../lib/remoteWatch'
@@ -105,9 +105,7 @@ function TitleBar() {
   )
 }
 
-const RAIL_W = 48
 const SIDE_MIN = 160, SIDE_MAX = 420, SIDE_DEFAULT = 200
-const clampW = (w: number) => Math.min(SIDE_MAX, Math.max(SIDE_MIN, Math.round(w)))
 
 function Sidebar({ slotRef }: { slotRef: (el: HTMLElement | null) => void }) {
   const route = useRoute()
@@ -117,31 +115,8 @@ function Sidebar({ slotRef }: { slotRef: (el: HTMLElement | null) => void }) {
   const waiting = useStore((s) => s.reviewQueue.waiting)
   useEffect(() => { if (route === '/remotes') markRemotesRead() }, [route])
   const cur = NAV.find((n) => n.to === route) ?? NAV[0]
-  // Độ rộng panel trái: kéo thanh tách để đổi, nhớ cho lần mở sau; bấm đúp để về mặc định
-  const [saved, setSaved] = usePersisted<number>('devdeck.sidebar.w', SIDE_DEFAULT, (v) => typeof v === 'number' && v >= SIDE_MIN && v <= SIDE_MAX)
-  const [drag, setDrag] = useState<number | null>(null)
-  const w = drag ?? saved
-  const startDrag = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    const left = (e.currentTarget.parentElement as HTMLElement).getBoundingClientRect().left + RAIL_W
-    const el = e.currentTarget
-    el.setPointerCapture(e.pointerId)
-    document.body.style.userSelect = 'none'
-    document.body.style.cursor = 'col-resize'
-    let last = w
-    const move = (ev: PointerEvent) => { last = clampW(ev.clientX - left); setDrag(last) }
-    const up = () => {
-      el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up)
-      document.body.style.userSelect = ''; document.body.style.cursor = ''
-      setSaved(last); setDrag(null)
-    }
-    el.addEventListener('pointermove', move); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up)
-  }
-  const keyResize = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowLeft') { e.preventDefault(); setSaved(clampW(saved - 16)) }
-    else if (e.key === 'ArrowRight') { e.preventDefault(); setSaved(clampW(saved + 16)) }
-    else if (e.key === 'Home') { e.preventDefault(); setSaved(SIDE_DEFAULT) }
-  }
+  // Độ rộng panel trái nhớ riêng từng trang; khóa chung cũ dùng làm mặc định để không mất cài đặt trước đây
+  const { width: w, dragging, handleProps } = useResizable(`devdeck.sidebar.w.${cur.to}`, { min: SIDE_MIN, max: SIDE_MAX, def: SIDE_DEFAULT, edge: 'right', fallbackKeys: ['devdeck.sidebar.w'] })
   return (
     <div className="side">
       {/* Dải icon: chuyển giữa các tab, giống thanh hoạt động của VS Code */}
@@ -162,9 +137,7 @@ function Sidebar({ slotRef }: { slotRef: (el: HTMLElement | null) => void }) {
         <div className="side-title">{cur.label}</div>
         <div className="side-slot" ref={slotRef} />
       </aside>
-      <div className={'side-resize' + (drag !== null ? ' dragging' : '')} role="separator" aria-orientation="vertical" aria-label="Đổi độ rộng panel trái"
-        aria-valuemin={SIDE_MIN} aria-valuemax={SIDE_MAX} aria-valuenow={w} tabIndex={0} title="Kéo để đổi độ rộng · bấm đúp để về mặc định"
-        onPointerDown={startDrag} onDoubleClick={() => setSaved(SIDE_DEFAULT)} onKeyDown={keyResize} />
+      <div className={'side-resize' + (dragging ? ' dragging' : '')} aria-label={'Đổi độ rộng panel trái (nhớ riêng trang ' + cur.label + ')'} {...handleProps} />
     </div>
   )
 }
