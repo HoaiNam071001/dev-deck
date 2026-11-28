@@ -54,7 +54,7 @@ export function JiraPage() {
   useEffect(() => {
     const on = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement
-      if (e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable || !shown.length) return
+      if (e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable || !shown.length || document.querySelector('dialog[open]')) return
       const i = shown.findIndex((x) => x.issue.key === openKey)
       const cur = shown[i]
       const k = e.key.toLowerCase()
@@ -65,6 +65,13 @@ export function JiraPage() {
     window.addEventListener('keydown', on)
     return () => window.removeEventListener('keydown', on)
   })
+  // Esc đóng chuông thông báo
+  useEffect(() => {
+    if (!bell) return
+    const on = (e: KeyboardEvent) => { if (e.key === 'Escape') setBell(false) }
+    window.addEventListener('keydown', on)
+    return () => window.removeEventListener('keydown', on)
+  }, [bell])
   const unseen = all.filter((x) => x.events.length)
   const qKey = ticketKey(q)
   const canPin = !!qKey && !all.some((x) => x.issue.key === qKey)

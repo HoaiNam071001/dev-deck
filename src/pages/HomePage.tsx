@@ -145,7 +145,7 @@ export function HomePage() {
               <Chip tone={i.source === 'git' ? 'muted' : i.source === 'remotes' ? 'ahead' : 'purple'}>{i.source === 'git' ? 'Git' : i.source === 'remotes' ? 'Remotes' : 'Jira'}</Chip>
               <span className="flex min-w-0 flex-1 flex-col"><span className="truncate">{i.title}</span><span className="truncate text-fg-mute">{i.sub}</span></span>
               <button className="btn sm" onClick={() => (i.repo ? openRepo(i.repo) : navigate(i.to))}>Mở</button>
-              <button className="btn sm" title="Ẩn trên máy này đến khi mục thay đổi" onClick={() => setDone([...done, i.id])}>Xong</button>
+              <button className="btn sm" title="Ẩn trên máy này đến khi mục thay đổi" onClick={() => setDone([...done, i.id].slice(-200))}>Xong</button>
             </div>
           ))}
           {!inbox.length && <p className="empty border-t border-line">{repos.length ? 'Không có việc nào cần xử lý.' : 'Chưa quét Git nên chưa biết repo nào cần xử lý. Mở Git để quét.'}</p>}
