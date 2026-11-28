@@ -7,6 +7,16 @@ export interface ReleaseNote { version: string; date: string; title: string; ite
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '2.7.0',
+    date: '2026-11-28',
+    title: 'Theo dõi job trên macOS, Remotes liệt kê đủ project',
+    items: [
+      { tag: 'new', text: 'Tab Jobs chạy được trên macOS (và Linux): thấy test, dev server, build đang chạy trong repo, kèm RAM, CPU, cổng đang mở, và dừng cả cây tiến trình. Bước tự bật tiến độ vitest bằng NODE_OPTIONS vẫn chỉ có trên Windows; trên Mac hãy thêm cờ --reporter=devdeck-reporter vào lệnh.' },
+      { tag: 'fix', text: 'Panel Project của Remotes giờ liệt kê mọi repo của account (tối đa 300), kể cả repo chưa có MR / PR, thay vì chỉ các repo đang có MR / PR.' },
+      { tag: 'improve', text: 'Project trùng tên ở các chủ khác nhau hiện kèm owner (vd owner/tipme-web) để phân biệt.' },
+    ],
+  },
+  {
     version: '2.6.0',
     date: '2026-11-27',
     title: 'Git: stash, worktree, diff theo hunk',

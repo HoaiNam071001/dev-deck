@@ -1,5 +1,5 @@
 // Theo dõi tiến trình đang chạy (test, build, dev server...) trong các repo đã quét, và dừng chúng.
-// Chỉ hỗ trợ Windows: đọc thư mục làm việc của tiến trình qua PEB (procs.ps1).
+// Windows: đọc thư mục làm việc của tiến trình qua PEB (procs.ps1). macOS / Linux: ps + lsof (procs-unix.js).
 const { execFile } = require('child_process')
 const fs = require('fs')
 const os = require('os')
@@ -9,12 +9,16 @@ const gitActions = require('../git-actions')
 
 // PowerShell không đọc được file trong app.asar nên script được giải nén ra app.asar.unpacked
 const SCRIPT = path.join(__dirname, 'procs.ps1').replace('app.asar' + path.sep, 'app.asar.unpacked' + path.sep)
-const norm = (p) => String(p || '').replace(/\//g, '\\').replace(/\\+$/, '').toLowerCase()
+const WIN = process.platform === 'win32'
+const SEP = WIN ? '\\' : '/'
+const unix = require('./procs-unix')
+// Windows: đổi / thành \ và bỏ phân biệt hoa thường. macOS / Linux: giữ nguyên dấu /; hạ chữ thường vì ổ macOS mặc định không phân biệt hoa thường
+const norm = (p) => (WIN ? String(p || '').replace(/\//g, '\\').replace(/\\+$/, '') : String(p || '').replace(/\/+$/, '')).toLowerCase()
 
 // Runtime/công cụ coi là "job". Shell, editor, claude, ghosthand, gopls... cố ý không nằm đây.
 const JOB_EXE = /^(node|bun|deno|python[\d.]*|pythonw|py|dotnet|java|javaw|go|cargo|rustc|php|ruby|mvn|gradle|gradlew|npm|npx|pnpm|yarn|vitest|jest|pytest|tsc|vite|webpack|esbuild|playwright|cypress|.+\.test)(\.exe|\.cmd)?$/i
 // Tiến trình của editor/IDE hay chạy nền trong repo, không phải job của người dùng
-const IGNORE_CMD = /tsserver|typingsInstaller|\\\.vscode\\|\\\.vscode-|microsoft vs code|claude-code|\\ghosthand|language-server|eslintServer|\\\.cursor\\|\\jetbrains\\|\\\.gemini\\|cloudcode/i
+const IGNORE_CMD = /tsserver|typingsInstaller|[\\/]\.vscode[\\/]|[\\/]\.vscode-|microsoft vs code|visual studio code|claude-code|[\\/]ghosthand|language-server|eslintServer|[\\/]\.cursor[\\/]|[\\/]jetbrains[\\/]|[\\/]\.gemini[\\/]|cloudcode/i
 
 const FILE = path.join(process.env.DEVDECK_DATA || path.join(__dirname, '..', '..', 'data'), 'jobs.json')
 const MAX_RECENT = 10
@@ -48,6 +52,7 @@ function saveConfig(input) {
 }
 
 function listProcesses() {
+  if (!WIN) return unix.listProcesses((name) => JOB_EXE.test(name))
   return new Promise((resolve, reject) => {
     execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', SCRIPT],
       { windowsHide: true, timeout: 30000, maxBuffer: 32 * 1024 * 1024 }, (err, stdout) => {
@@ -57,7 +62,7 @@ function listProcesses() {
   })
 }
 
-const inside = (c, n) => c === n || c.startsWith(n + '\\')
+const inside = (c, n) => c === n || c.startsWith(n + SEP)
 
 /** Nhóm của một cwd: repo sâu nhất chứa nó; không có repo thì thư mục theo dõi chứa nó; ngoài các thư mục theo dõi thì null. */
 function groupOf(cwd, folders, repos) {
@@ -88,7 +93,7 @@ function branchOf(dir) {
 }
 
 async function scan() {
-  if (process.platform !== 'win32') return { supported: false, at: new Date().toISOString(), jobs: [] }
+  if (!WIN && process.platform !== 'darwin' && process.platform !== 'linux') return { supported: false, at: new Date().toISOString(), jobs: [] }
   const [procs, listening] = await Promise.all([listProcesses(), listeningPorts()])
   const cfg = loadConfig()
   const folders = cfg.folders.map((p) => ({ path: p, n: norm(p) })).filter((r) => r.n)
@@ -199,6 +204,7 @@ function installReporter(repoPath) {
 // ---- Cổng đang lắng nghe (netstat) và phân loại job: test / dev server / build ----
 /** pid → [{ port, host }] các cổng TCP đang LISTEN. */
 function listeningPorts() {
+  if (!WIN) return unix.listeningPorts()
   return new Promise((resolve) => {
     // Không lọc "-p TCP" vì sẽ mất cổng IPv6 ([::1]:5173) mà Vite/Node mới hay dùng; dòng UDP bị regex bên dưới bỏ qua
     execFile('netstat', ['-ano'], { windowsHide: true, timeout: 10000, maxBuffer: 8 * 1024 * 1024 }, (err, stdout) => {
@@ -303,7 +309,7 @@ async function stop(body) {
   const job = fresh.jobs.find((j) => j.pid === pid && j.start === body.start)
   if (!job) throw new Error('Job không còn chạy (hoặc đã đổi). Hãy làm mới danh sách.')
   let error, output
-  try { output = await taskkill(pid) } catch (e) { error = e }
+  try { output = WIN ? await taskkill(pid) : await unix.killTree([...job.procs.filter((m) => !m.done).map((m) => m.pid).reverse(), pid]) } catch (e) { error = e }
   gitActions.audit({ repo: job.repo, action: 'stopJob', params: { pid, name: job.name, cmd: job.cmd.slice(0, 300) }, ok: !error, error: error?.message })
   if (error) throw error
   return { ok: true, output }
