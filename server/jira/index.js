@@ -1,7 +1,7 @@
-// Jira (13a, chỉ đọc): account, nhận mã ticket, lấy ticket hàng loạt, việc của tôi. Cache 60 giây.
+// Jira: account, lấy ticket hàng loạt, việc của tôi / ghim / theo dõi, ghi (chuyển trạng thái, comment, giờ). Cache 60 giây.
 const store = require('./store')
 const client = require('./client')
-const { cleanBase, cached, dropCache } = require('../remotes/http')
+const { cleanBase, cached, dropCache, pool } = require('../remotes/http')
 
 const accounts = () => store.list()
 const setWrite = (id, on) => store.setWrite(String(id || ''), on === true)
@@ -40,14 +40,6 @@ async function issues({ keys }) {
     } catch { /* account lỗi: bỏ qua */ }
   }
   return wanted.filter((k) => found.has(k)).map((k) => found.get(k))
-}
-
-/** Mã ticket trong các đoạn chữ (tên nhánh, tiêu đề MR…), chỉ giữ project key có thật ở ít nhất một account. */
-async function extract({ texts }) {
-  const sets = []
-  for (const pub of store.list()) { try { sets.push(await keysOf(store.get(pub.id))) } catch { /* bỏ qua */ } }
-  const has = { has: (p) => sets.some((s) => s.has(p)) }
-  return (texts || []).slice(0, 200).map((t) => client.extractKeys(String(t).slice(0, 2000), sets.length ? has : null))
 }
 
 /** Việc của tôi: ticket giao cho tôi, chưa Done. */
@@ -128,14 +120,13 @@ async function links({ key }) {
   const git = require('../git')
   const has = new RegExp(`(^|[^A-Za-z0-9])${k}(?!\\d)`, 'i')
   const same = new RegExp(`(^|[^A-Za-z0-9])${project}-\\d+`, 'i')
-  const out = []
-  for (const r of await git.remoteUrlMap()) {
+  const out = await pool(await git.remoteUrlMap(), 8, async (r) => {
     try {
       const names = await git.localBranchNames(r.path)
-      out.push({ path: r.path, name: r.name, branches: names.filter((n) => has.test(n)), suggested: names.some((n) => same.test(n)) })
-    } catch { /* repo lỗi: bỏ qua */ }
-  }
-  return out.filter((r) => r.branches.length || r.suggested)
+      return { path: r.path, name: r.name, branches: names.filter((n) => has.test(n)), suggested: names.some((n) => same.test(n)) }
+    } catch { return null } // repo lỗi: bỏ qua
+  })
+  return out.filter((r) => r && (r.branches.length || r.suggested))
 }
 
 const KEY_OK = /^[A-Z][A-Z0-9]+-\d+$/
@@ -187,4 +178,4 @@ async function act(input) {
 
 const pin = ({ key, on }) => ({ pinned: watch.pin(String(key || ''), on === true) })
 
-module.exports = { users, follow, transitionsOf, act, setWrite, links, whatsNew, seen, pin, accounts, addAccount, removeAccount, testAccount, issues, extract, mine }
+module.exports = { users, follow, transitionsOf, act, setWrite, links, whatsNew, seen, pin, accounts, addAccount, removeAccount, testAccount, issues }

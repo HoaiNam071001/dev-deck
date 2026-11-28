@@ -1,5 +1,5 @@
 import { crDraft } from '../lib/jiraBranch'
-import { useJiraIssues } from './JiraChip'
+import { useJiraIssues } from '../lib/useJiraIssues'
 import { useEffect, useMemo, useState } from 'react'
 import { api, useLoad } from '../api'
 import { relTime } from '../lib/format'

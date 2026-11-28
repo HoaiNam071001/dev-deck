@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api, useLoad } from '../api'
+import { forgetNotified } from '../lib/jiraWatch'
 import { setState, toast } from '../lib/store'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { JiraAccountModal } from '../components/JiraAccountModal'
@@ -19,7 +20,7 @@ export function JiraPage() {
     try { await api.jiraPin(key, on); news.reload() } catch (x) { toast({ kind: 'err', title: 'Không ghim được', detail: (x as Error).message }) }
   }
   const seen = async (key?: string) => {
-    try { await api.jiraSeen(key); news.reload(); setState({ jiraUnread: 0 }) } catch (x) { toast({ kind: 'err', title: 'Không đánh dấu được', detail: (x as Error).message }) }
+    try { await api.jiraSeen(key); forgetNotified(key); news.reload(); setState({ jiraUnread: 0 }) } catch (x) { toast({ kind: 'err', title: 'Không đánh dấu được', detail: (x as Error).message }) }
   }
   const [adding, setAdding] = useState(false)
   const setWrite = async (id: string, on: boolean) => {

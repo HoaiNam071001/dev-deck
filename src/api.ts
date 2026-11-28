@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ScriptPackages, ScriptRun, ScriptLog, ActionResult, CloneJob, DeleteRepoInfo, ChangeRequest, ChangeRequestDetail, RemoteBranchesResponse, RemoteLocalJobs, PipelineRun, PipelineJob, CrListResponse, CrScope, CrState, RemoteAccount, ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, DiffKind, FileDiff, StashFile, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource, AiNotifyConfig, AiNotifyState, AiDoneEvent, JiraAccount, JiraIssue, JiraMine, JiraNew, JiraRepoLink, JiraTransition, JiraFollow } from './types'
+import type { ScriptPackages, ScriptRun, ScriptLog, ActionResult, CloneJob, DeleteRepoInfo, ChangeRequest, ChangeRequestDetail, RemoteBranchesResponse, RemoteLocalJobs, PipelineRun, PipelineJob, CrListResponse, CrScope, CrState, RemoteAccount, ClaudeAccount, JobsConfig, JobsResponse, ReporterStatus, ClaudeProfile, BrowseResult, DiffKind, FileDiff, StashFile, GitConfig, Overview, RepoDetail, ReposResponse, UsageRow, UsageSource, AiNotifyConfig, AiNotifyState, AiDoneEvent, JiraAccount, JiraIssue, JiraNew, JiraRepoLink, JiraTransition, JiraFollow } from './types'
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
@@ -102,9 +102,6 @@ export const api = {
     request<{ pinned: string[] }>('/api/jira/pin', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key, on }) }),
   jiraSeen: (key?: string) =>
     request<{ ok: true }>('/api/jira/seen', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key }) }),
-  jiraMine: () => request<JiraMine>('/api/jira/mine'),
-  jiraExtract: (texts: string[]) =>
-    request<string[][]>('/api/jira/extract', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ texts }) }),
   changeRequest: (key: string) => request<ChangeRequestDetail>('/api/remotes/cr?key=' + encodeURIComponent(key)),
   config: () => request<GitConfig>('/api/git/config'),
   overview: () => request<Overview>('/api/overview'),

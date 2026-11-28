@@ -186,18 +186,11 @@ async function api(req, res, url) {
       return json(res, 200, jira.follow(await readBody(req)))
     }
     if (url.pathname === '/api/jira/new') return json(res, 200, await jira.whatsNew())
-    if (url.pathname === '/api/jira/pins') return json(res, 200, { pinned: require('./jira/watch').pinned() })
     if (url.pathname === '/api/jira/pin' || url.pathname === '/api/jira/seen') {
       if (req.method !== 'POST') return json(res, 405, { error: 'Chỉ nhận POST' })
       if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
       const body = await readBody(req)
       return json(res, 200, url.pathname === '/api/jira/pin' ? jira.pin(body) : await jira.seen(body))
-    }
-    if (url.pathname === '/api/jira/mine') return json(res, 200, await jira.mine())
-    if (url.pathname === '/api/jira/extract') {
-      if (req.method !== 'POST') return json(res, 405, { error: 'Chỉ nhận POST' })
-      if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
-      return json(res, 200, await jira.extract(await readBody(req)))
     }
     if (url.pathname === '/api/remotes/accounts') {
       if (req.method !== 'POST') return json(res, 200, remotes.accounts())

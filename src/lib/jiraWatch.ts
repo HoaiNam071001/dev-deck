@@ -19,13 +19,19 @@ export function freshEvents(notified: string[] | null, items: JiraNewItem[]): { 
   return { next: [...new Set([...notified, ...all])].slice(-500), fresh }
 }
 
+/** Người dùng đã xem ticket: quên các sự kiện đã báo của nó (hoặc tất cả), để lần đổi sau trùng nội dung (vd quay lại cùng trạng thái) vẫn được báo. */
+export function forgetNotified(key?: string) {
+  const cur = read()
+  if (!cur) return
+  write(key ? cur.filter((x) => !x.startsWith(key + '|')) : [])
+}
+
 const read = (): string[] | null => { try { const v = JSON.parse(localStorage.getItem(NOTIFIED_KEY) || 'null'); return Array.isArray(v) ? v : null } catch { return null } }
 const write = (v: string[]) => { try { localStorage.setItem(NOTIFIED_KEY, JSON.stringify(v)) } catch { /* bỏ qua */ } }
 
 async function poll() {
   if (!(await api.jiraAccounts()).length) { setState({ jiraUnread: 0 }); return }
   const r = await api.jiraNew()
-  if (r.errors.length) return
   setState({ jiraUnread: r.items.filter((i) => i.events.length).length })
   const f = freshEvents(read(), r.items)
   write(f.next)

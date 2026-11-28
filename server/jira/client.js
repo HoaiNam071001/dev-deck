@@ -1,5 +1,5 @@
 // REST Jira. Cloud: /rest/api/3 + Basic (email:token). Server / Data Center: /rest/api/2 + Bearer (PAT).
-// Chỉ gọi tới đúng baseUrl của account. Chỉ đọc (giai đoạn 13a).
+// Chỉ gọi tới đúng baseUrl của account. Ghi (transition / comment / worklog) chỉ được gọi từ index.js sau khi kiểm account đã bật ghi.
 const { request } = require('../remotes/http')
 
 const FIELDS = 'summary,status,assignee,priority,issuetype,customfield_10020,description,updated,comment'
