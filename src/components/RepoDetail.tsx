@@ -1,3 +1,4 @@
+import { ticketKey } from '../lib/jiraKey'
 import { JiraChips, JiraTags } from './JiraChip'
 import { useEffect, useState } from 'react'
 import { api, useLoad } from '../api'
@@ -75,6 +76,8 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
   const canCommit = !busy && (amend ? !!data.commits.length : !!staged.length && !!message.trim())
   const commit = async () => { if (canCommit && await act('commit', 'commit', { message, amend })) { setMessage(''); setAmend(false) } }
   const iconBtn = 'icon-btn sm'
+  const commitPush = async () => { if (canCommit && await act('commit', 'commit', { message, amend })) { setMessage(''); setAmend(false); if (!data.detached && data.remotes.length) await act('push', 'push') } }
+  const keyHint = data.branch ? ticketKey(data.branch) : null
 
   return (
     <>
@@ -112,10 +115,10 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
 
         <div className="flex gap-1.5">
           <button className="btn flex-1" disabled={!!busy || !data.remotes.length} onClick={() => act('fetch', 'fetch')}>{busy === 'fetch' ? <><Spinner inline />Đang fetch…</> : 'Fetch'}</button>
-          <button className="btn flex-1" disabled={!!busy || !data.upstream} title={data.upstream ? 'git pull --ff-only' : 'Nhánh chưa có upstream'} onClick={() => act('pull', 'pull')}>
+          <button className={'btn flex-1' + (data.behind > 0 && data.ahead === 0 ? ' primary' : '')} disabled={!!busy || !data.upstream} title={data.upstream ? 'git pull --ff-only' : 'Nhánh chưa có upstream'} onClick={() => act('pull', 'pull')}>
             {busy === 'pull' ? <><Spinner inline />Đang pull…</> : <>Pull {data.behind > 0 && <span className="font-mono text-behind">↓{data.behind}</span>}</>}
           </button>
-          <button className="btn primary flex-1" disabled={!!busy || data.detached || !data.remotes.length} onClick={() => act('push', 'push')}>
+          <button className={'btn flex-1' + (data.ahead > 0 || data.behind === 0 ? ' primary' : '')} disabled={!!busy || data.detached || !data.remotes.length} onClick={() => act('push', 'push')}>
             {busy === 'push' ? <><Spinner inline />Đang push…</> : <>Push {data.ahead > 0 && <span className="font-mono">↑{data.ahead}</span>}</>}
           </button>
         </div>
@@ -206,6 +209,8 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
           <CommitBox id="commit-msg" value={message} onChange={setMessage} onSubmit={commit} amend={amend} register={onFocusCommit} />
           <div className="flex items-center justify-between gap-2">
             <label className="flex items-center gap-1.5 text-sm text-fg-mute"><input type="checkbox" checked={amend} onChange={(e) => setAmend(e.target.checked)} /> Amend commit cuối</label>
+            {keyHint && !message && <button type="button" className="btn sm" title="Chèn mã ticket từ tên nhánh" onClick={() => setMessage(keyHint + ': ')}>{keyHint}:</button>}
+            <button type="button" className="btn ml-auto" disabled={!canCommit || !!busy || amend} title="Commit rồi push ngay" onClick={() => void commitPush()}>Commit &amp; Push</button>
             <button type="submit" className="btn primary" disabled={!canCommit}>
               {busy === 'commit' ? <><Spinner inline />Đang commit…</> : amend ? 'Amend commit' : `Commit ${staged.length} tệp`}
             </button>
