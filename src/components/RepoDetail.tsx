@@ -1,3 +1,4 @@
+import { readDraft, writeDraft } from '../lib/commitDraft'
 import { ticketKey } from '../lib/jiraKey'
 import { JiraChips, JiraTags } from './JiraChip'
 import { useEffect, useState } from 'react'
@@ -34,14 +35,18 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
   const tokens = useBranchTokens(repo.path)
   const data = raw && { ...raw, stashes: raw.stashes ?? [], worktrees: raw.worktrees ?? [] }
   const [busy, setBusy] = useState<string | null>(null)
-  const [message, setMessage] = useState('')
-  const [amend, setAmend] = useState(false)
+  const [message, setMsg] = useState(() => readDraft(repo.path).message)
+  const [amend, setAmd] = useState(() => readDraft(repo.path).amend)
+  // Ghi nháp ngay khi đổi (không dùng effect để khỏi ghi nhầm giá trị cũ sang repo khác)
+  const setMessage = (m: string) => { setMsg(m); writeDraft(repo.path, { message: m, amend }) }
+  const clearDraft = () => { setMsg(''); setAmd(false); writeDraft(repo.path, { message: '', amend: false }) }
+  const setAmend = (a: boolean) => { setAmd(a); writeDraft(repo.path, { message, amend: a }) }
   const [newBranch, setNewBranch] = useState('')
   const [from, setFrom] = useState('')
   const [branchQ, setBranchQ] = useState('')
   const [dialog, setDialog] = useState<BranchDialog | null>(null)
   const [branchMenu, setBranchMenu] = useState<string | null>(null)
-  useEffect(() => { setMessage(''); setAmend(false); setNewBranch(''); setFrom(''); setBranchQ(''); setDialog(null); setBranchMenu(null) }, [repo.path])
+  useEffect(() => { const d = readDraft(repo.path); setMsg(d.message); setAmd(d.amend); setNewBranch(''); setFrom(''); setBranchQ(''); setDialog(null); setBranchMenu(null) }, [repo.path])
 
   const act = async (label: string, action: string, params: Record<string, unknown> = {}, quiet = false) => {
     setBusy(label)
@@ -74,9 +79,9 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
   const bq = branchQ.trim().toLowerCase()
   const shownBranches = [...data.branches.filter((x) => !x.remote), ...data.branches.filter((x) => x.remote)].filter((x) => !bq || x.name.toLowerCase().includes(bq))
   const canCommit = !busy && (amend ? !!data.commits.length : !!staged.length && !!message.trim())
-  const commit = async () => { if (canCommit && await act('commit', 'commit', { message, amend })) { setMessage(''); setAmend(false) } }
+  const commit = async () => { if (canCommit && await act('commit', 'commit', { message, amend })) { clearDraft() } }
   const iconBtn = 'icon-btn sm'
-  const commitPush = async () => { if (canCommit && await act('commit', 'commit', { message, amend })) { setMessage(''); setAmend(false); if (!data.detached && data.remotes.length) await act('push', 'push') } }
+  const commitPush = async () => { if (canCommit && await act('commit', 'commit', { message, amend })) { clearDraft(); if (!data.detached && data.remotes.length) await act('push', 'push') } }
   const keyHint = data.branch ? ticketKey(data.branch) : null
 
   return (
