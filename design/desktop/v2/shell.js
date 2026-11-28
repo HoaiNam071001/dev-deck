@@ -85,7 +85,7 @@
       <div class="palette-back" id="palBack"></div>
       <div class="palette" id="pal" role="dialog" aria-label="Bảng lệnh"><input id="palQ" placeholder="Gõ để tìm lệnh, trang…" autocomplete="off"><div class="list" id="palList"></div></div>`)
     const note = $('.note')
-    if (note) note.insertAdjacentHTML('beforeend', `<span class="swatches" title="Màu chính">Màu chính ${Object.entries(THEMES).map(([id, t]) => `<button data-theme="${id}" class="${id === cur0 ? 'on' : ''}" style="background:${t[1]}" title="${t[0]}" aria-label="Màu chính: ${t[0]}"></button>`).join('')}</span>`)
+    if (note) note.insertAdjacentHTML('beforeend', `<span class="swatches"><b>Màu chính:</b>${Object.entries(THEMES).map(([id, t]) => `<button data-theme="${id}" class="${id === cur0 ? 'on' : ''}" aria-label="Màu chính: ${t[0]}"><i style="background:${t[1]}"></i>${t[0]}</button>`).join('')}<a href="Colors.html">So sánh 4 màu →</a></span>`)
     document.querySelectorAll('.swatches button').forEach((b) => (b.onclick = () => { save('theme', b.dataset.theme); theme(b.dataset.theme); toast('Màu chính: ' + THEMES[b.dataset.theme][0], 'Đã nhớ cho mọi trang') }))
     if (note) note.insertAdjacentHTML('beforeend', `<span class="pages">${PAGES.map((p) => `<a href="${p.file}" class="${p.id === page ? 'on' : ''}">${p.label}</a>`).join('')}</span>`)
 

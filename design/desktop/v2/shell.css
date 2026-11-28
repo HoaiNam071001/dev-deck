@@ -23,8 +23,13 @@ a{color:var(--ahead)}
 .note .pages a:hover{color:var(--fg);background:var(--raised)}
 .note .pages a.on{color:var(--fg);background:var(--primary-soft)}
 .swatches{display:flex;align-items:center;gap:6px}
-.swatches button{width:18px;height:18px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
-.swatches button.on{border-color:var(--fg);box-shadow:0 0 0 2px #0A0E14 inset}
+.swatches{flex-basis:100%;order:-1;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--surface);font-size:12.5px;color:var(--fg-soft)}
+.swatches b{color:var(--fg);margin-right:4px}
+.swatches button{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px 0 8px;border-radius:14px;border:1px solid var(--border-strong);background:var(--bg-chrome);color:var(--fg-soft);cursor:pointer;font-size:12.5px}
+.swatches button i{width:14px;height:14px;border-radius:50%;display:inline-block}
+.swatches button:hover{color:var(--fg);border-color:var(--border-pop)}
+.swatches button.on{border-color:var(--primary);background:var(--primary-soft);color:var(--fg);font-weight:600}
+.swatches a{margin-left:auto;font-size:12.5px;color:var(--primary)}
 kbd{font-family:var(--font-mono);font-size:10.5px;padding:0 5px;border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:4px;color:var(--fg-mute);background:var(--bg-chrome);white-space:nowrap}
 svg.i{width:15px;height:15px;flex:none;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 svg.i.sm{width:13px;height:13px}

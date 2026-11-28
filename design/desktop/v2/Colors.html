@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevDeck · So sánh màu chính</title>
+<!-- So sánh 4 phương án màu chính trên cùng mẫu giao diện. Bấm "Dùng màu này" để áp cho mọi trang design v2. -->
+<link rel="stylesheet" href="shell.css">
+<style>
+body{padding:28px 24px 60px}
+.wrap{max-width:1280px;margin:0 auto}
+h1{font-size:22px;margin:0 0 4px}
+.lead{color:var(--fg-mute);margin:0 0 20px;font-size:13px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:18px;font-size:12.5px;color:var(--fg-soft)}
+.legend b{font-weight:600;color:var(--fg)}
+.cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.card{background:var(--bg);border:2px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.card.on{border-color:var(--c)}
+.head{padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+.sw{width:34px;height:34px;border-radius:9px;background:var(--c);flex:none}
+.head b{font-size:15px;display:block}
+.head .mono{font-size:12px;color:var(--fg-mute)}
+.tag{margin-left:auto;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--c);color:var(--on)}
+.body{padding:14px 16px;display:flex;flex-direction:column;gap:12px;flex:1}
+.lab{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-mute);font-weight:600}
+.mock{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.navi{display:flex;align-items:center;gap:8px;height:30px;padding:0 10px;font-size:12.5px;color:var(--fg-soft)}
+.navi.on{background:var(--selected);color:var(--fg);box-shadow:inset 3px 0 0 var(--c)}
+.navi .n{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--fg-mute)}
+.tabsm{display:flex;gap:2px;border-bottom:1px solid var(--line);padding:0 8px}
+.tabsm span{padding:8px 8px;font-size:12px;color:var(--fg-mute);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabsm span.on{color:var(--fg);border-bottom-color:var(--c)}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pbtn{height:28px;padding:0 12px;border-radius:6px;border:0;background:var(--c);color:var(--on);font-weight:600;font-size:12.5px}
+.sbtn{height:28px;padding:0 12px;border-radius:6px;border:1px solid var(--border-strong);background:var(--raised);color:var(--fg);font-size:12.5px}
+.segm{display:inline-flex;border:1px solid var(--border-strong);border-radius:7px;padding:2px;background:var(--bg-chrome)}
+.segm span{padding:2px 10px;border-radius:5px;font-size:12px;color:var(--fg-mute)}
+.segm span.on{background:var(--soft);color:var(--fg);box-shadow:0 0 0 1px var(--c)}
+.tg{width:30px;height:17px;border-radius:9px;background:var(--c);position:relative}
+.tg:after{content:"";position:absolute;right:2px;top:2px;width:13px;height:13px;border-radius:50%;background:#fff}
+.lnk{color:var(--c);font-size:12.5px}
+.item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--c);background:var(--selected);font-size:12.5px}
+.item .mono{font-size:11.5px;color:var(--fg-soft)}
+.stat{display:flex;gap:5px;flex-wrap:wrap}
+.cr{font-size:12px;color:var(--fg-mute);display:flex;flex-direction:column;gap:3px}
+.cr span b{font-family:var(--font-mono);font-weight:600}
+.ok4{color:var(--accent)}.bad4{color:var(--danger)}
+.note2{font-size:12px;color:var(--fg-soft);line-height:1.5;background:var(--surface);border-radius:8px;padding:8px 10px}
+.use{margin:0 16px 16px;height:34px;border-radius:8px;border:1px solid var(--c);background:transparent;color:var(--fg);font-weight:600;cursor:pointer;font-size:13px}
+.use:hover{background:var(--soft)}
+.card.on .use{background:var(--c);color:var(--on)}
+.back2{display:inline-flex;margin-top:22px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Chọn màu chính</h1>
+  <p class="lead">Màu chính dùng cho nút chính, mục đang chọn, tab, công tắc, link. Mỗi cột là cùng một mẫu giao diện với một màu. Hàng "Màu trạng thái" giữ nguyên ở mọi phương án để bạn xem màu chính có bị lẫn với chúng không.</p>
+  <div class="legend">Màu trạng thái giữ nguyên:
+    <span class="chip ok">✓ sạch / CI qua</span><span class="chip down">↓ cần pull · chưa xem</span><span class="chip up">↑ cần push</span><span class="chip bad">✕ lỗi</span>
+  </div>
+  <div class="cols" id="cols"></div>
+  <a class="btn back2" href="Home.html">← Về design (Tổng quan)</a>
+</div>
+
+<script>
+const THEMES = [
+  ['indigo', 'Chàm', '#8B93FF', '#11143A', 'rgba(139,147,255,.16)', 'Khuyên dùng. Không trùng màu trạng thái nào, nhìn là biết "đang chọn / nút chính".'],
+  ['teal', 'Ngọc', '#2CC8B4', '#062824', 'rgba(44,200,180,.15)', 'Tươi, mát. Hơi gần xanh lá "sạch / qua" nên nhìn lướt dễ lẫn.'],
+  ['amber', 'Hổ phách', '#F0B53C', '#2A1D04', 'rgba(240,181,60,.15)', 'Ấm, nổi. Gần màu cam "cần pull / chưa xem" nên dễ tưởng là cảnh báo.'],
+  ['green', 'Xanh lá (cũ)', '#30CF43', '#0C1A0E', 'rgba(48,207,67,.14)', 'Như hiện tại. Trùng màu "sạch / qua" – lý do khó phân biệt.'],
+]
+const lum = (h) => { const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] }
+const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05) }
+const load = () => { try { return JSON.parse(localStorage.getItem('devdeck.theme')) || 'indigo' } catch { return 'indigo' } }
+let cur = load()
+function draw() {
+  document.getElementById('cols').innerHTML = THEMES.map(([id, name, c, on, soft, note]) => {
+    const r1 = ratio(c, on), r2 = ratio(c, '#1A2230')
+    const ck = (r) => `<b class="${r >= 4.5 ? 'ok4' : 'bad4'}">${r.toFixed(1)}:1 ${r >= 4.5 ? '✓' : '✕'}</b>`
+    return `<section class="card ${cur === id ? 'on' : ''}" style="--c:${c};--on:${on};--soft:${soft}">
+      <div class="head"><span class="sw"></span><div><b>${name}</b><span class="mono">${c}</span></div>${cur === id ? '<span class="tag">Đang dùng</span>' : ''}</div>
+      <div class="body">
+        <div class="lab">Menu bên trái</div>
+        <div class="mock"><div class="navi on">● Có gì mới<span class="n">3</span></div><div class="navi">◉ Việc của tôi<span class="n">3</span></div><div class="navi">★ Đã ghim<span class="n">3</span></div></div>
+        <div class="lab">Tab · nút · bộ lọc</div>
+        <div class="mock"><div class="tabsm"><span class="on">Thay đổi</span><span>Nhánh</span><span>Commit</span></div>
+          <div style="padding:10px;display:flex;flex-direction:column;gap:10px"><div class="row"><button class="pbtn">Commit ⌘↵</button><button class="sbtn">Pull</button><span class="tg"></span></div>
+          <div class="row"><span class="segm"><span class="on">Hôm nay</span><span>7 ngày</span><span>30 ngày</span></span><a class="lnk" href="#" onclick="return false">Mở Git →</a></div></div></div>
+        <div class="lab">Dòng đang chọn cạnh màu trạng thái</div>
+        <div class="item"><span class="mono">PG-482</span><span style="flex:1">Lỗi làm tròn mã giảm giá</span></div>
+        <div class="stat"><span class="chip ok">✓ CI</span><span class="chip down">● 4</span><span class="chip up">↑1</span><span class="chip bad">✕ lỗi</span></div>
+        <div class="cr"><span>Chữ trên nút: ${ck(r1)}</span><span>Làm chữ link trên nền khối: ${ck(r2)}</span></div>
+        <div class="note2">${note}</div>
+      </div>
+      <button class="use" data-id="${id}">${cur === id ? '✓ Đang dùng' : 'Dùng màu này'}</button>
+    </section>`
+  }).join('')
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-id]'); if (!b) return
+  cur = b.dataset.id
+  try { localStorage.setItem('devdeck.theme', JSON.stringify(cur)) } catch { /* bỏ qua */ }
+  draw()
+})
+draw()
+</script>
+</body>
+</html>

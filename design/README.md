@@ -51,5 +51,5 @@ Dùng chung cho mọi trang:
 
 - Panel trái và khung chi tiết **kéo đổi độ rộng** được (tay kéo ở mép, nhấp đúp để về mặc định, phím ←/→ khi đang focus), độ rộng nhớ theo từng trang (`localStorage`, khóa `devdeck.w.*`).
 - Khung chi tiết của Git, Jira, Job, Remotes **chuyển được panel bên phải ↔ cửa sổ nổi** bằng nút ở góc, nhớ lựa chọn (`devdeck.mode.*`). Mặc định: Git, Jira là panel; Job, Remotes là cửa sổ nổi.
-- **Màu chính** tách khỏi xanh lá trạng thái: mặc định chàm `#8B93FF`; thanh ghi chú trên đầu mỗi trang có 4 ô màu để thử (chàm, ngọc, hổ phách, xanh lá cũ), nhớ lựa chọn (`devdeck.theme`).
+- **Màu chính** tách khỏi xanh lá trạng thái: mặc định chàm `#8B93FF`. Đầu mỗi trang có thanh "Màu chính" với 4 nút (chàm, ngọc, hổ phách, xanh lá cũ); [v2/Colors.html](desktop/v2/Colors.html) so 4 màu cạnh nhau trên cùng mẫu giao diện kèm độ tương phản. Lựa chọn được nhớ (`devdeck.theme`).
 - Trang AI có thêm chế độ biểu đồ đường **Theo repo** (plan: [07-ai-usage.md](../plan/07-ai-usage.md)); kế hoạch chuyển design sang code: [15-ui-v2.md](../plan/15-ui-v2.md).
