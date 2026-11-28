@@ -148,6 +148,9 @@ async function scan() {
       procs, progress, ports, kind: classify(procs.map((m) => m.cmd).concat(p.cmd || ''), ports, progress),
     })
   }
+  // Job do DevDeck khởi chạy (pid của tiến trình gốc, hoặc cha trực tiếp trên Windows vì cmd.exe không tính là job)
+  const fromApp = require('./runner').livePids()
+  for (const j of jobs) j.runId = fromApp.get(j.pid) || fromApp.get(j.ppid) || ''
   for (const k of hist.keys()) if (!seenJobs.has(k)) hist.delete(k) // job đã kết thúc: quên lịch sử
   jobs.sort((a, b) => a.repo.localeCompare(b.repo) || String(a.start).localeCompare(String(b.start)))
   return { supported: true, at: new Date().toISOString(), folders: cfg.folders, jobs }

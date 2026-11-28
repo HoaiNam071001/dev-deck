@@ -291,6 +291,7 @@ export function JobDetailModal({ job: j, now, onClose, onStopped, initialTab = '
         <span className="text-[12px] font-normal text-fg-mute">{relDir(j)}</span>
         <BranchChip branch={j.branch} />
         {kind && <Chip tone={kind.tone}>{kind.label}</Chip>}
+        {j.runId && <Chip tone="info">chạy từ app</Chip>}
       </h2>
     }>
       <div className="flex flex-col">
@@ -356,6 +357,7 @@ export function RepoJobs({ repoPath }: { repoPath: string }) {
             <button key={j.pid} className="flex min-w-0 items-center gap-2 rounded px-1.5 py-1 text-left text-[12px] hover:bg-selected" title="Xem chi tiết job" onClick={() => setPid(j.pid)}>
               <span className="size-1.5 flex-none rounded-full bg-accent" />
               {kind && <Chip tone={kind.tone}>{kind.label}</Chip>}
+              {j.runId && <Chip tone="info">từ app</Chip>}
               <span className="mono min-w-0 flex-1 truncate text-fg-soft">{shortCmd(j.cmd) || j.name}</span>
               {j.ports.length > 0 && <span className="mono flex-none text-accent">:{j.ports[0].port}</span>}
               {j.progress && <span className="mono flex-none text-fg-mute">{j.progress.done}/{j.progress.total}</span>}

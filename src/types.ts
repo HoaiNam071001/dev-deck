@@ -142,6 +142,8 @@ export interface JobProgress {
   files: { file: string; state: 'queued' | 'running' | 'pass' | 'fail' | 'skip'; ms?: number }[]
 }
 export interface Job {
+  /** Có giá trị khi job do DevDeck khởi chạy (tab Script). */
+  runId?: string
   kind: JobKind
   /** Cổng TCP đang lắng nghe của job và các tiến trình con (pid = tiến trình giữ cổng). */
   ports: (JobPort & { pid: number })[]

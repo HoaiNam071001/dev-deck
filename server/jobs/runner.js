@@ -3,6 +3,7 @@
 // Windows: npm / pnpm / yarn là .cmd nên gọi qua `cmd.exe /d /s /c`; an toàn nhờ whitelist ký tự cho tên script và tham số (không có & | < > ^ " % khoảng trắng…).
 const { spawn, execFile, execFileSync } = require('child_process')
 const fs = require('fs')
+const os = require('os')
 const path = require('path')
 const git = require('../git')
 const gitActions = require('../git-actions')
@@ -19,6 +20,22 @@ const SKIP = new Set(['node_modules', '.git', 'dist', 'build', 'out', '.next', '
 
 const runs = new Map() // id -> run
 let counter = 0
+
+const INDEX = path.join(RUNS, 'index.json')
+/** Lịch sử bền: các lần chạy đã kết thúc (không kèm log trong bộ nhớ; xem lại log từ tệp .log). */
+function saveIndex() {
+  try { fs.mkdirSync(RUNS, { recursive: true }); fs.writeFileSync(INDEX, JSON.stringify([...runs.values()].filter((r) => r.end !== null).map(view))) } catch { /* không ghi được thì thôi */ }
+}
+function loadIndex() {
+  try {
+    for (const v of JSON.parse(fs.readFileSync(INDEX, 'utf8'))) {
+      if (!v || typeof v.id !== 'string' || !/^[a-z0-9-]+$/.test(v.id) || v.running) continue
+      let lines = []
+      try { lines = fs.readFileSync(path.join(RUNS, v.id + '.log'), 'utf8').split(/\r?\n/).filter(Boolean).slice(-MAX_LINES) } catch { /* mất log */ }
+      runs.set(v.id, { ...v, end: v.end, lines, seq: lines.length, file: path.join(RUNS, v.id + '.log'), fileBytes: MAX_LOG_BYTES, child: null })
+    }
+  } catch { /* chưa có lịch sử */ }
+}
 
 function manager(dir) {
   const has = (f) => fs.existsSync(path.join(dir, f))
@@ -101,9 +118,13 @@ function run(body) {
   fs.mkdirSync(RUNS, { recursive: true })
   const r = { id, repo: root, rel, script, args, manager: pkg.manager, pid: 0, start: new Date().toISOString(), end: null, code: null, port: 0, lines: [], seq: 0, file: path.join(RUNS, id + '.log'), fileBytes: 0, child: null }
   runs.set(id, r)
+  const env = { ...process.env, FORCE_COLOR: '1' }
+  // Script chạy vitest: nạp preload của DevDeck (nếu đã cài ở tab Job) để tab Job thấy tiến độ "N/M file"
+  const preload = path.join(os.homedir(), '.devdeck', 'preload.cjs')
+  if (/vitest/.test(pkg.scripts[script]) && fs.existsSync(preload) && !String(env.NODE_OPTIONS || '').includes('preload.cjs')) env.NODE_OPTIONS = (env.NODE_OPTIONS ? env.NODE_OPTIONS + ' ' : '') + '--require="' + preload + '"'
   const child = WIN
-    ? spawn('cmd.exe', ['/d', '/s', '/c', pkg.manager, ...argv], { cwd, windowsHide: true, env: { ...process.env, FORCE_COLOR: '1' } })
-    : spawn(pkg.manager, argv, { cwd, detached: true, env: { ...process.env, FORCE_COLOR: '1' } })
+    ? spawn('cmd.exe', ['/d', '/s', '/c', pkg.manager, ...argv], { cwd, windowsHide: true, env })
+    : spawn(pkg.manager, argv, { cwd, detached: true, env })
   r.child = child
   r.pid = child.pid || 0
   const t0 = Date.now()
@@ -114,6 +135,7 @@ function run(body) {
     if (err) push(r, '[DevDeck] ' + err + '\n')
     gitActions.audit({ repo: root, action: 'runScript', params: { dir: rel, script, args, code, ms: Date.now() - t0 }, ok: code === 0, error: code === 0 ? undefined : (err || 'mã thoát ' + code) })
     prune()
+    saveIndex()
   }
   child.stdout.on('data', (d) => push(r, d.toString()))
   child.stderr.on('data', (d) => push(r, d.toString()))
@@ -146,6 +168,9 @@ function stopAll() {
   }
 }
 
+/** pid đang chạy của các lần chạy từ app → id; tab Job dùng để gắn nhãn "chạy từ app". */
+function livePids() { const m = new Map(); for (const r of runs.values()) if (r.end === null && r.pid) m.set(r.pid, r.id); return m }
+
 function list() { return [...runs.values()].sort((a, b) => b.start.localeCompare(a.start)).map(view) }
 
 /** Log từ dòng thứ `since` (số thứ tự tuyệt đối). Dòng cũ đã rơi khỏi bộ đệm thì trả từ dòng cũ nhất còn giữ. */
@@ -157,4 +182,6 @@ function log(id, since) {
   return { run: view(r), from, lines: r.lines.slice(from - first) }
 }
 
-module.exports = { listPackages, run, stop, stopAll, list, log, _test: { parseArgs, manager, PORT_RE, NAME_RE } }
+loadIndex()
+
+module.exports = { livePids, listPackages, run, stop, stopAll, list, log, _test: { parseArgs, manager, PORT_RE, NAME_RE } }

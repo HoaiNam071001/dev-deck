@@ -11,19 +11,19 @@ Mục tiêu: từ chi tiết repo hoặc tab Job, bấm để chạy `dev`, `tes
 - [x] Tham số thêm (ví dụ tên tệp test) qua ô riêng, kiểm từng phần, truyền sau `--`
 - [x] Giữ log trong bộ đệm vòng (ví dụ 5.000 dòng / job), đọc qua `GET /api/jobs/log?id=&since=` (poll) hoặc SSE; lưu tệp log ở `data/runs/<id>.log` để xem lại sau khi xong
 - [x] Dừng: dùng lại `taskkill /T` hiện có (cây tiến trình)
-- [ ] Script chạy vitest: tự gắn reporter tiến độ hiện có để tab Job thấy "N/M file"
+- [x] Script chạy vitest: tự gắn reporter tiến độ hiện có để tab Job thấy "N/M file"
 - [x] Mỗi lần chạy / dừng ghi audit (repo, script, mã thoát, thời lượng)
 
 ### Giao diện
 - [x] `RepoDetail`: tab "Script" liệt kê script, nút ▶ chạy, ghim script hay dùng lên đầu
-- [ ] Job do DevDeck khởi chạy hiện cùng danh sách Job với nhãn "chạy từ app", mở ra thấy log trực tiếp (cuộn theo, tìm chữ, sao chép), mã màu ANSI cơ bản
+- [x] Job do DevDeck khởi chạy hiện cùng danh sách Job với nhãn "chạy từ app", mở ra thấy log trực tiếp (cuộn theo, tìm chữ, sao chép), mã màu ANSI cơ bản
 - [x] Dev server: hiện cổng đang nghe (đã có `jobPorts`) kèm nút mở `http://localhost:<port>`
-- [ ] Lịch sử: 20 lần chạy gần nhất mỗi repo (script, lúc chạy, thời lượng, mã thoát), bấm để xem lại log
+- [x] Lịch sử: 20 lần chạy gần nhất mỗi repo (script, lúc chạy, thời lượng, mã thoát), bấm để xem lại log
 - [x] Thông báo khi job chạy lâu (build / test) kết thúc, theo công tắc thông báo hiện có
 - [x] Command Palette: "Chạy script…" → chọn repo → chọn script
 - [x] Chạy lại cùng script đang chạy → hỏi "dừng bản cũ và chạy lại?"
 
-**Ghi chú làm (lượt 1):** Windows gọi `cmd.exe /d /s /c <pm> run …` vì npm là `.cmd`; an toàn nhờ whitelist `[A-Za-z0-9:_.-]` cho tên script và `[A-Za-z0-9_@+=:,./\\-]` cho tham số. Log: bộ đệm 5.000 dòng trong bộ nhớ + `data/runs/<id>.log` (≤5MB, giữ 50 lần gần nhất); lịch sử chỉ trong phiên chạy của app. **Lượt 2:** cổng lấy bằng cách dò `http://localhost:<port>` trong log; thông báo (job ≥20s) qua `useScriptDoneWatch`; ghim script (localStorage); mã màu ANSI cơ bản, tìm chữ, sao chép log; palette "Chạy script: <repo>"; thoát app thì tự dừng mọi job (chưa hỏi). Chưa làm: reporter vitest (N/M file), hiện chung với danh sách Job, lịch sử bền qua lần khởi động.
+**Ghi chú làm (lượt 1):** Windows gọi `cmd.exe /d /s /c <pm> run …` vì npm là `.cmd`; an toàn nhờ whitelist `[A-Za-z0-9:_.-]` cho tên script và `[A-Za-z0-9_@+=:,./\\-]` cho tham số. Log: bộ đệm 5.000 dòng trong bộ nhớ + `data/runs/<id>.log` (≤5MB, giữ 50 lần gần nhất); lịch sử chỉ trong phiên chạy của app. **Lượt 2:** cổng lấy bằng cách dò `http://localhost:<port>` trong log; thông báo (job ≥20s) qua `useScriptDoneWatch`; ghim script (localStorage); mã màu ANSI cơ bản, tìm chữ, sao chép log; palette "Chạy script: <repo>"; thoát app thì tự dừng mọi job (chưa hỏi). **Lượt 3:** script có `vitest` tự nạp `~/.devdeck/preload.cjs` (nếu đã cài ở tab Job) qua `NODE_OPTIONS` để thấy "N/M file"; job do app chạy có nhãn "chạy từ app" ở tab Job (khớp pid / ppid); lịch sử lưu ở `data/runs/index.json` (50 lần, xem lại log từ tệp). Chưa làm: hỏi xác nhận khi thoát app.
 
 ## Tiêu chí xong
 
