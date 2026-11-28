@@ -11,6 +11,7 @@ import { RepoScripts } from './RepoScripts'
 import { RepoStash } from './RepoStash'
 import { RepoWorktrees } from './RepoWorktrees'
 import { Spinner, Icon } from './ui'
+import { DockButtons } from './DetailDock'
 import { RepoJobs } from './JobDetail'
 import { RepoMr } from './RepoMr'
 import { ContextMenu } from './ContextMenu'
@@ -89,8 +90,7 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
           <button className={iconBtn} title="Sao chép đường dẫn" aria-label="Sao chép đường dẫn" onClick={async () => toast(await copyText(data.path) ? { kind: 'ok', title: 'Đã sao chép đường dẫn' } : { kind: 'err', title: 'Không sao chép được' })}><Icon name="copy" size={13} /></button>
           <button className={iconBtn + (isPinned ? ' !text-primary' : '')} title={isPinned ? 'Bỏ ghim' : 'Ghim lên đầu'} aria-label={isPinned ? 'Bỏ ghim' : 'Ghim lên đầu'} aria-pressed={isPinned} onClick={() => (isPinned ? unpinRepo(data.path) : pinRepo(data.path))}><Icon name="pin" size={13} fill={isPinned} /></button>
           {onDelete && <button className={iconBtn + ' hover:!text-danger'} title="Xóa repo khỏi máy…" aria-label="Xóa repo khỏi máy" onClick={onDelete}><Icon name="trash" size={13} /></button>}
-          {onMode && <button className={iconBtn} title={mode === 'modal' ? 'Chuyển sang khung bên phải' : 'Chuyển sang cửa sổ nổi'} aria-label={mode === 'modal' ? 'Chuyển sang khung bên phải' : 'Chuyển sang cửa sổ nổi'} onClick={() => onMode(mode === 'modal' ? 'panel' : 'modal')}><Icon name={mode === 'modal' ? 'panel' : 'modal'} size={13} /></button>}
-          {onClose && <button className={iconBtn} title="Đóng chi tiết (Esc)" aria-label="Đóng chi tiết" onClick={onClose}><Icon name="x" size={13} /></button>}
+          <DockButtons mode={mode} onMode={onMode} onClose={onClose} className={iconBtn} />
         </div>
 
         <div className="flex items-center gap-2 font-mono text-[12px]">

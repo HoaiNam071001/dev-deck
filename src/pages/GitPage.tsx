@@ -3,6 +3,7 @@ import { api, useLoad } from '../api'
 import { FolderPicker } from '../components/FolderPicker'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { RepoDetail } from '../components/RepoDetail'
+import { DetailDock, useDockMode } from '../components/DetailDock'
 import { RepoList } from '../components/RepoList'
 import { BulkDialog, type BulkKind } from '../components/BulkDialog'
 import { ContextMenu } from '../components/ContextMenu'
@@ -23,7 +24,6 @@ type Tab = 'changes' | 'stash' | 'worktree' | 'branches' | 'commits' | 'remotes'
 const SORTS: { id: Sort; label: string }[] = [{ id: 'name', label: 'tên' }, { id: 'recent', label: 'commit mới nhất' }, { id: 'changes', label: 'nhiều thay đổi nhất' }]
 const p2 = (n: number) => String(n).padStart(2, '0')
 const clock = (iso: string) => { const d = new Date(iso); return `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}` }
-const MIN_W = 380, MAX_W = 720
 
 export function GitPage() {
   const [rms, sec, setSec] = useRefreshMs('git', 30)
@@ -89,8 +89,8 @@ export function GitPage() {
   const [ticks, setTicks] = useState<Set<string> | null>(null)   // null = không ở chế độ chọn nhiều
   const tick = useCallback((p: string) => setTicks((s) => { const n = new Set(s ?? []); if (!n.delete(p)) n.add(p); return n }), [])
   const closeBulkMenu = useCallback(() => setBulkMenu(false), [])
-  const [mode, setMode] = usePersisted<'panel' | 'modal'>('git.detailMode', 'panel', (v) => v === 'panel' || v === 'modal')
-  const [detailW, setDetailW] = usePersisted('git.detailW', 460, (v) => typeof v === 'number' && v >= MIN_W && v <= MAX_W)
+  const [mode, setMode] = useDockMode('git', 'panel')
+  const closeDetail = useCallback(() => setState({ selected: null }), [])
 
   const list: RepoSummary[] = repos.data?.repos ?? cached
   const activeRoots = repos.data?.roots ?? roots
@@ -164,19 +164,6 @@ export function GitPage() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [shown])
-
-  // Kéo đổi độ rộng khung chi tiết
-  const drag = (e: React.PointerEvent) => {
-    e.preventDefault()
-    const startX = e.clientX, startW = detailW
-    const move = (ev: PointerEvent) => setDetailW(Math.max(MIN_W, Math.min(MAX_W, startW + startX - ev.clientX)))
-    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
-    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up)
-  }
-  const resizeKey = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowLeft') setDetailW(Math.min(MAX_W, detailW + 20))
-    else if (e.key === 'ArrowRight') setDetailW(Math.max(MIN_W, detailW - 20))
-  }
 
   const empty = !list.length && (repos.loading || scanning) ? <Spinner label="Đang quét…" /> : list.length ? 'Không có repo khớp bộ lọc.' : 'Không tìm thấy repo nào. Thử thư mục khác hoặc tăng độ sâu.'
   const sortLabel = SORTS.find((s) => s.id === sort)!.label
@@ -266,22 +253,10 @@ export function GitPage() {
             onPick={(p) => { setState({ selected: p }) }} />
         </section>
 
-        {current && mode === 'panel' && <div className="relative flex-none" style={{ width: detailW }}>
-          <div role="separator" aria-orientation="vertical" aria-label="Đổi độ rộng khung chi tiết" aria-valuenow={detailW} aria-valuemin={MIN_W} aria-valuemax={MAX_W} tabIndex={0} title="Kéo để đổi độ rộng"
-            onPointerDown={drag} onKeyDown={resizeKey} className="group absolute top-0 bottom-0 -left-[3px] z-10 flex w-1.5 cursor-col-resize items-center justify-center">
-            <span className="h-7 w-0.5 rounded-sm bg-border-pop group-hover:bg-primary group-focus-visible:bg-primary" />
-          </div>
-          <section aria-label={'Chi tiết repo ' + current.name} className="flex h-full flex-col border-l border-border bg-surface-2">
-            <ErrorBoundary resetKey={current.path} label="Không hiển thị được chi tiết repo"><RepoDetail key={current!.path} repo={current!} tab={tab} setTab={setTab} mode={mode} onMode={setMode} onClose={() => setState({ selected: null })} onDelete={() => setDeleting(current!)} /></ErrorBoundary>
-          </section>
-        </div>}
-        {current && mode === 'modal' && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center p-8">
-            <button className="absolute inset-0 border-0 bg-[rgba(8,9,10,.6)]" aria-label="Đóng chi tiết" tabIndex={-1} onClick={() => setState({ selected: null })} />
-            <section role="dialog" aria-modal="true" aria-label={'Chi tiết repo ' + current.name} className="relative flex h-full max-h-[620px] w-full max-w-[860px] flex-col overflow-hidden rounded-xl border border-border-pop bg-surface-2 shadow-[0_24px_64px_rgba(0,0,0,.6)]">
-              <ErrorBoundary resetKey={current.path} label="Không hiển thị được chi tiết repo"><RepoDetail key={current!.path} repo={current!} tab={tab} setTab={setTab} mode={mode} onMode={setMode} onClose={() => setState({ selected: null })} onDelete={() => setDeleting(current!)} /></ErrorBoundary>
-            </section>
-          </div>
+        {current && (
+          <DetailDock pageKey="git" mode={mode} open onClose={closeDetail} label={'Chi tiết repo ' + current.name} minW={380} maxW={720} defW={460}>
+            <ErrorBoundary resetKey={current.path} label="Không hiển thị được chi tiết repo"><RepoDetail key={current.path} repo={current} tab={tab} setTab={setTab} mode={mode} onMode={setMode} onClose={closeDetail} onDelete={() => setDeleting(current)} /></ErrorBoundary>
+          </DetailDock>
         )}
       </div>
     </>
