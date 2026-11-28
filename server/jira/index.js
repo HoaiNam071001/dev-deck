@@ -62,4 +62,32 @@ async function mine() {
   return { items: parts.flat(), errors }
 }
 
-module.exports = { accounts, addAccount, removeAccount, testAccount, issues, extract, mine }
+const watch = require('./watch')
+
+/** Ticket lấy theo account, không lọc theo project key của ai; dùng cho ghim (mã đã hợp lệ). */
+const byKeys = (keys) => issues({ keys })
+
+/** Có gì mới: ticket của tôi + ticket đã ghim, kèm sự kiện đổi kể từ lần xem cuối. */
+async function whatsNew() {
+  const m = await mine()
+  const pins = watch.pinned()
+  const have = new Set(m.items.map((i) => i.key))
+  const extra = await byKeys(pins.filter((k) => !have.has(k)))
+  const items = [...m.items, ...extra].slice(0, 50)
+  const ev = new Map(watch.compare(items).map((e) => [e.key, e.events]))
+  return {
+    items: items.map((i) => ({ issue: i, pinned: pins.includes(i.key), events: ev.get(i.key) || [] })),
+    errors: m.errors,
+  }
+}
+
+/** Đánh dấu đã xem một ticket (key) hoặc tất cả (không key). */
+async function seen({ key }) {
+  const wn = await whatsNew()
+  watch.markSeen(wn.items.map((x) => x.issue).filter((i) => !key || i.key === key))
+  return { ok: true }
+}
+
+const pin = ({ key, on }) => ({ pinned: watch.pin(String(key || ''), on === true) })
+
+module.exports = { whatsNew, seen, pin, accounts, addAccount, removeAccount, testAccount, issues, extract, mine }

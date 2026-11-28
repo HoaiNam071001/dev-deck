@@ -39,3 +39,18 @@ console.log('jira: ok')
   assert.strictEqual((await jira.issues({ keys: ['ABC-1'] }))[0].description, 'plain')
   console.log('jira fetch: ok')
 })().catch((e) => { console.error(e); process.exit(1) })
+
+;(() => {
+  const { diff, snapshot } = require('./watch')
+  const mk = (o) => ({ status: 'To Do', assignee: 'A', priority: 'High', sprint: 'S1', comments: [], ...o })
+  const base = mk({ comments: [{ id: '1', author: 'B', mine: false, body: 'x' }] })
+  const prev = snapshot(base)
+  assert.deepStrictEqual(diff(prev, base), [])
+  const now = mk({ status: 'In Review', assignee: 'C', comments: [base.comments[0], { id: '2', author: 'B', mine: false, body: 'đã sửa xong\nxem lại' }, { id: '3', author: 'Tôi', mine: true, body: 'ok' }] })
+  const ev = diff(prev, now)
+  assert.deepStrictEqual(ev.map((e) => e.kind), ['status', 'assignee', 'comment'])
+  assert.strictEqual(ev[0].text, 'To Do → In Review'); assert.ok(ev[2].text.startsWith('B: “đã sửa xong”'))
+  // ticket chưa có comment trước đó: comment đầu tiên của người khác vẫn được báo
+  assert.strictEqual(diff(snapshot(mk()), mk({ comments: [{ id: '9', author: 'B', mine: false, body: 'hi' }] })).length, 1)
+  console.log('jira watch: ok')
+})()

@@ -292,3 +292,6 @@ export interface JiraIssue {
   assignee: string; priority: string; type: string; sprint: string; description: string; url: string; accountId: string
 }
 export interface JiraMine { items: JiraIssue[]; errors: { accountId: string; name: string; error: string }[] }
+export interface JiraEvent { kind: 'status' | 'assignee' | 'priority' | 'sprint' | 'comment'; text: string }
+export interface JiraNewItem { issue: JiraIssue; pinned: boolean; events: JiraEvent[] }
+export interface JiraNew { items: JiraNewItem[]; errors: { accountId: string; name: string; error: string }[] }

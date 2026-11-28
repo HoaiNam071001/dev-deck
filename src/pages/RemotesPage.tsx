@@ -119,6 +119,8 @@ export function RemotesPage() {
   const [query, setQuery] = usePersisted<string>('remotes.query', '', (v) => typeof v === 'string')
   const [adding, setAdding] = useState(false)
   const [jiraOpen, setJiraOpen] = useState(false)
+  const jiraWanted = useStore((s) => s.jiraOpen)
+  useEffect(() => { if (jiraWanted) { setJiraOpen(true); setStore({ jiraOpen: false }) } }, [jiraWanted])
   const [openKey, setOpenKey] = useState<string | null>(null)
   const [confirmDel, setConfirmDel] = useState<string | null>(null)
   const [confirmWrite, setConfirmWrite] = useState<string | null>(null)

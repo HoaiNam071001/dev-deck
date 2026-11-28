@@ -2,7 +2,7 @@
 // Chỉ gọi tới đúng baseUrl của account. Chỉ đọc (giai đoạn 13a).
 const { request } = require('../remotes/http')
 
-const FIELDS = 'summary,status,assignee,priority,issuetype,customfield_10020,description'
+const FIELDS = 'summary,status,assignee,priority,issuetype,customfield_10020,description,updated,comment'
 const KEY_RE = /\b[A-Z][A-Z0-9]+-\d+\b/g
 
 const api = (acc) => acc.baseUrl + (acc.kind === 'cloud' ? '/rest/api/3' : '/rest/api/2')
@@ -51,6 +51,8 @@ function normalize(acc, i) {
     sprint: sp?.name || '',
     description: desc.slice(0, 4000),
     url: `${acc.baseUrl}/browse/${i.key}`,
+    updated: f.updated || '',
+    comments: (f.comment?.comments || []).slice(-20).map((c) => ({ id: String(c.id), author: c.author?.displayName || '', mine: !!acc.user && c.author?.displayName === acc.user, body: adfText(c.body).trim().slice(0, 200) })),
   }
 }
 
