@@ -192,7 +192,6 @@ ${s.files} file · ${s.rows} tin` : `Chưa thấy log${s.root ? ' tại ' + s.ro
           <div className="page-tools">
             <Select label="Nhà cung cấp" value={provider} onChange={setProvider}
               options={[{ id: '', label: 'Tất cả' }, ...PROVIDERS.filter((p) => hasData(p.id) || provider === p.id).map((p) => ({ id: p.id as string, label: p.label }))]} />
-            <Select label="Khoảng thời gian" value={range} onChange={setRange} options={RANGES.map(({ id, label }) => ({ id, label }))} />
             {tab === 'chart' && <>
             <select value={gran} onChange={(e) => setGran(Number(e.target.value))} aria-label="Độ chi tiết">
               <option value="0">Tự động</option><option value="1">1 phút</option><option value="5">5 phút</option>
@@ -210,6 +209,8 @@ ${s.files} file · ${s.rows} tin` : `Chưa thấy log${s.root ? ' tại ' + s.ro
 
         {notifyOpen && <AiNotifyPanel onClose={() => setNotifyOpen(false)} />}
         {error && <ErrorBanner onRetry={reload}>Không đọc được dữ liệu: {error}</ErrorBanner>}
+
+        <Segmented label="Khoảng thời gian" value={range} onChange={setRange} options={RANGES.map(({ id, label }) => ({ id, label }))} />
 
         <UsageWindows rows={provider ? all.filter((r) => r.provider === provider) : all} />
 
