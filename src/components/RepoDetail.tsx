@@ -12,6 +12,8 @@ import { Spinner, Icon } from './ui'
 import { RepoJobs } from './JobDetail'
 import { RepoMr } from './RepoMr'
 import { ContextMenu } from './ContextMenu'
+import { ShortNum } from './ShortNum'
+import { useBranchTokens } from '../lib/useBranchTokens'
 import { DeleteBranchDialog, DeleteRemoteBranchDialog, RenameBranchDialog } from './BranchDialogs'
 
 type Tab = 'changes' | 'stash' | 'worktree' | 'branches' | 'commits' | 'remotes'
@@ -25,6 +27,7 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
   const isPinned = useStore((s) => s.pinned.includes(repo.path))
   const { data: raw, error, reload } = useLoad(() => api.repo(repo.path), [repo.path, rev], 0, 'repo:' + repo.path)
   // Server cũ (chưa khởi động lại sau khi nâng cấp) hoặc cache cũ có thể thiếu stashes / worktrees: coi như rỗng để UI không crash
+  const tokens = useBranchTokens(repo.path)
   const data = raw && { ...raw, stashes: raw.stashes ?? [], worktrees: raw.worktrees ?? [] }
   const [busy, setBusy] = useState<string | null>(null)
   const [message, setMessage] = useState('')
@@ -95,6 +98,12 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
           <span className="truncate text-fg-mute">→ {data.upstream ?? 'chưa có upstream'}</span>
         </div>
 
+        {data.branch && tokens.get(data.branch) && (
+          <div className="flex items-center gap-2 text-sm text-fg-mute" title={'Token AI của nhánh ' + data.branch + ' (Claude Code, Codex)'}>
+            <Icon name="ai" size={12} />Token AI nhánh này: <span className="font-mono text-fg-soft"><ShortNum n={tokens.get(data.branch)!.today} /> hôm nay</span> · <span className="font-mono text-fg-soft"><ShortNum n={tokens.get(data.branch)!.total} /> tổng</span>
+          </div>
+        )}
+
         <RepoMr remotes={data.remotes.map((r) => r.url)} branch={data.branch} />
         <RepoJobs repoPath={data.path} />
 
@@ -146,6 +155,7 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
                     {x.current ? 'đang mở' : x.remote ? 'remote' : x.upstream && !x.gone ? x.upstream : x.gone ? 'upstream đã mất' : 'chưa có upstream'} · {relTime(x.date)}
                   </span>
                 </span>
+                {!x.remote && tokens.get(x.name) && <span className="font-mono text-sm text-fg-mute" title="Token AI của nhánh này (tổng)"><ShortNum n={tokens.get(x.name)!.total} /></span>}
                 <span className="font-mono text-sm">{x.ahead > 0 && <span className="text-ahead">↑{x.ahead}</span>} {x.behind > 0 && <span className="text-behind">↓{x.behind}</span>}</span>
                 {!x.remote && x.upstream && !x.gone && x.behind > 0 && <button className="btn sm" disabled={!!busy} title="Fast-forward từ upstream" onClick={() => act('pl:' + x.name, 'pullBranch', { branch: x.name })}>Pull</button>}
                 {!x.remote && data.remotes.length > 0 && (x.ahead > 0 || !x.upstream || x.gone) && <button className="btn sm" disabled={!!busy} title={x.upstream && !x.gone ? 'Push lên upstream' : 'Push và đặt upstream'} onClick={() => act('ps:' + x.name, 'pushBranch', { branch: x.name })}>Push</button>}

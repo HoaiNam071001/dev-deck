@@ -10,6 +10,9 @@ const projectName = (dir) => dir.replace(/^[a-zA-Z]--Users-[^-]+-/, '').replace(
 /** Mỗi tài khoản (thư mục cấu hình) có thư mục projects riêng; log được gắn nhãn `account` ('' = mặc định). */
 const roots = () => profiles.dirs().map((d) => ({ dir: d, account: d === profiles.DEFAULT_DIR ? '' : d, root: path.join(d, 'projects') }))
 
+/** Nhánh trống / HEAD (detached) → không có nhánh */
+const cleanBranch = (b) => (typeof b === 'string' && b && b !== 'HEAD' ? b : undefined)
+
 function parse(text, file) {
   const r = roots().find((x) => file.startsWith(x.root + path.sep)) || { account: '', root: ROOT }
   const fallback = projectName(path.relative(r.root, file).split(path.sep)[0])
@@ -21,7 +24,12 @@ function parse(text, file) {
     const m = o.message
     if (!m || !m.usage || !o.timestamp || m.model === '<synthetic>') continue
     const u = m.usage
+    const branch = cleanBranch(o.gitBranch)
+    const cwd = typeof o.cwd === 'string' && o.cwd && o.cwd !== projectPath ? o.cwd : undefined
     rows.push({
+      ...(branch && { branch }),
+      ...(typeof o.sessionId === 'string' && o.sessionId && { session: o.sessionId }),
+      ...(cwd && { cwd }),
       id: m.id || o.uuid,
       t: o.timestamp,
       project,

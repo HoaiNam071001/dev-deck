@@ -86,6 +86,7 @@ plan/     kế hoạch theo giai đoạn
 | `GET /api/git/stash?path=&ref=` | Các tệp (và số dòng +/−) của một stash |
 | `POST /api/git/action` | Thao tác ghi trên một repo đã quét: stage, commit, fetch, pull, push, checkout (tùy chọn `stash` để tự cất thay đổi), tạo / đổi tên / xóa nhánh (local và remote), stash / stashApply / stashPop / stashDrop, worktreeAdd / worktreeRemove (có dry-run) / worktreePrune, stageHunk / unstageHunk (chỉ nhận `file` + `hash` hunk, server tự dựng patch). `dryRun: true` chỉ cho xóa nhánh, trả về điều sẽ xảy ra |
 | `POST /api/git/repo-action` | `create` (git init + README / .gitignore tùy chọn), `delete` (dry-run rồi chuyển vào Thùng rác) |
+| `POST /api/git/bulk` | Thao tác hàng loạt: `pullPlan` / `pullRun` (chỉ repo sạch, có upstream, chỉ behind, `--ff-only`), `cleanupPlan` / `cleanupRun` (xóa nhánh local đã merge bằng `-d`, chạy cần `confirmCount` đúng tổng nhánh). Mỗi repo một dòng audit |
 | `POST /api/git/clone`, `GET /api/git/clone?id=` | Bắt đầu clone (trả `id`), hỏi tiến độ; `{action:'cancel', id}` để hủy và dọn bản dở |
 
 ## Nguồn log AI

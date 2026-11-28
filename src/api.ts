@@ -32,6 +32,8 @@ export const api = {
     request<{ ok: true; path: string }>('/api/git/repo-action', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...p, action: 'create' }) }),
   deleteRepo: (p: { path: string; dryRun?: boolean; confirmName?: string }) =>
     request<{ ok: true; dryRun?: boolean; info?: DeleteRepoInfo }>('/api/git/repo-action', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...p, action: 'delete' }) }),
+  bulk: <T,>(body: Record<string, unknown>) =>
+    request<T>('/api/git/bulk', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),
   cloneStart: (p: { url: string; parent: string; name: string }) =>
     request<CloneJob>('/api/git/clone', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(p) }),
   cloneStatus: (id: string) => request<CloneJob>('/api/git/clone?id=' + encodeURIComponent(id)),

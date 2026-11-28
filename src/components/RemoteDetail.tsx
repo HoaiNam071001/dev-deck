@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { api, useLoad } from '../api'
 import { relTime } from '../lib/format'
 import { toast } from '../lib/store'
+import { useBranchTokens } from '../lib/useBranchTokens'
+import { ShortNum } from './ShortNum'
 import type { ChangeRequest, ReviewThread } from '../types'
 import { CollapsibleMarkdown, Markdown } from './Markdown'
 import { Modal } from './Modal'
@@ -104,11 +106,20 @@ function CrActions({ cr, onDone }: { cr: ChangeRequest; onDone: () => void }) {
 function LocalJobs({ cr }: { cr: ChangeRequest }) {
   const q = useLoad(() => api.remoteLocalJobs(cr.accountId, cr.project, cr.source), [cr.key], 15000)
   const d = q.data
+  const tokens = useBranchTokens(d?.local?.path).get(cr.source)
   if (!d || !d.local) return null
   const ciWord: Record<string, string> = { success: 'pass', failed: 'lỗi', running: 'đang chạy', pending: 'chờ', canceled: 'hủy', none: 'chưa có' }
   return (
     <div className="rounded-[10px] border border-border bg-surface px-3.5 py-2">
       <div className="flex items-center justify-between py-1 text-[13px] font-semibold"><span>Chạy ở máy này</span><span className="text-[11.5px] font-normal text-fg-mute" title={d.local.path}>{d.local.name} · {cr.source}</span></div>
+      {tokens && (
+        <div className="border-t border-line py-1.5 text-[12.5px]" title="Token AI (Claude Code, Codex) ghi trên nhánh nguồn của bản clone local">
+          <div className="flex items-center justify-between"><span className="text-fg-mute">Token AI nhánh này</span><span className="font-mono text-fg-soft"><ShortNum n={tokens.total} /> · hôm nay <ShortNum n={tokens.today} /></span></div>
+          {Object.entries(tokens.byModel).sort((a, b) => b[1] - a[1]).map(([m, n]) => (
+            <div key={m} className="flex items-center justify-between text-[11.5px] text-fg-mute"><span className="truncate">{m}</span><span className="font-mono"><ShortNum n={n} /></span></div>
+          ))}
+        </div>
+      )}
       {!d.jobs.length && <div className="py-1 text-[12px] text-fg-mute">Không có job nào đang chạy trên nhánh này. CI: {ciWord[cr.ci]}.</div>}
       {d.jobs.map((j) => {
         const p = j.progress

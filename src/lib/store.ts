@@ -23,7 +23,7 @@ interface State {
   toasts: Toast[]
   pinned: string[]
   /** Lệnh chờ trang Git xử lý khi mở (từ bảng lệnh / phím tắt ở trang khác) */
-  pending: 'rescan' | 'fetchAll' | null
+  pending: 'rescan' | 'fetchAll' | 'pullAll' | 'cleanup' | null
   /** Khóa MR / PR cần mở chi tiết khi vào trang Remotes (từ thông báo); trang Remotes nhận rồi xóa */
   openRemote: string | null
 }

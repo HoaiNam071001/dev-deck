@@ -7,10 +7,12 @@ import { StackedChart } from '../components/StackedChart'
 import { UsageWindows } from '../components/UsageWindows'
 import { ErrorBanner, Icon, Kpi, KpiStrip, NavLabel, Segmented, Select, ShareBar, Spinner } from '../components/ui'
 import { ShortNum } from '../components/ShortNum'
-import { dayKey, fmt } from '../lib/format'
+import { dayKey, fmt, relTime } from '../lib/format'
+import { baseName } from '../lib/repo'
+import { useStore } from '../lib/store'
 import { downloadCsv } from '../lib/csv'
 import { usePersisted } from '../lib/persist'
-import { buckets, filterRows, granOf, group, KEYS, topSeries, PROVIDERS, providerOf, sum, totalOf, type Totals } from '../lib/usage'
+import { buckets, byBranch, bySession, filterRows, granOf, group, KEYS, topSeries, PROVIDERS, providerOf, sum, totalOf, type Totals } from '../lib/usage'
 
 const RANGES = [
   { id: 'h1', label: '1h', name: '1 giờ qua' }, { id: 'h6', label: '6h', name: '6 giờ qua' }, { id: 'h24', label: '24h', name: '24 giờ qua' },
@@ -22,24 +24,25 @@ const RANGES = [
 /** Màu theo phần của dòng so với dòng lớn nhất: xanh ít → cam nhiều → đỏ chiếm phần lớn. */
 const heat = (r: number) => (r >= 0.85 ? 'var(--danger)' : r >= 0.5 ? 'var(--behind)' : r >= 0.15 ? 'var(--accent)' : 'var(--fg-mute)')
 
-function GroupTable({ title, label, rows, render, dot, tip }: { tip?: (k: string) => string | undefined; title: string; label: string; rows: (Totals & { k: string })[]; render: (k: string) => string; dot?: (k: string) => string | undefined }) {
+function GroupTable({ title, label, rows, render, dot, tip, extra }: { extra?: { label: string; of: (k: string) => string }; tip?: (k: string) => string | undefined; title: string; label: string; rows: (Totals & { k: string })[]; render: (k: string) => string; dot?: (k: string) => string | undefined }) {
   const max = Math.max(1, ...rows.map(totalOf))
   return (
     <section className="panel">
       <h2 className="panel-h">{title}</h2>
       <table className="tbl">
-        <thead><tr><th scope="col">{label}</th><th scope="col">Tin</th><th scope="col">In / Out</th><th scope="col">Cache</th><th scope="col" className="w-total">Tổng</th></tr></thead>
+        <thead><tr><th scope="col">{label}</th>{extra && <th scope="col">{extra.label}</th>}<th scope="col">Tin</th><th scope="col">In / Out</th><th scope="col">Cache</th><th scope="col" className="w-total">Tổng</th></tr></thead>
         <tbody>
           {rows.map((r) => (
             <tr key={r.k}>
               <td title={tip?.(r.k) ?? r.k}>{dot?.(r.k) && <i className="pdot" style={{ background: dot(r.k) }} />}{render(r.k)}</td>
+              {extra && <td className="muted">{extra.of(r.k)}</td>}
               <td className="muted">{fmt(r.msgs)}</td>
               <td>{<ShortNum n={r.input} />} / {<ShortNum n={r.output} />}</td>
               <td>{<ShortNum n={r.cacheRead + r.cacheWrite} />}</td>
               <td><span className="total-cell"><ShareBar pct={(totalOf(r) / max) * 100} color={heat((totalOf(r) / max))} /><span style={{ color: heat(totalOf(r) / max) }}>{<ShortNum n={totalOf(r)} />}</span></span></td>
             </tr>
           ))}
-          {!rows.length && <tr><td colSpan={5} className="empty">Không có dữ liệu</td></tr>}
+          {!rows.length && <tr><td colSpan={extra ? 6 : 5} className="empty">Không có dữ liệu</td></tr>}
         </tbody>
       </table>
     </section>
@@ -56,6 +59,7 @@ export function TokenPage() {
   const [project, setProject] = usePersisted<string>('ai.project', '', (v) => typeof v === 'string')
   const [provider, setProvider] = usePersisted<string>('ai.provider', '', (v) => typeof v === 'string')
   const [notifyOpen, setNotifyOpen] = useState(false)
+  const [branch, setBranch] = useState('')   // lọc theo nhánh, chỉ khi đã chọn dự án; không nhớ giữa các lần mở
   const sources = useLoad(api.usageSources, [], ms, 'usageSources').data ?? []
 
   const all = data ?? []
@@ -65,7 +69,10 @@ export function TokenPage() {
   useEffect(() => { if (project && data && !data.some((r) => r.project === project && (!provider || r.provider === provider))) setProject('') }, [provider, project, data])
   const inRange = useMemo(() => filterRows(all, range, '', provider), [all, range, provider])
   const projTotals = useMemo(() => new Map(group(inRange, (r) => r.project).map((g) => [g.k, totalOf(g)])), [inRange])
-  const rows = useMemo(() => (project ? inRange.filter((r) => r.project === project) : inRange), [inRange, project])
+  const inProject = useMemo(() => (project ? inRange.filter((r) => r.project === project) : inRange), [inRange, project])
+  const branchList = useMemo(() => (project ? group(inProject, (r) => r.branch ?? '').sort((a, b) => totalOf(b) - totalOf(a)) : []), [inProject, project])
+  useEffect(() => { if (branch && (!project || !branchList.some((b) => b.k === branch))) setBranch('') }, [project, branchList, branch])
+  const rows = useMemo(() => (project && branch !== '' ? inProject.filter((r) => (r.branch ?? '') === branch) : inProject), [inProject, project, branch])
   const s = useMemo(() => sum(rows), [rows])
   const g = granOf(gran, range)
   const projSeries = useMemo(() => (stack === 'project' ? topSeries(rows) : []), [rows, stack])
@@ -78,6 +85,19 @@ export function TokenPage() {
   const byProject = useMemo(() => group(rows, (r) => r.project).sort(byTotal), [rows])
   const byProvider = useMemo(() => group(rows, (r) => r.provider as string).sort(byTotal), [rows])
   const modelProvider = useMemo(() => new Map(rows.map((r) => [r.model, r.provider as string])), [rows])
+  const storeRepos = useStore((st) => st.repos)
+  const loadedRepos = useLoad(async () => (storeRepos.length || tab !== 'detail' ? null : api.repos()), [tab, storeRepos.length], 0, 'aiRepos').data
+  const repoPaths = useMemo(() => (storeRepos.length ? storeRepos : loadedRepos?.repos ?? []).map((r) => r.path), [storeRepos, loadedRepos])
+  const branchRows = useMemo(() => (tab === 'detail' ? byBranch(rows, repoPaths) : []), [rows, repoPaths, tab])
+  const branchInfo = useMemo(() => new Map(branchRows.map((b) => [b.repo + '\0' + b.branch, b])), [branchRows])
+  const branchGroups = useMemo(() => branchRows.map((b) => ({ ...b, k: b.repo + '\0' + b.branch })).sort(byTotal), [branchRows])
+  const sessionRows = useMemo(() => (tab === 'detail' ? bySession(rows).sort(byTotal).slice(0, 20) : []), [rows, tab])
+  const knownRepos = useMemo(() => new Map((storeRepos.length ? storeRepos : loadedRepos?.repos ?? []).map((r) => [r.path, r.branches])), [storeRepos, loadedRepos])
+  const branchLabel = (k: string) => {
+    const [repo, br] = k.split('\0')
+    const gone = !!br && !!repo && !!knownRepos.get(repo)?.length && !knownRepos.get(repo)!.includes(br)
+    return (repo ? baseName(repo) : 'ngoài repo') + ' · ' + (br || 'không rõ nhánh') + (gone ? ' (không còn)' : '')
+  }
   const hasData = (id: string) => sources.find((s) => s.id === id)?.rows ? true : all.some((r) => r.provider === id)
 
   const total = totalOf(s)
@@ -104,6 +124,8 @@ export function TokenPage() {
         ...byProvider.map((r) => ['Nhà cung cấp', providerOf(r.k)?.label ?? r.k, ...num(r)]),
         ...byModel.map((r) => ['Model', r.k, ...num(r)]),
         ...byProject.map((r) => ['Dự án', r.k, ...num(r)]),
+        ...branchGroups.map((r) => ['Nhánh', branchLabel(r.k), ...num(r)]),
+        ...sessionRows.map((r) => ['Phiên', `${r.session} (${r.project}${r.branches.length ? ' · ' + r.branches.join(', ') : ''})`, ...num(r)]),
       ]
       downloadCsv(`ai-token-chi-tiet-${stamp}.csv`, [head, ...body])
       return
@@ -130,6 +152,19 @@ export function TokenPage() {
             </button>
           ))}
         </div>
+        {project && branchList.length > 1 && (
+          <div className="side-group">
+            <NavLabel>Nhánh</NavLabel>
+            <button className={'nav-item' + (!branch ? ' on' : '')} aria-pressed={!branch} onClick={() => setBranch('')}>
+              Mọi nhánh<span className="nav-n">{<ShortNum n={totalOf(sum(inProject))} />}</span>
+            </button>
+            {branchList.filter((b) => b.k).map((b) => (
+              <button key={b.k} className={'nav-item' + (branch === b.k ? ' on' : '')} aria-pressed={branch === b.k} title={b.k} onClick={() => setBranch(b.k)}>
+                <span className="truncate font-mono">{b.k}</span><span className="nav-n">{<ShortNum n={totalOf(b)} />}</span>
+              </button>
+            ))}
+          </div>
+        )}
         <div className="side-foot">
           <span>Nguồn log</span>
           {(sources.length ? sources : PROVIDERS.map((p) => ({ id: p.id, label: p.label, root: '', found: false, files: 0, rows: 0 }))).map((s) => (
@@ -207,7 +242,17 @@ ${s.files} file · ${s.rows} tin` : `Chưa thấy log${s.root ? ' tại ' + s.ro
         </div>
         <div className="two">
           <GroupTable title="Theo dự án" label="Dự án" rows={byProject} render={(k) => k} tip={(k) => projPath.get(k)} />
+          <GroupTable title="Theo nhánh" label="Repo · nhánh" rows={branchGroups} render={branchLabel} tip={(k) => k.split('\0')[0]}
+            extra={{ label: 'Phiên · lần cuối', of: (k) => { const b = branchInfo.get(k); return b ? `${b.sessions} · ${relTime(b.last)}` : '' } }} />
         </div>
+        <div className="two">
+          <GroupTable title="Phiên ngốn nhiều nhất (20)" label="Phiên" rows={sessionRows.map((x) => ({ ...x, k: x.provider + '\0' + x.session }))}
+            render={(k) => { const x = sessionRows.find((y) => y.provider + '\0' + y.session === k); return x ? `${x.project} · ${x.branches.join(', ') || 'không rõ nhánh'}` : k }}
+            tip={(k) => { const x = sessionRows.find((y) => y.provider + '\0' + y.session === k); return x ? `${x.session}\n${x.models.join(', ')}` : k }}
+            dot={(k) => providerOf(k.split('\0')[0])?.color}
+            extra={{ label: 'Bắt đầu', of: (k) => { const x = sessionRows.find((y) => y.provider + '\0' + y.session === k); return x ? relTime(x.start) : '' } }} />
+        </div>
+        <p className="muted px-1">Số liệu theo nhánh chỉ gồm Claude Code và Codex (Gemini, Antigravity không ghi nhánh → "không rõ nhánh").</p>
         </>}
       </div>
     </>

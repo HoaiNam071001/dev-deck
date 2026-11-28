@@ -54,6 +54,9 @@ interface RowProps {
   onMenu: () => void
   onCloseMenu: () => void
   onDelete?: (r: RepoSummary) => void
+  /** Chế độ chọn nhiều: có ô tick ở đầu hàng */
+  ticked?: boolean
+  onTick?: () => void
 }
 
 /** Từ ngưỡng này danh sách chỉ dựng các hàng đang nhìn thấy. */
@@ -61,9 +64,10 @@ export const VIRTUAL_MIN = 200
 const ROW_H = 56
 const OVERSCAN = 6
 
-function RepoRow({ r, active, pinned, menuOpen, menuUp, top, onPick, onMenu, onCloseMenu, onDelete }: RowProps) {
+function RepoRow({ r, active, pinned, menuOpen, menuUp, top, onPick, onMenu, onCloseMenu, onDelete, ticked, onTick }: RowProps) {
   return (
     <div style={top === undefined ? { contentVisibility: 'auto', containIntrinsicSize: `auto ${ROW_H - 2}px` } : { position: 'absolute', top, left: 0, right: 0, height: ROW_H, boxSizing: 'border-box' }} className={'group relative flex items-stretch border-b border-raised ' + (active ? 'bg-selected shadow-[inset_2px_0_0_var(--accent)]' : 'hover:bg-[#1F2124]')}>
+      {onTick && <label className="flex w-8 flex-none cursor-pointer items-center justify-center pl-1"><input type="checkbox" checked={!!ticked} onChange={onTick} aria-label={'Chọn ' + r.name} /></label>}
       <button onClick={onPick} aria-current={active} className="flex min-w-0 flex-1 flex-col gap-[3px] border-0 bg-transparent py-[9px] pr-1 pl-3.5 text-left text-inherit">
         <span className="flex w-full items-center gap-2">
           <span className="truncate font-medium">{r.name}</span>
@@ -91,8 +95,10 @@ function RepoRow({ r, active, pinned, menuOpen, menuUp, top, onPick, onMenu, onC
   )
 }
 
-export function RepoList({ repos, selected, pinned, menu, setMenu, onPick, empty, onDelete }: {
+export function RepoList({ repos, selected, pinned, menu, setMenu, onPick, empty, onDelete, ticks, onTick }: {
   onDelete?: (r: RepoSummary) => void
+  /** Có giá trị = đang ở chế độ chọn nhiều */
+  ticks?: Set<string>; onTick?: (path: string) => void
   repos: RepoSummary[]; selected: string | null; pinned: string[]
   menu: string | null; setMenu: (p: string | null) => void
   onPick: (p: string) => void; empty: React.ReactNode
@@ -128,7 +134,8 @@ export function RepoList({ repos, selected, pinned, menu, setMenu, onPick, empty
   const row = (r: RepoSummary, i: number) => (
     <RepoRow key={r.path} r={r} active={selected === r.path} pinned={pinned.includes(r.path)}
       menuOpen={menu === r.path} menuUp={i >= repos.length - 3 && repos.length > 4} top={virtual ? i * ROW_H : undefined}
-      onPick={() => { setMenu(null); onPick(r.path) }} onMenu={() => setMenu(menu === r.path ? null : r.path)} onCloseMenu={() => setMenu(null)} onDelete={onDelete} />
+      onPick={() => { setMenu(null); onPick(r.path) }} onMenu={() => setMenu(menu === r.path ? null : r.path)} onCloseMenu={() => setMenu(null)} onDelete={onDelete}
+      ticked={ticks?.has(r.path)} onTick={ticks && onTick ? () => onTick(r.path) : undefined} />
   )
 
   return (

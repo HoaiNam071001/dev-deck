@@ -4,6 +4,8 @@ import { FolderPicker } from '../components/FolderPicker'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { RepoDetail } from '../components/RepoDetail'
 import { RepoList } from '../components/RepoList'
+import { BulkDialog, type BulkKind } from '../components/BulkDialog'
+import { ContextMenu } from '../components/ContextMenu'
 import { CloneDialog, DeleteRepoDialog, NewRepoDialog } from '../components/RepoDialogs'
 import { RefreshInfo, useRefreshMs } from '../components/RefreshInfo'
 import { SideSlot, StatusSlot } from '../components/Shell'
@@ -80,6 +82,11 @@ export function GitPage() {
   const [menu, setMenu] = useState<string | null>(null)
   const [dialog, setDialog] = useState<'new' | 'clone' | null>(null)
   const [deleting, setDeleting] = useState<RepoSummary | null>(null)
+  const [bulk, setBulk] = useState<BulkKind | null>(null)
+  const [bulkMenu, setBulkMenu] = useState(false)
+  const [ticks, setTicks] = useState<Set<string> | null>(null)   // null = không ở chế độ chọn nhiều
+  const tick = useCallback((p: string) => setTicks((s) => { const n = new Set(s ?? []); if (!n.delete(p)) n.add(p); return n }), [])
+  const closeBulkMenu = useCallback(() => setBulkMenu(false), [])
   const [mode, setMode] = usePersisted<'panel' | 'modal'>('git.detailMode', 'panel', (v) => v === 'panel' || v === 'modal')
   const [detailW, setDetailW] = usePersisted('git.detailW', 460, (v) => typeof v === 'number' && v >= MIN_W && v <= MAX_W)
 
@@ -125,7 +132,10 @@ export function GitPage() {
   useEffect(() => {
     if (!pending) return
     if (pending === 'rescan') { if (cfg.data || seeded.current) { setState({ pending: null }); void rescan() } }
-    else if (!repos.loading) { setState({ pending: null }); void fetchAll() }
+    else if (!repos.loading) {
+      setState({ pending: null })
+      if (pending === 'fetchAll') void fetchAll(); else setBulk(pending === 'pullAll' ? 'pull' : 'cleanup')
+    }
   }, [pending, cfg.data, repos.loading]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Phím tắt trong trang
@@ -218,6 +228,7 @@ export function GitPage() {
 
       {dialog === 'new' && <NewRepoDialog roots={roots} onClose={() => setDialog(null)} />}
       {dialog === 'clone' && <CloneDialog roots={roots} onClose={() => setDialog(null)} />}
+      {bulk && <BulkDialog kind={bulk} all={list} filtered={shown} ticked={ticks ? [...ticks] : []} onClose={() => setBulk(null)} />}
       {deleting && <DeleteRepoDialog repo={deleting} onClose={() => setDeleting(null)} />}
       {picking && <FolderPicker start={roots[roots.length - 1] ?? ''} selected={roots} recent={cfg.data?.recent ?? []}
         onClose={() => { setPicking(false); if (roots.length && roots.join('|') !== (repos.data?.roots ?? []).join('|')) void rescan() }}
@@ -237,10 +248,19 @@ export function GitPage() {
             <button className="icon-btn sm" style={{ border: '1px solid var(--border-strong)' }} aria-label="Sắp xếp" title={'Sắp xếp theo ' + sortLabel + ' (bấm để đổi)'}
               onClick={() => setSort(SORTS[(SORTS.findIndex((s) => s.id === sort) + 1) % SORTS.length].id)}><Icon name="sort" size={13} /></button>
             <button className="icon-btn sm" style={{ border: '1px solid var(--border-strong)' }} aria-label="Tạo repo mới" title="Tạo repo mới" disabled={!roots.length} onClick={() => setDialog('new')}><Icon name="plus" size={13} /></button>
+            <span className="relative flex"><button className="icon-btn sm" style={{ border: '1px solid var(--border-strong)' }} aria-label="Thao tác hàng loạt" title="Thao tác hàng loạt" aria-haspopup="menu" aria-expanded={bulkMenu} onClick={() => setBulkMenu((v) => !v)}><Icon name="dots" size={13} /></button>
+              {bulkMenu && <ContextMenu label="Thao tác hàng loạt" onClose={closeBulkMenu} items={[
+                { label: ticks ? 'Thoát chế độ chọn repo' : 'Chọn nhiều repo…', run: () => setTicks(ticks ? null : new Set()) },
+                { sep: true },
+                { label: 'Fetch tất cả', run: () => void fetchAll() },
+                { label: 'Pull tất cả…', run: () => setBulk('pull') },
+                { label: 'Dọn nhánh đã merge…', run: () => setBulk('cleanup') },
+              ]} />}
+            </span>
             <button className="icon-btn sm" style={{ border: '1px solid var(--border-strong)' }} aria-label="Clone từ URL" title="Clone từ URL" disabled={!roots.length} onClick={() => setDialog('clone')}><Icon name="download" size={13} /></button>
           </div>
           {repos.error && <ErrorBanner className="m-3" onRetry={repos.reload}>Lỗi: {repos.error}</ErrorBanner>}
-          <RepoList repos={shown} selected={selected} pinned={pinned} menu={menu} setMenu={setMenu} empty={empty} onDelete={setDeleting}
+          <RepoList repos={shown} selected={selected} pinned={pinned} menu={menu} setMenu={setMenu} empty={empty} onDelete={setDeleting} ticks={ticks ?? undefined} onTick={tick}
             onPick={(p) => { setState({ selected: p }) }} />
         </section>
 

@@ -10,6 +10,7 @@ const profiles = require('./usage/profiles')
 const git = require('./git')
 const gitActions = require('./git-actions')
 const gitRepos = require('./git-repos')
+const gitBulk = require('./git-bulk')
 const gitDiff = require('./git-diff')
 const jobs = require('./jobs')
 const reporter = require('./jobs/reporter')
@@ -29,7 +30,6 @@ const readBody = (req) => new Promise((resolve, reject) => {
   req.on('end', () => { try { resolve(JSON.parse(s || '{}')) } catch (e) { reject(e) } })
 })
 
-async function api(req, res, url) {
 /** Cấu hình thông báo + các thư mục đã thấy trong log AI (để bật / tắt từng cái) + trạng thái hook Claude. */
 function aiNotifyState(req) {
   const config = notifyConfig.load()
@@ -47,6 +47,7 @@ function aiNotifyState(req) {
   return { config, projects, hooks: claudeHook.status(req.socket.localPort) }
 }
 
+async function api(req, res, url) {
   try {
     if (url.pathname === '/api/usage') return json(res, 200, usage.collect())
     if (url.pathname === '/api/account/claude') return json(res, 200, await claudeAccount(url.searchParams.get('dir') || ''))
@@ -58,7 +59,6 @@ function aiNotifyState(req) {
       usage.invalidate()
       return json(res, 200, out)
     }
-    if (url.pathname === '/api/usage/sources') return json(res, 200, usage.sources())
     if (url.pathname === '/api/ai/done') return json(res, 200, aiDone.since(Number(url.searchParams.get('since')) || 0))
     if (url.pathname === '/api/ai/notify') {
       if (req.method === 'PUT') {
@@ -87,6 +87,7 @@ function aiNotifyState(req) {
       aiDone.fromHook(await readBody(req))
       return json(res, 200, { ok: true })
     }
+    if (url.pathname === '/api/usage/sources') return json(res, 200, usage.sources())
     if (url.pathname === '/api/git/repos') return json(res, 200, await git.listRepos(url.searchParams.get('rescan') === '1'))
     if (url.pathname === '/api/git/repo') return json(res, 200, await git.repoDetail(url.searchParams.get('path') || ''))
     if (url.pathname === '/api/git/diff') {
@@ -99,6 +100,16 @@ function aiNotifyState(req) {
       if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
       const body = await readBody(req)
       return json(res, 200, await gitActions.perform(git.knownRepo(String(body.path || '')), body))
+    }
+    if (url.pathname === '/api/git/bulk') {
+      if (req.method !== 'POST') return json(res, 405, { error: 'Chỉ nhận POST' })
+      if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
+      const body = await readBody(req)
+      if (body.action === 'pullPlan') return json(res, 200, await gitBulk.pullPlan(body.paths))
+      if (body.action === 'pullRun') return json(res, 200, await gitBulk.pullRun(body.paths))
+      if (body.action === 'cleanupPlan') return json(res, 200, await gitBulk.cleanupPlan(body.paths))
+      if (body.action === 'cleanupRun') return json(res, 200, await gitBulk.cleanupRun(body.items, body.confirmCount))
+      return json(res, 400, { error: 'Hành động không hỗ trợ' })
     }
     if (url.pathname === '/api/git/repo-action') {
       if (req.method !== 'POST') return json(res, 405, { error: 'Chỉ nhận POST' })
@@ -203,6 +214,7 @@ function start(port = PORT) {
     if (url.pathname.startsWith('/api/')) return api(req, res, url)
     serveStatic(res, decodeURIComponent(url.pathname))
   })
+  aiDone.start()
   return new Promise((resolve, reject) => {
     server.once('error', reject)
     server.listen(port, '127.0.0.1', () => resolve({ server, port: server.address().port }))
@@ -212,4 +224,3 @@ function start(port = PORT) {
 module.exports = { start }
 
 if (require.main === module) start().then(({ port }) => console.log(`DevDeck: http://localhost:${port}`))
-  aiDone.start()

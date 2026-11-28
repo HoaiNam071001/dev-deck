@@ -4,7 +4,7 @@ import { baseName, changeCount, isDirty, isOut, rootOf, shortPath, toneOf, workt
 import { nameFromUrl } from '../components/RepoDialogs'
 import type { RepoSummary, UsageRow } from '../types'
 import { csvCell, toCsv } from './csv'
-import { buckets, OTHER_KEY, topSeries } from './usage'
+import { buckets, byBranch, bySession, OTHER_KEY, repoOfRow, sum, topSeries, totalOf } from './usage'
 import { diffCrs, unreadThreads } from './remoteWatch'
 import { diffRows, hunkContext, hunkStats, stepIndex } from './diff'
 import { authorQueue, queueCounts, reviewQueue, reviewState, reviewerWait, sizeLines, waitAlerts, waitHours, waitLevel, waitSince } from './reviewQueue'
@@ -266,5 +266,31 @@ describe('aiNotify (quy tắc thông báo theo thư mục)', () => {
     const ev = (o: Partial<AiDoneEvent>): AiDoneEvent => ({ id: 1, source: 'claude', session: 's', project: 'app', projectPath: '/p', finishedAt: '', durationSec: 95, ...o })
     expect(doneMessage([ev({})])).toEqual({ title: 'Claude Code đã xong', body: 'app · 1 phút 35 giây' })
     expect(doneMessage([ev({ durationSec: null, project: '' }), ev({ source: 'codex' })]).title).toBe('2 phiên AI đã xong')
+  })
+})
+
+describe('token theo nhánh / phiên', () => {
+  const row = (o: Partial<UsageRow>): UsageRow => ({ provider: 'claude', t: '2026-01-01T10:00:00Z', project: 'app', projectPath: 'C:\\w\\app', model: 'm', input: 1, output: 2, cacheWrite: 3, cacheRead: 4, ...o })
+  const repos = ['C:\\w\\app', 'C:\\w\\app\\packages\\sub', 'C:\\w\\other']
+  it('map cwd về repo: thư mục con, worktree, ngoài repo', () => {
+    expect(repoOfRow(row({}), repos)).toBe('C:\\w\\app')
+    expect(repoOfRow(row({ cwd: 'C:\\w\\app\\src' }), repos)).toBe('C:\\w\\app')
+    expect(repoOfRow(row({ cwd: 'C:\\w\\app\\packages\\sub\\x' }), repos)).toBe('C:\\w\\app\\packages\\sub')
+    expect(repoOfRow(row({ cwd: 'C:\\w\\app-wt\\feat-x' }), repos)).toBe('C:\\w\\app')
+    expect(repoOfRow(row({ cwd: 'D:\\tmp' }), repos)).toBe('')
+  })
+  it('gom theo repo + nhánh; tổng không đổi; trùng tên nhánh khác repo thì tách', () => {
+    const rows = [row({ branch: 'main', session: 'S' }), row({ branch: 'feat', session: 'S', t: '2026-01-02T10:00:00Z' }),
+      row({ branch: 'main', projectPath: 'C:\\w\\other', session: 'T' }), row({})]
+    const g = byBranch(rows, repos)
+    expect(g).toHaveLength(4)
+    expect(g.find((x) => x.repo === 'C:\\w\\app' && x.branch === 'feat')).toMatchObject({ msgs: 1, sessions: 1, last: '2026-01-02T10:00:00Z' })
+    expect(g.find((x) => x.repo === 'C:\\w\\other' && x.branch === 'main')).toBeTruthy()
+    expect(g.reduce((n, x) => n + totalOf(x), 0)).toBe(totalOf(sum(rows)))
+  })
+  it('bySession: một dòng mỗi phiên, kèm các nhánh', () => {
+    const s = bySession([row({ branch: 'a', session: 'S' }), row({ branch: 'b', session: 'S', t: '2026-01-01T11:00:00Z' }), row({})])
+    expect(s).toHaveLength(1)
+    expect(s[0]).toMatchObject({ session: 'S', branches: ['a', 'b'], msgs: 2, start: '2026-01-01T10:00:00Z', end: '2026-01-01T11:00:00Z' })
   })
 })

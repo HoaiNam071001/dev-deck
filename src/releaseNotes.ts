@@ -7,6 +7,16 @@ export interface ReleaseNote { version: string; date: string; title: string; ite
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '2.8.0',
+    date: '2026-11-28',
+    title: 'Token AI theo nhánh, thao tác Git hàng loạt',
+    items: [
+      { tag: 'new', text: 'Tab Chi tiết của trang AI có bảng "Theo nhánh" và "Phiên ngốn nhiều nhất", thanh bên lọc theo nhánh khi đã chọn dự án. Số liệu theo nhánh có với Claude Code và Codex.' },
+      { tag: 'new', text: 'Chi tiết repo hiện token AI của nhánh đang mở (hôm nay / tổng) và token của từng nhánh ở tab Nhánh; chi tiết MR / PR hiện token của nhánh nguồn nếu máy có bản clone.' },
+      { tag: 'new', text: 'Menu "⋯" ở trang Git: Pull tất cả (chỉ repo sạch, chỉ fast-forward) và Dọn nhánh đã merge, luôn xem trước theo từng repo / nhánh, bỏ tick được, xóa nhánh cần gõ lại số lượng. Có thể chọn nhiều repo bằng ô tick làm phạm vi.' },
+    ],
+  },
+  {
     version: '2.7.0',
     date: '2026-11-28',
     title: 'Theo dõi job trên macOS, Remotes liệt kê đủ project',

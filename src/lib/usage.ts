@@ -99,3 +99,79 @@ export function buckets(rows: UsageRow[], g: number, seriesOf?: (r: UsageRow) =>
   }
   return out
 }
+
+// ── Theo nhánh git / theo phiên (giai đoạn 11) ──
+
+const normPath = (p: string) => p.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase()
+
+/** Repo (trong danh sách đã quét) mà dòng log thuộc về: thư mục con → repo cha sâu nhất; worktree mặc định `<repo>-wt/<nhánh>` → repo chính. '' = ngoài repo. */
+export function repoOfRow(r: Pick<UsageRow, 'cwd' | 'projectPath'>, repoPaths: string[]): string {
+  const p = normPath(r.cwd || r.projectPath || '')
+  if (!p) return ''
+  let best = ''
+  for (const rp of repoPaths) {
+    const n = normPath(rp)
+    if (n.length <= best.length) continue
+    if (p === n || p.startsWith(n + '/') || p.startsWith(n + '-wt/')) best = n
+  }
+  return best ? repoPaths.find((x) => normPath(x) === best)! : ''
+}
+
+export interface BranchGroup extends Totals { repo: string; branch: string; sessions: number; last: string }
+
+/** Gom theo repo + nhánh (không theo tên nhánh trần). Dòng không có nhánh gom vào branch ''. */
+export function byBranch(rows: UsageRow[], repoPaths: string[]): BranchGroup[] {
+  const m = new Map<string, { repo: string; branch: string; rows: UsageRow[]; sessions: Set<string>; last: string }>()
+  for (const r of rows) {
+    const repo = repoOfRow(r, repoPaths), branch = r.branch ?? ''
+    const key = repo + '\0' + branch
+    let g = m.get(key)
+    if (!g) m.set(key, g = { repo, branch, rows: [], sessions: new Set(), last: '' })
+    g.rows.push(r)
+    if (r.session) g.sessions.add(r.session)
+    if (r.t > g.last) g.last = r.t
+  }
+  return [...m.values()].map((g) => ({ repo: g.repo, branch: g.branch, sessions: g.sessions.size, last: g.last, ...sum(g.rows) }))
+}
+
+export interface SessionGroup extends Totals { session: string; provider: Provider; project: string; start: string; end: string; branches: string[]; models: string[] }
+
+/** Mỗi phiên một dòng (chỉ dòng có `session`). */
+export function bySession(rows: UsageRow[]): SessionGroup[] {
+  const m = new Map<string, UsageRow[]>()
+  for (const r of rows) {
+    if (!r.session) continue
+    const k = r.provider + '\0' + r.session
+    const l = m.get(k)
+    if (l) l.push(r); else m.set(k, [r])
+  }
+  return [...m.values()].map((l) => {
+    const ts = l.map((r) => r.t).sort()
+    return {
+      session: l[0].session!, provider: l[0].provider, project: l[0].project, start: ts[0], end: ts[ts.length - 1],
+      branches: [...new Set(l.map((r) => r.branch).filter((b): b is string => !!b))],
+      models: [...new Set(l.map((r) => r.model))], ...sum(l),
+    }
+  })
+}
+
+export interface BranchTokens { total: number; today: number; msgs: number; byModel: Record<string, number> }
+
+/** Token theo từng nhánh của MỘT repo (khóa = tên nhánh). `repoPaths` = mọi repo đã quét, để dòng log ở worktree / thư mục con map đúng repo. */
+export function repoBranchTokens(rows: UsageRow[], repoPath: string, repoPaths: string[], now = new Date()): Map<string, BranchTokens> {
+  const day0 = new Date(now).setHours(0, 0, 0, 0)
+  const out = new Map<string, BranchTokens>()
+  const me = normPath(repoPath)
+  for (const r of rows) {
+    if (!r.branch) continue
+    const repo = repoOfRow(r, repoPaths)
+    if (!repo || normPath(repo) !== me) continue
+    const n = r.input + r.output + r.cacheWrite + r.cacheRead
+    const b = out.get(r.branch) ?? { total: 0, today: 0, msgs: 0, byModel: {} }
+    b.total += n; b.msgs++
+    if (new Date(r.t).getTime() >= day0) b.today += n
+    b.byModel[r.model] = (b.byModel[r.model] ?? 0) + n
+    out.set(r.branch, b)
+  }
+  return out
+}

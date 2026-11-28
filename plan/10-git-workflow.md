@@ -45,14 +45,17 @@ Hiện tại: tab Thay đổi có ô tick stage cả tệp và số dòng +/− 
 
 Hiện tại: đã có "Fetch tất cả" (Command Palette).
 
-- [ ] "Pull tất cả": chỉ chọn repo **sạch**, có upstream, `behind > 0`, `ahead = 0`; chạy `pull --ff-only` song song (pool 4–8); repo không đủ điều kiện liệt kê kèm lý do và bỏ qua
-- [ ] "Dọn nhánh đã merge": mỗi repo `git branch --merged <nhánh mặc định>`, loại nhánh hiện tại, nhánh mặc định, nhánh có worktree đang dùng
-- [ ] Dry-run bắt buộc: bảng repo × nhánh sẽ xóa, bỏ tick từng dòng được; xác nhận bằng cách gõ số nhánh; xóa bằng `-d` (không bao giờ `-D` ở chế độ hàng loạt)
+- [x] "Pull tất cả": chỉ chọn repo **sạch**, có upstream, `behind > 0`, `ahead = 0`; chạy `pull --ff-only` song song (pool 4–8); repo không đủ điều kiện liệt kê kèm lý do và bỏ qua
+- [x] "Dọn nhánh đã merge": mỗi repo `git branch --merged <nhánh mặc định>`, loại nhánh hiện tại, nhánh mặc định, nhánh có worktree đang dùng
+- [x] Dry-run bắt buộc: bảng repo × nhánh sẽ xóa, bỏ tick từng dòng được; xác nhận bằng cách gõ số nhánh; xóa bằng `-d` (không bao giờ `-D` ở chế độ hàng loạt)
 - [ ] (Tùy chọn) Nhánh remote đã merge: chỉ liệt kê và chép lệnh, không tự xóa (giống tab Branches của Remotes)
-- [ ] Chọn phạm vi: tất cả repo / repo đang lọc / repo đã tick trong danh sách (thêm ô tick vào `RepoList`)
-- [ ] Bảng kết quả theo từng repo (ok / bỏ qua / lỗi + thông báo); mỗi repo ghi một dòng audit
-- [ ] Lệnh trong Command Palette + menu "⋯" ở thanh công cụ trang Git
-- [ ] Test: 3 repo tạm (sạch-behind, bẩn, ahead) → pull tất cả chỉ đụng repo đầu; dọn nhánh không xóa nhánh chưa merge
+- [x] Chọn phạm vi: tất cả repo / repo đang lọc (trong hộp thoại)
+- [x] Phạm vi "repo đã tick": menu "⋯" › "Chọn nhiều repo…" bật ô tick trong `RepoList`; hộp thoại có thêm phạm vi "Repo đã tick"
+- [x] Bảng kết quả theo từng repo (ok / bỏ qua / lỗi + thông báo); mỗi repo ghi một dòng audit
+- [x] Lệnh trong Command Palette + menu "⋯" ở thanh công cụ trang Git
+- [x] Test: 3 repo tạm (sạch-behind, bẩn, ahead) → pull tất cả chỉ đụng repo đầu; dọn nhánh không xóa nhánh chưa merge
+
+Ghi chú 10d (đã làm): `server/git-bulk.js`, route `POST /api/git/bulk` (pullPlan/pullRun/cleanupPlan/cleanupRun); bước chạy kiểm tra lại điều kiện từng repo, cleanup chỉ xóa nhánh vẫn "đã merge" lúc chạy, luôn `-d`. Nhánh trùng đầu nhánh mặc định (mới tạo chưa commit) không coi là đã merge. UI: `BulkDialog`, menu "⋯" trên thanh công cụ Git + Command Palette. Chưa kiểm bằng mắt.
 
 Ghi chú 10b (đã làm): worktree phụ được nhận ra bằng .git/worktrees/<tên>/gitdir của repo chính (không spawn git) nên cũng bắt được worktree nằm ngoài thư mục quét; chỉ ẩn khỏi danh sách khi repo chính có trong danh sách. Worktree được thêm vào whitelist của knownRepo (mở VS Code / Terminal / Explorer). Job chạy trong worktree thành nhóm riêng, hiện đúng nhánh. Xóa worktree không xóa nhánh; worktree bị khóa hoặc đã mất thì chặn (dùng prune).
 

@@ -11,6 +11,7 @@ const c = codex.parse(fs.readFileSync(fx('codex.jsonl'), 'utf8'), fx('codex.json
 assert.strictEqual(c.length, 2, 'bỏ token_count lặp và info=null')
 assert.deepStrictEqual([c[0].input, c[0].cacheRead, c[0].output, c[0].model, c[0].project], [60, 40, 50, 'gpt-5-codex', 'demo'])
 assert.strictEqual(c[1].input, 50)
+assert.deepStrictEqual([c[0].branch, c[0].session], ['feat/x', 'codex'], 'Codex: nhánh từ session_meta.git')
 
 const g = gemini.parse(fs.readFileSync(fx('gemini.json'), 'utf8'), fx('gemini.json'))
 assert.strictEqual(g.length, 2, 'bỏ message không phải gemini')
@@ -20,6 +21,12 @@ assert.strictEqual(g[1].input, 505)
 const line = '{"timestamp":"t","uuid":"u","message":{"id":"m","model":"claude-x","usage":{"input_tokens":1,"output_tokens":2,"cache_creation_input_tokens":3,"cache_read_input_tokens":4}}}\n{"junk'
 const cl = claude.parse(line, path.join(claude.root, 'c--Users-bob-Desktop-app', 's.jsonl'))
 assert.deepStrictEqual([cl.length, cl[0].project, cl[0].cacheRead], [1, 'app', 4])
+// Một phiên đổi nhánh giữa chừng, có dòng detached HEAD và cwd là worktree
+const mk = (id, br, cwd) => JSON.stringify({ timestamp: 't', uuid: id, sessionId: 'S1', gitBranch: br, cwd, message: { id, model: 'claude-x', usage: { input_tokens: 1, output_tokens: 1 } } })
+const two = [mk('a', 'main', 'C:\\w\\app'), mk('b', 'feat/y', 'C:\\w\\app'), mk('c', 'HEAD', 'C:\\w\\app-wt')].join('\n')
+const t = claude.parse(two, path.join(claude.root, 'c--Users-bob-Desktop-app', 's.jsonl'))
+assert.deepStrictEqual(t.map((r) => r.branch), ['main', 'feat/y', undefined], 'nhánh theo từng dòng, HEAD bỏ')
+assert.deepStrictEqual([t[0].session, t[0].cwd, t[2].cwd], ['S1', undefined, 'C:\\w\\app-wt'])
 console.log('ok')
 
 const ag = require('./antigravity')

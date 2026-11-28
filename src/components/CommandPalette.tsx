@@ -32,6 +32,8 @@ function Palette() {
       cmd('remotes', 'Mở Remotes (MR / PR trên GitLab, GitHub)', MOD + '5', () => navigate('/remotes')),
       cmd('rescan', 'Quét lại repo', MOD + 'R', () => { setState({ pending: 'rescan' }); navigate('/git') }),
       cmd('fetchAll', 'Fetch tất cả repo', undefined, () => { setState({ pending: 'fetchAll' }); navigate('/git') }),
+      cmd('pullAll', 'Pull tất cả repo (chỉ repo sạch, chậm hơn remote)', undefined, () => { setState({ pending: 'pullAll' }); navigate('/git') }),
+      cmd('cleanup', 'Dọn nhánh đã merge ở mọi repo', undefined, () => { setState({ pending: 'cleanup' }); navigate('/git') }),
     ]
     // Chưa quét lần nào thì chỉ có repo đã ghim (lấy tên từ đường dẫn)
     const known = repos.length ? repos.map((r) => ({ path: r.path, name: r.name, dot: toneColor(toneOf(r)) })) : pinned.map((p) => ({ path: p, name: baseName(p), dot: 'var(--fg-mute)' }))

@@ -355,6 +355,45 @@ const test = async (name, fn) => { try { await fn(); n++; console.log('  ok  ' +
     await run('worktreePrune', {}); assert.equal((await detail()).worktrees.length, 1)
   })
 
+  console.log('thao tác hàng loạt')
+  const bulk = require('./git-bulk')
+  const B = path.join(tmp, 'bulk-remote.git')
+  const seed = path.join(tmp, 'bulk-seed')
+  G(tmp, 'init', '--bare', '-b', 'main', B)
+  fs.mkdirSync(seed); G(seed, 'init', '-b', 'main'); fs.writeFileSync(path.join(seed, 'a.txt'), '1'); G(seed, 'add', '.'); G(seed, 'commit', '-m', 'c1'); G(seed, 'remote', 'add', 'origin', B); G(seed, 'push', '-u', 'origin', 'main')
+  const mk = (n) => { const d = path.join(root, n); G(tmp, 'clone', B, d); return d }
+  const behindR = mk('b-behind'), dirtyR = mk('b-dirty'), aheadR = mk('b-ahead')
+  fs.writeFileSync(path.join(seed, 'a.txt'), '2'); G(seed, 'commit', '-am', 'c2'); G(seed, 'push')
+  for (const d of [behindR, dirtyR, aheadR]) G(d, 'fetch')
+  fs.writeFileSync(path.join(dirtyR, 'a.txt'), 'local edit')
+  fs.writeFileSync(path.join(aheadR, 'b.txt'), 'x'); G(aheadR, 'add', '.'); G(aheadR, 'commit', '-m', 'local')
+  await git.listRepos(true)
+  await test('pullAll chỉ đụng repo sạch, behind, không ahead', async () => {
+    const all = [behindR, dirtyR, aheadR]
+    const plan = await bulk.pullPlan(all)
+    assert.deepEqual(plan.map((p) => p.eligible), [true, false, false])
+    assert.match(plan[1].reason, /chưa commit/); assert.match(plan[2].reason, /ahead/)
+    const res = await bulk.pullRun(all)
+    assert.deepEqual(res.map((r) => r.status), ['ok', 'skipped', 'skipped'])
+    assert.equal(fs.readFileSync(path.join(behindR, 'a.txt'), 'utf8'), '2')
+    assert.equal(fs.readFileSync(path.join(dirtyR, 'a.txt'), 'utf8'), 'local edit')
+    await rejects(bulk.pullPlan([tmp]), /không nằm/, 'repo lạ')
+  })
+  await test('dọn nhánh: chỉ nhánh đã merge, không đụng nhánh chưa merge / mới tạo / đang dùng', async () => {
+    const r = behindR
+    G(r, 'checkout', '-b', 'done'); fs.writeFileSync(path.join(r, 'd.txt'), 'd'); G(r, 'add', '.'); G(r, 'commit', '-m', 'd')
+    G(r, 'checkout', 'main'); G(r, 'merge', '--no-ff', 'done', '-m', 'merge done')
+    G(r, 'branch', 'fresh')                       // trùng đầu main (mới tạo): giữ lại
+    G(r, 'checkout', '-b', 'wip'); fs.writeFileSync(path.join(r, 'w.txt'), 'w'); G(r, 'add', '.'); G(r, 'commit', '-m', 'w'); G(r, 'checkout', 'main')
+    const [plan] = await bulk.cleanupPlan([r])
+    assert.equal(plan.base, 'main'); assert.deepEqual(plan.branches, ['done'])
+    await rejects(bulk.cleanupRun([{ path: r, branches: ['done'] }], 2), /số nhánh/, 'sai số xác nhận')
+    const [res] = await bulk.cleanupRun([{ path: r, branches: ['done', 'wip', 'main'] }], 3)
+    assert.deepEqual(res.done, ['done']); assert.deepEqual(res.failed.map((f) => f.branch).sort(), ['main', 'wip'])
+    const left = G(r, 'branch', '--format=%(refname:short)').split('\n').sort()
+    assert.deepEqual(left, ['fresh', 'main', 'wip'])
+  })
+
   console.log('audit')
   await test('audit.log ghi hành động, không ghi confirmName', () => {
     const lines = fs.readFileSync(path.join(dataDir, 'audit.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l))

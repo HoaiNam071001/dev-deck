@@ -55,6 +55,9 @@ function git(cwd, args, timeout = 20000) {
   })
 }
 
+/** Đường dẫn thật (macOS: /var → /private/var); không có thì giữ nguyên, vd worktree đã mất thư mục. */
+const real = (p) => { try { return fs.realpathSync(p) } catch { return p } }
+
 /** Worktree phụ của một repo chính: đọc gitdir trong .git/worktrees, không spawn git. */
 function linkedWorktrees(main) {
   const dir = path.join(main, '.git', 'worktrees')
@@ -87,9 +90,9 @@ function scanRepos(roots, depth) {
   const hidden = new Set()
   for (const p of found) {
     const l = linkedWorktrees(p)
-    if (l.length) { linked.set(p, l); for (const w of l) hidden.add(normPath(w)) }
+    if (l.length) { linked.set(p, l); for (const w of l) { hidden.add(normPath(w)); hidden.add(normPath(real(w))) } }
   }
-  return { paths: [...found].filter((p) => !hidden.has(normPath(p))).sort((a, b) => a.localeCompare(b)), linked }
+  return { paths: [...found].filter((p) => !hidden.has(normPath(real(p)))).sort((a, b) => a.localeCompare(b)), linked }
 }
 
 const discover = (roots, depth) => scanRepos(roots, depth).paths
@@ -305,7 +308,7 @@ function knownRepo(p) {
   const { paths, linked } = repoPaths(false)
   if (paths.includes(p)) return p
   const n = normPath(String(p))
-  for (const l of linked.values()) if (l.some((w) => normPath(w) === n)) return p
+  for (const l of linked.values()) if (l.some((w) => normPath(w) === n || normPath(real(w)) === normPath(real(String(p))))) return p
   throw new Error('Repo không nằm trong danh sách đã quét')
 }
 

@@ -17,8 +17,8 @@ Việc phát sinh: thêm vào [00-backlog.md](00-backlog.md) bất cứ lúc nà
 | 7 | Mục "AI" đa nhà cung cấp (Claude, Codex, Gemini) | [07-ai-usage.md](07-ai-usage.md) | xong (Codex/Gemini chưa thử trên log thật) |
 | 8 | Đọc log token từ Antigravity (đa model: Gemini, Claude…) | [08-antigravity-usage.md](08-antigravity-usage.md) | xong |
 | 9 | Tab Remotes: MR / PR trên GitLab, GitHub | [09-remotes.md](09-remotes.md) | 9a-9d xong code (chưa thử token thật); 9e đang làm: có hàng đợi review + thời gian chờ + độ lớn, còn phía tác giả, ngưỡng sửa được (chưa kiểm bằng mắt) |
-| 10 | Git: stash, worktree, diff theo hunk, thao tác hàng loạt | [10-git-workflow.md](10-git-workflow.md) | một phần: 10a stash, 10b worktree, 10c diff + stage theo hunk xong (chưa kiểm bằng mắt); còn 10d hàng loạt |
-| 11 | Token AI theo nhánh git / theo MR | [11-token-by-branch.md](11-token-by-branch.md) | chưa |
+| 10 | Git: stash, worktree, diff theo hunk, thao tác hàng loạt | [10-git-workflow.md](10-git-workflow.md) | một phần: 10a stash, 10b worktree, 10c diff + stage theo hunk xong (chưa kiểm bằng mắt); 10d hàng loạt (pull tất cả, dọn nhánh đã merge, phạm vi repo đã tick) xong code; chưa kiểm bằng mắt |
+| 11 | Token AI theo nhánh git / theo MR | [11-token-by-branch.md](11-token-by-branch.md) | một phần: server + bảng theo nhánh / phiên (trang AI), cột token ở tab Nhánh, thẻ ở chi tiết repo và MR xong code; bộ lọc nhánh sidebar; chưa kiểm bằng mắt, chưa đối chiếu log thật |
 | 12 | Chạy script npm ngay trong app | [12-npm-scripts.md](12-npm-scripts.md) | chưa |
 | 13 | Tích hợp Jira: chip ticket, tạo nhánh từ ticket, chuyển trạng thái, theo dõi thay đổi ticket | [13-jira.md](13-jira.md) | chưa |
 | 14 | Thông báo khi AI chạy xong một câu hỏi (4 nguồn qua log, Claude thêm hook Stop) | [14-ai-done-notify.md](14-ai-done-notify.md) | xong code (server + panel tab AI); chưa kiểm bằng mắt, chưa thử trên log thật của Codex / Gemini / Antigravity |

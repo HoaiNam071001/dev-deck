@@ -97,6 +97,8 @@ async function hunkPatch(cwd, { file, hash, staged }) {
 
 const applyPatch = (cwd, patch, reverse) => run(cwd, ['apply', '--cached', '--whitespace=nowarn', ...(reverse ? ['--reverse'] : []), '-'], 30000, patch)
 
+/** Đường dẫn thật (macOS: /var → /private/var); không đọc được thì giữ nguyên. */
+const realOf = (p) => { try { return fs.realpathSync(p) } catch { try { return path.join(fs.realpathSync(path.dirname(p)), path.basename(p)) } catch { return p } } }
 const normP = (p) => path.resolve(p).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase()
 const worktreeList = async (cwd) => git.parseWorktrees(await run(cwd, ['worktree', 'list', '--porcelain']))
 const defaultWorktreeDir = (repo, branch) => path.join(path.resolve(repo) + '-wt', branch.replace(/[\\/:*?"<>|]+/g, '-'))
@@ -194,7 +196,8 @@ const actions = {
   },
   /** Xóa worktree phụ (không xóa nhánh). Còn thay đổi chưa commit thì cần force. dryRun trả thông tin để UI cảnh báo. */
   async worktreeRemove(cwd, body) {
-    const w = (await worktreeList(cwd)).find((x) => normP(x.path) === normP(String(body.dir || '')))
+    const same = (a, b) => normP(a) === normP(b) || normP(realOf(a)) === normP(realOf(b))
+    const w = (await worktreeList(cwd)).find((x) => same(x.path, String(body.dir || '')))
     if (!w) throw new Error('Không phải worktree của repo này')
     if (w.main) throw new Error('Không xóa được worktree chính')
     if (w.locked) throw new Error('Worktree đang bị khóa (git worktree unlock trước)')

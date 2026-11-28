@@ -8,6 +8,12 @@ export interface UsageRow {
   projectPath?: string
   /** Chỉ có với Claude: thư mục cấu hình của tài khoản ('' = mặc định) */
   account?: string
+  /** Nhánh git lúc ghi dòng này (Claude, Codex); trống nếu log không có hoặc detached */
+  branch?: string
+  /** Mã phiên làm việc */
+  session?: string
+  /** Thư mục làm việc của dòng này, chỉ có khi khác projectPath (vd worktree, thư mục con) */
+  cwd?: string
   model: string
   input: number
   output: number
@@ -266,3 +272,8 @@ export interface RemoteLocalJobs {
   local: { path: string; name: string } | null
   jobs: { pid: number; name: string; kind: JobKind; cmd: string; start: string; progress: { total: number; done: number; pass: number; fail: number; finished: boolean } | null }[]
 }
+
+export interface BulkPullPlan { path: string; eligible: boolean; reason?: string | null; behind?: number; branch?: string; upToDate?: boolean }
+export interface BulkPullResult { path: string; status: 'ok' | 'skipped' | 'error'; message: string }
+export interface BulkCleanupPlan { path: string; base: string | null; branches: string[]; reason?: string }
+export interface BulkCleanupResult { path: string; done: string[]; failed: { branch: string; message: string }[] }

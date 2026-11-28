@@ -14,13 +14,15 @@ function parse(text, file) {
   let project = 'unknown'
   let projectPath = ''
   let model = 'unknown'
+  let branch
   let lastTotal = -1
   let n = 0
   for (const o of jsonLines(text)) {
     const p = o.payload
     if (!p) continue
     if (o.type === 'session_meta' && p.cwd) { project = base(p.cwd); projectPath = p.cwd }
-    else if (o.type === 'turn_context') {
+    if (o.type === 'session_meta' && p.git && typeof p.git.branch === 'string' && p.git.branch && p.git.branch !== 'HEAD') branch = p.git.branch
+    if (o.type === 'turn_context') {
       if (p.model) model = p.model
       if (p.cwd && project === 'unknown') { project = base(p.cwd); projectPath = p.cwd }
     } else if (o.type === 'event_msg' && p.type === 'token_count' && p.info && o.timestamp) {
@@ -32,6 +34,8 @@ function parse(text, file) {
       rows.push({
         id: `${file}#${n++}`,
         t: o.timestamp,
+        ...(branch && { branch }),
+        session: path.basename(file, '.jsonl'),
         project,
         projectPath,
         model,
