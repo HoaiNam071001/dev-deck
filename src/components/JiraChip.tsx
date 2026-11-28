@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
-import { api } from '../api'
+import { api, useLoad } from '../api'
+import { branchName } from '../lib/jiraBranch'
+import { navigate } from '../lib/router'
+import { openRemoteCr } from '../lib/remoteWatch'
+import { setState, toast } from '../lib/store'
 import type { JiraIssue } from '../types'
 import { Modal } from './Modal'
 import { Chip, type Tone } from './ui'
@@ -82,8 +86,59 @@ export function JiraPanel({ issue, onClose }: { issue: JiraIssue; onClose: () =>
         {row('Loại', issue.type)}
         {row('Sprint', issue.sprint)}
         {issue.description && <pre className="max-h-[40vh] overflow-auto whitespace-pre-wrap border-t border-border pt-2 font-sans text-[12.5px] text-fg-soft">{issue.description}</pre>}
+        <JiraContinue issue={issue} onDone={onClose} />
         {safeUrl(issue.url) && <a href={safeUrl(issue.url)} target="_blank" rel="noreferrer noopener" className="text-[12.5px] text-accent">Mở trong Jira ↗</a>}
       </div>
     </Modal>
+  )
+}
+
+/** "Làm tiếp": nhánh local và MR / PR đã nối với ticket; chưa có nhánh thì tạo từ ticket. */
+function JiraContinue({ issue, onDone }: { issue: JiraIssue; onDone: () => void }) {
+  const links = useLoad(() => api.jiraLinks(issue.key), [issue.key], 0)
+  const crs = useLoad(async () => {
+    if (!(await api.remoteAccounts()).length) return []
+    const [a, b] = await Promise.all([api.changeRequests('all', 'mine', 'opened'), api.changeRequests('all', 'review', 'opened')])
+    const re = new RegExp(`(^|[^A-Za-z0-9])${issue.key}(?!\\d)`, 'i')
+    const seen = new Map(a.items.concat(b.items).filter((c) => re.test(c.title) || re.test(c.source)).map((c) => [c.key, c]))
+    return [...seen.values()]
+  }, [issue.key], 0)
+  const [name, setName] = useState(() => branchName(issue))
+  const [repo, setRepo] = useState('')
+  const [busy, setBusy] = useState(false)
+  const repos = links.data ?? []
+  const pick = repo || (repos.find((r) => r.suggested)?.path ?? repos[0]?.path ?? '')
+  const have = repos.flatMap((r) => r.branches.map((b) => ({ path: r.path, repo: r.name, branch: b })))
+
+  const open = (path: string) => { setState({ selected: path, wantTab: 'branches' }); navigate('/git'); onDone() }
+  const create = async () => {
+    if (!pick) return
+    setBusy(true)
+    try {
+      await api.action(pick, 'createBranch', { name: name.trim() })
+      toast({ kind: 'ok', title: 'Đã tạo nhánh', detail: name.trim() })
+      open(pick)
+    } catch (e) { toast({ kind: 'err', title: 'Không tạo được nhánh', detail: (e as Error).message }) }
+    setBusy(false)
+  }
+  return (
+    <div className="flex flex-col gap-2 border-t border-border pt-2 text-[12.5px]">
+      <span className="font-semibold">Làm tiếp</span>
+      {links.loading && !links.data && <span className="text-fg-mute">Đang tìm nhánh…</span>}
+      {have.map((h) => <button key={h.path + h.branch} className="btn sm justify-start" onClick={() => open(h.path)} title={h.path}><span className="font-mono">{h.branch}</span><span className="text-fg-mute"> · {h.repo}</span></button>)}
+      {(crs.data ?? []).map((c) => <button key={c.key} className="btn sm justify-start" onClick={() => { openRemoteCr(c.key); onDone() }}>{c.project} · {c.title}</button>)}
+      {!have.length && !links.loading && (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-fg-mute">Chưa có nhánh local cho ticket này.</span>
+          {repos.length > 0
+            ? <>
+                <select value={pick} onChange={(e) => setRepo(e.target.value)} aria-label="Repo tạo nhánh">{repos.map((r) => <option key={r.path} value={r.path}>{r.name}{r.suggested ? ' (cùng project)' : ''}</option>)}</select>
+                <input className="mono" value={name} onChange={(e) => setName(e.target.value)} aria-label="Tên nhánh" spellCheck={false} />
+                <button className="btn primary self-start" disabled={busy || !name.trim()} onClick={() => void create()}>Tạo nhánh và mở</button>
+              </>
+            : <span className="text-fg-mute">Chưa có repo nào có nhánh cùng project {issue.key.slice(0, issue.key.lastIndexOf('-'))}; hãy mở repo rồi tạo nhánh ở tab Nhánh với tên <span className="font-mono">{name}</span>.</span>}
+        </div>
+      )}
+    </div>
   )
 }

@@ -295,3 +295,4 @@ export interface JiraMine { items: JiraIssue[]; errors: { accountId: string; nam
 export interface JiraEvent { kind: 'status' | 'assignee' | 'priority' | 'sprint' | 'comment'; text: string }
 export interface JiraNewItem { issue: JiraIssue; pinned: boolean; events: JiraEvent[] }
 export interface JiraNew { items: JiraNewItem[]; errors: { accountId: string; name: string; error: string }[] }
+export interface JiraRepoLink { path: string; name: string; branches: string[]; suggested: boolean }

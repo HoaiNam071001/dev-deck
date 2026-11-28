@@ -26,8 +26,8 @@ Lưu account giống Remotes (`server/remotes/store.js`): token mã hóa bằng 
 
 ## Giai đoạn 13b — Từ ticket sang nhánh
 
-- [ ] Nút "Tạo nhánh" trên ticket: chọn repo (gợi ý repo đã có nhánh cùng project key), tên mặc định `<loại>/<KEY>-<tóm-tắt-không-dấu>` (mẫu sửa được trong cài đặt), dùng lại hành động tạo nhánh hiện có (qua `check-ref-format`)
-- [ ] Tạo MR / PR từ tab Branches tự điền tiêu đề `KEY: summary` và link ticket vào mô tả
+- [x] Nút "Tạo nhánh" trên ticket (mẫu cố định `feature|fix/KEY-slug`, sửa tay được khi tạo; chưa có mẫu trong cài đặt): chọn repo (gợi ý repo đã có nhánh cùng project key), tên mặc định `<loại>/<KEY>-<tóm-tắt-không-dấu>` (mẫu sửa được trong cài đặt), dùng lại hành động tạo nhánh hiện có (qua `check-ref-format`)
+- [x] Tạo MR / PR từ tab Branches tự điền tiêu đề `KEY: summary` và link ticket vào mô tả
 
 ## Giai đoạn 13c — Ghi (bật riêng từng account)
 
@@ -46,7 +46,7 @@ Mục tiêu: thấy ticket của mình, ghim thêm ticket cần để mắt, và
 - [x] Mốc "đã xem" theo từng ticket (`jira.seen[key] = {updated, commentId}`), lưu cục bộ; mở panel ticket hoặc bấm "đánh dấu đã xem" thì cập nhật mốc
 - [x] Poll 2 phút khi app đang mở và hiện (`src/lib/jiraWatch.ts`, cùng kiểu `remoteWatch.ts`) (công tắc thông báo, toast + thông báo hệ thống, gộp nhiều thay đổi một lần); lần đầu ghim chỉ lấy mốc, không báo dồn
 - [x] Hộp tin "Có gì mới": mỗi ticket một khối, các dòng thay đổi kể từ lần xem cuối (vd `In Progress → In Review`, `Anh B: "đã sửa xong, xem lại"`); badge số ticket chưa xem trên sidebar (giống badge thread ở 9)
-- [ ] "Làm tiếp": từ ticket mở nhánh local đã nối (mã trong tên nhánh) hoặc MR / PR đã nối; chưa có nhánh thì nút "Tạo nhánh" (13b)
+- [x] "Làm tiếp" (panel ticket: nhánh local từ `/api/jira/links`, MR / PR của tôi / cần review có mã trong tiêu đề hoặc nhánh): từ ticket mở nhánh local đã nối (mã trong tên nhánh) hoặc MR / PR đã nối; chưa có nhánh thì nút "Tạo nhánh" (13b)
 - [x] Test: so sánh trước / sau ra đúng sự kiện, bỏ comment của mình, lần đầu không báo dồn, ADF → chữ thuần cho comment Cloud
 
 ## Tiêu chí xong

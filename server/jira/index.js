@@ -88,6 +88,24 @@ async function seen({ key }) {
   return { ok: true }
 }
 
+/** Nhánh local của các repo đã quét có chứa mã ticket; `suggested` = repo có nhánh cùng project key (gợi ý nơi tạo nhánh). */
+async function links({ key }) {
+  const k = String(key || '')
+  if (!/^[A-Z][A-Z0-9]+-\d+$/.test(k)) throw new Error('Mã ticket không hợp lệ')
+  const project = k.slice(0, k.lastIndexOf('-'))
+  const git = require('../git')
+  const has = new RegExp(`(^|[^A-Za-z0-9])${k}(?!\\d)`, 'i')
+  const same = new RegExp(`(^|[^A-Za-z0-9])${project}-\\d+`, 'i')
+  const out = []
+  for (const r of await git.remoteUrlMap()) {
+    try {
+      const names = await git.localBranchNames(r.path)
+      out.push({ path: r.path, name: r.name, branches: names.filter((n) => has.test(n)), suggested: names.some((n) => same.test(n)) })
+    } catch { /* repo lỗi: bỏ qua */ }
+  }
+  return out.filter((r) => r.branches.length || r.suggested)
+}
+
 const pin = ({ key, on }) => ({ pinned: watch.pin(String(key || ''), on === true) })
 
-module.exports = { whatsNew, seen, pin, accounts, addAccount, removeAccount, testAccount, issues, extract, mine }
+module.exports = { links, whatsNew, seen, pin, accounts, addAccount, removeAccount, testAccount, issues, extract, mine }

@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react'
+import { crDraft } from '../lib/jiraBranch'
+import { useJiraIssues } from './JiraChip'
+import { useEffect, useMemo, useState } from 'react'
 import { api, useLoad } from '../api'
 import { relTime } from '../lib/format'
 import { usePersisted } from '../lib/persist'
@@ -19,6 +21,9 @@ function CreateCrModal({ accountId, project, source, defaultTarget, provider, on
   const [target, setTarget] = useState(defaultTarget)
   const [title, setTitle] = useState(source.replace(/^[\w-]+\//, '').replace(/[-_]+/g, ' '))
   const [desc, setDesc] = useState('')
+  const [touched, setTouched] = useState(false)
+  const ticket = useJiraIssues([source])[0]
+  useEffect(() => { if (ticket && !touched) { const d = crDraft(ticket); setTitle(d.title); setDesc((x) => x || d.description) } }, [ticket, touched])
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const word = provider === 'gitlab' ? 'MR' : 'PR'
@@ -34,7 +39,7 @@ function CreateCrModal({ accountId, project, source, defaultTarget, provider, on
     <Modal onClose={onClose} titleId="mk-title" header={<h2 id="mk-title">Tạo {word} từ <span className="mono">{source}</span></h2>}>
       <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-3 p-4">
         <label className="flex flex-col gap-1.5 text-[12px]"><span className="text-fg-mute">Nhánh đích</span><input className="mono" value={target} onChange={(e) => setTarget(e.target.value)} required spellCheck={false} /></label>
-        <label className="flex flex-col gap-1.5 text-[12px]"><span className="text-fg-mute">Tiêu đề</span><input value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={300} /></label>
+        <label className="flex flex-col gap-1.5 text-[12px]"><span className="text-fg-mute">Tiêu đề</span><input value={title} onChange={(e) => { setTitle(e.target.value); setTouched(true) }} required maxLength={300} /></label>
         <label className="flex flex-col gap-1.5 text-[12px]"><span className="text-fg-mute">Mô tả (tùy chọn)</span><textarea className="min-h-[96px]" value={desc} onChange={(e) => setDesc(e.target.value)} /></label>
         {err && <div className="banner err" role="alert">{err}</div>}
         <div className="flex items-center justify-end gap-2">

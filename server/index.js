@@ -171,6 +171,7 @@ async function api(req, res, url) {
       return json(res, 200, await jira.addAccount(body))
     }
     if (url.pathname === '/api/jira/issues') return json(res, 200, await jira.issues({ keys: url.searchParams.getAll('key') }))
+    if (url.pathname === '/api/jira/links') return json(res, 200, await jira.links({ key: url.searchParams.get('key') || '' }))
     if (url.pathname === '/api/jira/new') return json(res, 200, await jira.whatsNew())
     if (url.pathname === '/api/jira/pins') return json(res, 200, { pinned: require('./jira/watch').pinned() })
     if (url.pathname === '/api/jira/pin' || url.pathname === '/api/jira/seen') {
