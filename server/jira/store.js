@@ -26,6 +26,15 @@ function add({ name, baseUrl, kind, email, token, user }) {
   writeAll([...readAll(), a])
   return pub(a)
 }
+/** Bật / tắt thao tác ghi lên Jira cho account. Mặc định tắt. */
+function setWrite(id, on) {
+  const all = readAll()
+  const a = all.find((x) => x.id === id)
+  if (!a) throw new Error('Không có account Jira này')
+  a.write = !!on
+  writeAll(all)
+  return pub(a)
+}
 function remove(id) { writeAll(readAll().filter((a) => a.id !== id)); return list() }
 
-module.exports = { list, get, add, remove }
+module.exports = { list, get, add, remove, setWrite }

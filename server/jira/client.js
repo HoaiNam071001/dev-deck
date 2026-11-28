@@ -70,4 +70,18 @@ async function search(acc, jql, max = 50) {
   return (r?.issues || []).map((i) => normalize(acc, i))
 }
 
-module.exports = { extractKeys, adfText, normalize, whoami, projectKeys, search, KEY_RE }
+const send = (acc, p, method, body) => request(api(acc) + p, { method, headers: { ...headers(acc), 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) }).then((r) => r.data)
+/** Cloud (v3) nhận comment / ghi chú dạng ADF; Server / DC (v2) nhận chữ thuần. */
+const rich = (acc, text) => acc.kind === 'cloud'
+  ? { type: 'doc', version: 1, content: String(text).split(/\n{2,}/).map((para) => ({ type: 'paragraph', content: para.split('\n').flatMap((l, i) => (i ? [{ type: 'hardBreak' }] : []).concat(l ? [{ type: 'text', text: l }] : [])) })) }
+  : String(text)
+
+async function transitions(acc, key) {
+  const r = await get(acc, `/issue/${key}/transitions`)
+  return (r?.transitions || []).map((t) => ({ id: String(t.id), name: t.name || '', to: t.to?.name || '' }))
+}
+const transition = (acc, key, id) => send(acc, `/issue/${key}/transitions`, 'POST', { transition: { id: String(id) } })
+const comment = (acc, key, text) => send(acc, `/issue/${key}/comment`, 'POST', { body: rich(acc, text) })
+const worklog = (acc, key, seconds, text) => send(acc, `/issue/${key}/worklog`, 'POST', { timeSpentSeconds: seconds, ...(text ? { comment: rich(acc, text) } : {}) })
+
+module.exports = { transitions, transition, comment, worklog, rich, extractKeys, adfText, normalize, whoami, projectKeys, search, KEY_RE }

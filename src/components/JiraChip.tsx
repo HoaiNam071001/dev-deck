@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, useLoad } from '../api'
 import { branchName } from '../lib/jiraBranch'
+import { parseDuration } from '../lib/jiraTime'
 import { navigate } from '../lib/router'
 import { openRemoteCr } from '../lib/remoteWatch'
 import { setState, toast } from '../lib/store'
@@ -87,6 +88,7 @@ export function JiraPanel({ issue, onClose }: { issue: JiraIssue; onClose: () =>
         {row('Sprint', issue.sprint)}
         {issue.description && <pre className="max-h-[40vh] overflow-auto whitespace-pre-wrap border-t border-border pt-2 font-sans text-[12.5px] text-fg-soft">{issue.description}</pre>}
         <JiraContinue issue={issue} onDone={onClose} />
+        <JiraWrite issue={issue} />
         {safeUrl(issue.url) && <a href={safeUrl(issue.url)} target="_blank" rel="noreferrer noopener" className="text-[12.5px] text-accent">Mở trong Jira ↗</a>}
       </div>
     </Modal>
@@ -139,6 +141,44 @@ function JiraContinue({ issue, onDone }: { issue: JiraIssue; onDone: () => void 
             : <span className="text-fg-mute">Chưa có repo nào có nhánh cùng project {issue.key.slice(0, issue.key.lastIndexOf('-'))}; hãy mở repo rồi tạo nhánh ở tab Nhánh với tên <span className="font-mono">{name}</span>.</span>}
         </div>
       )}
+    </div>
+  )
+}
+
+/** Chuyển trạng thái, comment, ghi thời gian: chỉ hiện khi account của ticket đã bật ghi. */
+function JiraWrite({ issue }: { issue: JiraIssue }) {
+  const acc = useLoad(api.jiraAccounts, [], 0, 'jiraAccounts').data?.find((a) => a.id === issue.accountId)
+  const trans = useLoad(() => (acc?.write ? api.jiraTransitions(issue.key, issue.accountId) : Promise.resolve([])), [acc?.write, issue.key], 0)
+  const [tid, setTid] = useState('')
+  const [text, setText] = useState('')
+  const [dur, setDur] = useState('')
+  const [busy, setBusy] = useState(false)
+  if (!acc) return null
+  if (!acc.write) return <div className="border-t border-border pt-2 text-[12px] text-fg-mute">Account này đang chỉ đọc. Bật "cho phép ghi" ở trang Jira để chuyển trạng thái, comment, ghi thời gian.</div>
+  const secs = parseDuration(dur)
+  const run = async (label: string, body: Parameters<typeof api.jiraAct>[0], done?: () => void) => {
+    setBusy(true)
+    try { await api.jiraAct(body); toast({ kind: 'ok', title: label, detail: issue.key }); done?.() }
+    catch (e) { toast({ kind: 'err', title: 'Không thực hiện được', detail: (e as Error).message }) }
+    setBusy(false)
+  }
+  const t = (trans.data ?? []).find((x) => x.id === tid)
+  return (
+    <div className="flex flex-col gap-2 border-t border-border pt-2 text-[12.5px]">
+      <span className="font-semibold">Cập nhật ticket</span>
+      <div className="flex items-center gap-2">
+        <select value={tid} onChange={(e) => setTid(e.target.value)} aria-label="Chuyển trạng thái" className="min-w-0 flex-1">
+          <option value="">Chuyển trạng thái…</option>
+          {(trans.data ?? []).map((x) => <option key={x.id} value={x.id}>{x.name}{x.to && x.to !== x.name ? ` → ${x.to}` : ''}</option>)}
+        </select>
+        <button className="btn sm" disabled={busy || !t} onClick={() => void run('Đã chuyển trạng thái', { action: 'transition', key: issue.key, account: issue.accountId, transitionId: tid }, () => setTid(''))}>Chuyển</button>
+      </div>
+      <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} placeholder="Viết comment…" aria-label="Comment" maxLength={20000} />
+      <div className="flex items-center gap-2">
+        <button className="btn sm" disabled={busy || !text.trim()} onClick={() => void run('Đã gửi comment', { action: 'comment', key: issue.key, account: issue.accountId, body: text }, () => setText(''))}>Gửi comment</button>
+        <input className="mono ml-auto w-24" value={dur} onChange={(e) => setDur(e.target.value)} placeholder="1h30m" aria-label="Thời gian làm" spellCheck={false} />
+        <button className="btn sm" disabled={busy || secs === null} title={secs === null ? 'Nhập dạng 1h30m, 45m, 2h (1 phút – 24 giờ)' : undefined} onClick={() => void run('Đã ghi thời gian', { action: 'worklog', key: issue.key, account: issue.accountId, seconds: secs! }, () => setDur(''))}>Ghi giờ</button>
+      </div>
     </div>
   )
 }

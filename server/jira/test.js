@@ -37,6 +37,28 @@ console.log('jira: ok')
   assert.strictEqual(dc.kind, 'server')
   assert.ok(calls.at(-1).url.includes('/rest/api/2/myself') && calls.at(-1).auth === 'Bearer pat123456')
   assert.strictEqual((await jira.issues({ keys: ['ABC-1'] }))[0].description, 'plain')
+  // 13c: ghi
+  const { rich } = require('./client')
+  assert.deepStrictEqual(rich({ kind: 'server' }, 'a\nb'), 'a\nb')
+  assert.strictEqual(rich({ kind: 'cloud' }, 'a\n\nb').content.length, 2)
+  const acc2 = jira.accounts()[0]
+  const writes = []
+  const base = global.fetch
+  global.fetch = async (url, init) => { if (init.method === 'POST') writes.push({ url: String(url), body: init.body }); const u = new URL(url); if (u.pathname.endsWith('/transitions') && init.method === 'GET') return { ok: true, status: 200, statusText: '', headers: new Headers(), text: async () => JSON.stringify({ transitions: [{ id: '31', name: 'Review', to: { name: 'In Review' } }] }) }; return base(url, init) }
+  await assert.rejects(jira.act({ action: 'comment', key: 'ABC-1', account: acc2.id, body: 'hi' }), /chỉ đọc/)
+  assert.strictEqual(writes.length, 0)
+  jira.setWrite(acc2.id, true)
+  assert.deepStrictEqual(await jira.transitionsOf({ key: 'ABC-1', account: acc2.id }), [{ id: '31', name: 'Review', to: 'In Review' }])
+  await jira.act({ action: 'transition', key: 'ABC-1', account: acc2.id, transitionId: '31' })
+  await jira.act({ action: 'comment', key: 'ABC-1', account: acc2.id, body: 'bí mật' })
+  await jira.act({ action: 'worklog', key: 'ABC-1', account: acc2.id, seconds: 1800 })
+  assert.strictEqual(writes.length, 3)
+  assert.strictEqual(JSON.parse(writes[1].body).body, 'bí mật') // Data Center: chữ thuần
+  assert.strictEqual(JSON.parse(writes[2].body).timeSpentSeconds, 1800)
+  await assert.rejects(jira.act({ action: 'worklog', key: 'ABC-1', account: acc2.id, seconds: 5 }), /Thời gian/)
+  await assert.rejects(jira.act({ action: 'transition', key: 'ZZZ-1', account: acc2.id, transitionId: '1' }), /không thuộc/)
+  const log = fs.readFileSync(path.join(process.env.DEVDECK_DATA, 'audit.log'), 'utf8')
+  assert.ok(!log.includes('bí mật') && log.includes('jira.comment'))
   console.log('jira fetch: ok')
 })().catch((e) => { console.error(e); process.exit(1) })
 

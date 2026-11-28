@@ -1,9 +1,10 @@
 // Jira (13a, chỉ đọc): account, nhận mã ticket, lấy ticket hàng loạt, việc của tôi. Cache 60 giây.
 const store = require('./store')
 const client = require('./client')
-const { cleanBase, cached } = require('../remotes/http')
+const { cleanBase, cached, dropCache } = require('../remotes/http')
 
 const accounts = () => store.list()
+const setWrite = (id, on) => store.setWrite(String(id || ''), on === true)
 
 async function addAccount(input) {
   const token = String(input.token || '').trim()
@@ -106,6 +107,53 @@ async function links({ key }) {
   return out.filter((r) => r.branches.length || r.suggested)
 }
 
+const KEY_OK = /^[A-Z][A-Z0-9]+-\d+$/
+const accountFor = async (key, accountId) => {
+  if (!KEY_OK.test(key)) throw new Error('Mã ticket không hợp lệ')
+  const acc = store.get(String(accountId || ''))
+  if (!(await keysOf(acc)).has(key.slice(0, key.lastIndexOf('-')))) throw new Error('Ticket không thuộc account này')
+  return acc
+}
+
+/** Các bước chuyển trạng thái có thể làm (chỉ đọc; workflow mỗi project khác nhau nên luôn hỏi Jira). */
+async function transitionsOf({ key, account }) { return client.transitions(await accountFor(String(key || ''), account), String(key)) }
+
+/** Thao tác ghi lên Jira: transition | comment | worklog. Account phải bật ghi; ghi audit (không ghi nội dung, chỉ độ dài). */
+async function act(input) {
+  const action = String(input.action || '')
+  if (!['transition', 'comment', 'worklog'].includes(action)) throw new Error('Hành động không hỗ trợ')
+  const key = String(input.key || '')
+  const acc = await accountFor(key, input.account)
+  if (!acc.write) throw new Error('Account Jira này đang ở chế độ chỉ đọc. Bật "cho phép ghi" ở trang Jira trước.')
+  const params = { key }
+  let run
+  if (action === 'transition') {
+    const id = String(input.transitionId || '')
+    if (!/^\d{1,10}$/.test(id)) throw new Error('Mã bước chuyển không hợp lệ')
+    params.transitionId = id
+    run = () => client.transition(acc, key, id)
+  } else if (action === 'comment') {
+    const body = String(input.body || '').trim()
+    if (!body) throw new Error('Cần nhập nội dung comment')
+    if (body.length > 20000) throw new Error('Nội dung quá dài (tối đa 20000 ký tự)')
+    params.body = `(${body.length} ký tự)`
+    run = () => client.comment(acc, key, body)
+  } else {
+    const seconds = Math.round(Number(input.seconds))
+    if (!Number.isFinite(seconds) || seconds < 60 || seconds > 86400) throw new Error('Thời gian phải từ 1 phút đến 24 giờ')
+    const note = String(input.body || '').trim().slice(0, 5000)
+    params.seconds = seconds
+    if (note) params.body = `(${note.length} ký tự)`
+    run = () => client.worklog(acc, key, seconds, note)
+  }
+  let error
+  try { await run() } catch (e) { error = e }
+  require('../git-actions').audit({ repo: 'jira:' + acc.name, action: 'jira.' + action, params, ok: !error, error: error?.message })
+  if (error) throw error
+  dropCache(`jira:`)
+  return { ok: true }
+}
+
 const pin = ({ key, on }) => ({ pinned: watch.pin(String(key || ''), on === true) })
 
-module.exports = { links, whatsNew, seen, pin, accounts, addAccount, removeAccount, testAccount, issues, extract, mine }
+module.exports = { transitionsOf, act, setWrite, links, whatsNew, seen, pin, accounts, addAccount, removeAccount, testAccount, issues, extract, mine }

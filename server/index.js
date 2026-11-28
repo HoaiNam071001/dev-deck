@@ -167,10 +167,17 @@ async function api(req, res, url) {
       if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
       const body = await readBody(req)
       if (body.action === 'remove') return json(res, 200, jira.removeAccount(String(body.id || '')))
+      if (body.action === 'setWrite') return json(res, 200, jira.setWrite(body.id, body.on))
       if (body.action === 'test') return json(res, 200, await jira.testAccount(String(body.id || '')))
       return json(res, 200, await jira.addAccount(body))
     }
     if (url.pathname === '/api/jira/issues') return json(res, 200, await jira.issues({ keys: url.searchParams.getAll('key') }))
+    if (url.pathname === '/api/jira/transitions') return json(res, 200, await jira.transitionsOf({ key: url.searchParams.get('key') || '', account: url.searchParams.get('account') || '' }))
+    if (url.pathname === '/api/jira/act') {
+      if (req.method !== 'POST') return json(res, 405, { error: 'Chỉ nhận POST' })
+      if (!(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { error: 'Cần application/json' })
+      return json(res, 200, await jira.act(await readBody(req)))
+    }
     if (url.pathname === '/api/jira/links') return json(res, 200, await jira.links({ key: url.searchParams.get('key') || '' }))
     if (url.pathname === '/api/jira/new') return json(res, 200, await jira.whatsNew())
     if (url.pathname === '/api/jira/pins') return json(res, 200, { pinned: require('./jira/watch').pinned() })

@@ -296,3 +296,4 @@ export interface JiraEvent { kind: 'status' | 'assignee' | 'priority' | 'sprint'
 export interface JiraNewItem { issue: JiraIssue; pinned: boolean; events: JiraEvent[] }
 export interface JiraNew { items: JiraNewItem[]; errors: { accountId: string; name: string; error: string }[] }
 export interface JiraRepoLink { path: string; name: string; branches: string[]; suggested: boolean }
+export interface JiraTransition { id: string; name: string; to: string }

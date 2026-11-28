@@ -31,10 +31,10 @@ Lưu account giống Remotes (`server/remotes/store.js`): token mã hóa bằng 
 
 ## Giai đoạn 13c — Ghi (bật riêng từng account)
 
-- [ ] Chuyển trạng thái: lấy `/issue/{key}/transitions`, chọn một bước; gợi ý "chuyển sang In Review" khi tạo MR, "Done" khi MR merge (chỉ gợi ý, người dùng bấm mới làm)
-- [ ] Comment lên ticket (soạn rồi Gửi, giống trả lời thread ở 9d)
-- [ ] Ghi worklog: thời gian + ghi chú; (tùy chọn) gợi ý thời gian từ khoảng commit / phiên AI trên nhánh đó ([11](11-token-by-branch.md))
-- [ ] Mọi thao tác ghi vào `data/audit.log` (không ghi nội dung comment, chỉ độ dài); xác nhận hai bước khi bật ghi
+- [~] Chuyển trạng thái (xong; chưa có gợi ý "In Review" / "Done" theo MR): lấy `/issue/{key}/transitions`, chọn một bước; gợi ý "chuyển sang In Review" khi tạo MR, "Done" khi MR merge (chỉ gợi ý, người dùng bấm mới làm)
+- [x] Comment lên ticket (soạn rồi Gửi, giống trả lời thread ở 9d)
+- [~] Ghi worklog (xong thời gian `1h30m`; chưa gợi ý từ commit / phiên AI): thời gian + ghi chú; (tùy chọn) gợi ý thời gian từ khoảng commit / phiên AI trên nhánh đó ([11](11-token-by-branch.md))
+- [x] Mọi thao tác ghi vào `data/audit.log` (không ghi nội dung comment, chỉ độ dài); xác nhận hai bước khi bật ghi
 
 ## Giai đoạn 13d — Theo dõi thay đổi ticket (chỉ đọc, làm ngay sau 13a) *(người dùng yêu cầu 2026-11-27)*
 

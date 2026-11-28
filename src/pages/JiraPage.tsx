@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { api, useLoad } from '../api'
 import { setState, toast } from '../lib/store'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 import { JiraChip } from '../components/JiraChip'
 import { ErrorBanner, Spinner } from '../components/ui'
 
@@ -9,6 +10,7 @@ export function JiraPage() {
   const accounts = useLoad(api.jiraAccounts, [], 0, 'jiraAccounts')
   const hasAcc = (accounts.data?.length ?? 0) > 0
   const news = useLoad(async () => (hasAcc ? api.jiraNew() : { items: [], errors: [] }), [hasAcc], 0)
+  const [askWrite, setAskWrite] = useState<string | null>(null)
   const [pinKey, setPinKey] = useState('')
   const pin = async (key: string, on: boolean) => {
     try { await api.jiraPin(key, on); news.reload() } catch (x) { toast({ kind: 'err', title: 'Không ghim được', detail: (x as Error).message }) }
@@ -33,6 +35,11 @@ export function JiraPage() {
     } catch (x) { setErr((x as Error).message) }
     setBusy(false)
   }
+  const setWrite = async (id: string, on: boolean) => {
+    try { await api.setJiraWrite(id, on); accounts.reload(); toast({ kind: 'ok', title: on ? 'Đã bật thao tác ghi' : 'Đã tắt thao tác ghi' }) }
+    catch (x) { toast({ kind: 'err', title: 'Không đổi được', detail: (x as Error).message }); return false }
+    return true
+  }
   const remove = async (id: string) => {
     try { await api.removeJiraAccount(id); accounts.reload(); toast({ kind: 'ok', title: 'Đã xóa account Jira', detail: 'Token đã bị xóa khỏi máy.' }) }
     catch (x) { toast({ kind: 'err', title: 'Không xóa được', detail: (x as Error).message }) }
@@ -46,13 +53,19 @@ export function JiraPage() {
           <span className="text-[12px] text-fg-mute">Ticket giao cho bạn và ticket đã ghim, kèm thay đổi chưa xem. Chỉ đọc, không ghi gì lên Jira</span>
         </div>
       </header>
+      {askWrite && (
+        <ConfirmDialog title="Cho phép ghi lên Jira?" confirmLabel="Bật ghi" danger={false} onClose={() => setAskWrite(null)} onConfirm={async () => { const ok = await setWrite(askWrite, true); if (ok) setAskWrite(null); return ok }}>
+          <p className="text-[12.5px] leading-relaxed">DevDeck sẽ được chuyển trạng thái, gửi comment và ghi giờ làm trên ticket bằng token của account này. Mỗi thao tác đều ghi vào nhật ký (không lưu nội dung comment). Token cần quyền ghi trên Jira.</p>
+        </ConfirmDialog>
+      )}
       <div className="flex max-w-[860px] flex-col gap-4">
         {accounts.error && <ErrorBanner onRetry={accounts.reload}>{accounts.error}</ErrorBanner>}
         {(accounts.data ?? []).map((a) => (
           <div key={a.id} className="flex items-center gap-2 text-[12.5px]">
             <span className="font-semibold">{a.name}</span>
             <span className="text-fg-mute">{a.kind === 'cloud' ? 'Cloud' : 'Server / DC'} · {a.user} · …{a.tokenHint}</span>
-            <button className="btn ml-auto" onClick={() => void remove(a.id)}>Xóa</button>
+            <button className="btn ml-auto" aria-pressed={a.write} title={a.write ? 'Đang cho phép ghi: bấm để quay về chỉ đọc' : 'Bật chuyển trạng thái, comment, ghi giờ'} onClick={() => (a.write ? void setWrite(a.id, false) : setAskWrite(a.id))}>{a.write ? '✎ Đang cho ghi' : 'Chỉ đọc'}</button>
+            <button className="btn" onClick={() => void remove(a.id)}>Xóa</button>
           </div>
         ))}
 
