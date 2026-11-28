@@ -2,12 +2,13 @@ import { useState, type FormEvent } from 'react'
 import { api, useLoad } from '../api'
 import { setState, toast } from '../lib/store'
 import { ConfirmDialog } from '../components/ConfirmDialog'
-import { JiraChip } from '../components/JiraChip'
+import { JiraKey, JiraStatus } from '../components/JiraChip'
 import { ErrorBanner, Spinner } from '../components/ui'
 
 /** Trang Jira: ticket của tôi và đã ghim kèm thay đổi, account Jira. Chỉ đọc. */
 export function JiraPage() {
   const accounts = useLoad(api.jiraAccounts, [], 0, 'jiraAccounts')
+  const writable = new Set((accounts.data ?? []).filter((a) => a.write).map((a) => a.id))
   const hasAcc = (accounts.data?.length ?? 0) > 0
   const news = useLoad(async () => (hasAcc ? api.jiraNew() : { items: [], errors: [] }), [hasAcc], 0)
   const [askWrite, setAskWrite] = useState<string | null>(null)
@@ -84,13 +85,16 @@ export function JiraPage() {
             {news.data?.errors.map((e) => <div key={e.accountId} className="banner err">{e.name}: {e.error}</div>)}
             {news.data && !news.data.items.length && !news.data.errors.length && <span className="text-[12.5px] text-fg-mute">Không có ticket nào đang giao cho bạn hoặc đã ghim.</span>}
             {news.data?.items.map(({ issue: i, pinned, events }) => (
-              <div key={i.key} className="flex flex-col gap-1 border-t border-border pt-1.5 first:border-t-0 first:pt-0">
-                <div className="flex items-center gap-2 text-[12.5px]">
-                  <JiraChip issue={i} /><span className="min-w-0 truncate">{i.summary}</span>
-                  <button className={'ghost ml-auto flex size-6 flex-none items-center justify-center ' + (pinned ? 'text-behind' : 'text-fg-mute')} aria-pressed={pinned} title={pinned ? 'Bỏ ghim' : 'Ghim để theo dõi'} aria-label={(pinned ? 'Bỏ ghim ' : 'Ghim ') + i.key} onClick={() => void pin(i.key, !pinned)}>{pinned ? '★' : '☆'}</button>
+              <div key={i.key} className="flex flex-col gap-1 border-t border-border py-2 first:border-t-0">
+                <div className="grid grid-cols-[84px_minmax(0,1fr)_auto_26px] items-center gap-3 text-[13px]">
+                  <JiraKey issue={i} />
+                  <span className="truncate" title={i.summary}>{i.summary}</span>
+                  <JiraStatus issue={i} writable={writable.has(i.accountId)} onChanged={news.reload} />
+                  <button className={'ghost flex size-6 items-center justify-center ' + (pinned ? 'text-behind' : 'text-fg-mute')} aria-pressed={pinned} title={pinned ? 'Bỏ ghim' : 'Ghim để theo dõi'} aria-label={(pinned ? 'Bỏ ghim ' : 'Ghim ') + i.key} onClick={() => void pin(i.key, !pinned)}>{pinned ? '★' : '☆'}</button>
                 </div>
-                {events.map((e, n) => <div key={n} className="pl-3 text-[12px] text-fg-soft">{e.kind === 'comment' ? '💬 ' : '• '}{e.text}</div>)}
-                {events.length > 0 && <button className="btn sm self-start" onClick={() => void seen(i.key)}>Đánh dấu đã xem</button>}
+                {(i.assignee || i.priority || i.sprint) && <div className="pl-[96px] text-[11.5px] text-fg-mute">{[i.priority, i.sprint].filter(Boolean).join(' · ')}</div>}
+                {events.map((e, n) => <div key={n} className="pl-[96px] text-[12px] text-fg-soft">{e.kind === 'comment' ? '💬 ' : '• '}{e.text}</div>)}
+                {events.length > 0 && <button className="btn sm ml-[96px] self-start" onClick={() => void seen(i.key)}>Đánh dấu đã xem</button>}
               </div>
             ))}
           </section>
