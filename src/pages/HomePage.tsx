@@ -23,19 +23,6 @@ const hhmm = (iso: string) => {
 }
 const greeting = () => { const h = new Date().getHours(); return h < 11 ? 'Chào buổi sáng' : h < 14 ? 'Chào buổi trưa' : h < 18 ? 'Chào buổi chiều' : 'Chào buổi tối' }
 
-function QuickCard({ to, icon, tint, title, keyHint, desc, foot }: { to: '/git' | '/ai'; icon: string; tint: string; title: string; keyHint: string; desc: string; foot: React.ReactNode }) {
-  return (
-    <Link to={to} className="flex gap-3.5 rounded-[10px] border border-border bg-surface p-4 !text-fg hover:border-border-strong hover:bg-[#1F2124]">
-      <span className={'flex size-10 flex-none items-center justify-center rounded-[9px] ' + tint}><Icon name={icon} size={20} /></span>
-      <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="flex items-center gap-2"><span className="text-[14px] font-semibold">{title}</span><span className="ml-auto font-mono text-xs text-fg-mute">{keyHint}</span></span>
-        <span className="text-[12px] text-fg-mute">{desc}</span>
-        <span className="mt-1 text-sm text-fg-mute">{foot}</span>
-      </span>
-    </Link>
-  )
-}
-
 const Panel = ({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) => (
   <section className="panel min-w-0">
     <div className="flex items-center justify-between pr-3.5"><h2 className="panel-h">{title}</h2>{action}</div>
@@ -137,6 +124,8 @@ export function HomePage() {
           <Link to="/jobs" className="!text-fg"><Kpi label="Job" value={jobs.data ? jobList.length : (jobs.error ? '!' : '…')} sub={jobs.data && !jobs.data.supported ? 'chưa hỗ trợ hệ điều hành này' : `${jobList.filter((j) => j.kind === 'dev').length} dev · ${jobList.filter((j) => j.kind === 'test').length} test`} /></Link>
         </KpiStrip>
 
+        <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-3.5">
+          <div className="flex min-w-0 flex-col gap-3.5">
         <Panel title={`Cần xử lý${inbox.length ? ` · ${inbox.length}` : ''}`} action={done.length ? <button className="link-btn pr-0" onClick={() => setDone([])}>Hiện lại {done.length} mục đã ẩn</button> : undefined}>
           {inbox.slice(0, 8).map((i) => (
             <div key={i.id} className="flex items-center gap-2.5 border-t border-line px-3.5 py-2 text-[12px]">
@@ -149,14 +138,6 @@ export function HomePage() {
           {!inbox.length && <p className="empty border-t border-line">{repos.length ? 'Không có việc nào cần xử lý.' : 'Chưa quét Git nên chưa biết repo nào cần xử lý. Mở Git để quét.'}</p>}
         </Panel>
 
-        <section aria-label="Mở nhanh" className="grid grid-cols-2 gap-3">
-          <QuickCard to="/git" icon="git" tint="bg-accent/12 text-accent" title="Git" keyHint={MOD + '3'} desc="Quản lý repo, nhánh, commit, push / pull"
-            foot={scan ? <>Lần quét trước: <span className="text-fg-soft">{relTime(scan.at)}</span> · {scan.repos} repo trong {scan.roots.length} thư mục</> : 'Chưa quét lần nào'} />
-          <QuickCard to="/ai" icon="ai" tint="bg-ahead/12 text-ahead" title="AI" keyHint={MOD + '2'} desc="Token Claude Code, Codex, Gemini, Antigravity theo thời gian, model, dự án"
-            foot={<>Đọc log <span className="text-fg-soft">Claude Code · Codex · Gemini CLI · Antigravity</span> khi mở</>} />
-        </section>
-
-        <div className="grid grid-cols-2 gap-3.5">
           <Panel title="Repo đã ghim" action={<Link to="/git" className="text-[12px]">Xem trạng thái ở Git →</Link>}>
             {pinned.slice(0, 5).map((p) => (
               <div key={p} className="flex items-center gap-2.5 border-t border-line px-3.5 py-2">
@@ -171,6 +152,18 @@ export function HomePage() {
               </div>
             ))}
             {!pinned.length && <p className="empty border-t border-line">Ghim repo ở trang Git để mở nhanh từ đây.</p>}
+          </Panel>
+          </div>
+          <div className="flex min-w-0 flex-col gap-3.5">
+          <Panel title="Job đang chạy" action={<Link to="/jobs" className="text-[12px]">Mở Job →</Link>}>
+            {jobList.slice(0, 5).map((j) => (
+              <div key={j.pid} className="flex items-center gap-2.5 border-t border-line px-3.5 py-2 text-[12px]">
+                <Chip tone={j.kind === 'test' ? 'ahead' : 'ok'}>{j.kind === 'test' ? 'Test' : j.kind === 'dev' ? 'Dev' : j.kind === 'build' ? 'Build' : 'Khác'}</Chip>
+                <span className="min-w-0 flex-1 truncate">{j.name}</span>
+                <span className="font-mono text-sm text-fg-mute">{j.ports[0] ? ':' + j.ports[0].port : 'PID ' + j.pid}</span>
+              </div>
+            ))}
+            {!jobList.length && <p className="empty border-t border-line">{jobs.data && !jobs.data.supported ? 'Hệ điều hành này chưa hỗ trợ xem job.' : 'Không có job nào đang chạy.'}</p>}
           </Panel>
 
           <Panel title="Thao tác gần đây">
@@ -187,7 +180,12 @@ export function HomePage() {
             })}
             {!activity.length && (ov.loading && !ov.data ? <div className="border-t border-line"><div className="spinner-wrap compact"><span className="spinner" aria-hidden="true" /></div></div> : <p className="empty border-t border-line">Chưa có thao tác nào.</p>)}
           </Panel>
+          </div>
+        </div>
 
+        <details className="rounded-[10px] border border-border bg-surface">
+          <summary className="cursor-pointer px-3.5 py-2.5 text-[13px] font-semibold">Thiết lập nhanh <span className="font-normal text-fg-mute">thư mục làm việc, thông báo, phím tắt</span></summary>
+          <div className="grid grid-cols-2 gap-3.5 p-3.5 pt-0">
           <Panel title="Thư mục làm việc" action={<button className="btn sm !border !border-border-strong" onClick={addFolder}>+ Thêm thư mục</button>}>
             <div className="flex flex-col gap-1.5 px-3.5 pt-0.5 pb-3">
               {known.map((r) => (
@@ -212,7 +210,8 @@ export function HomePage() {
               {keys.map(([label, k]) => <div key={label} className="flex h-6 items-center justify-between text-[12px] text-fg-soft">{label}<Kbd>{k}</Kbd></div>)}
             </div>
           </Panel>
-        </div>
+          </div>
+        </details>
       </div>
     </>
   )
