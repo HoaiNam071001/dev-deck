@@ -5,6 +5,7 @@ import { RemoteAccountModal } from '../components/RemoteAccountModal'
 import { RemoteBranches } from '../components/RemoteBranches'
 import { RemoteQueue } from '../components/RemoteQueue'
 import { RemotePipelines } from '../components/RemotePipelines'
+import { DetailDock, useDockMode } from '../components/DetailDock'
 import { RemoteDetailModal } from '../components/RemoteDetail'
 import { ApprovalChip, CiChip, copyCrLink, CR_WORD, crRef, PROVIDER_LABEL, ProviderTag, ThreadChip, unresolved } from '../components/RemoteBits'
 import { RefreshInfo, useRefreshMs } from '../components/RefreshInfo'
@@ -101,6 +102,7 @@ function GroupBlock({ g, by, collapsed, pinned, expanded, onToggle, onPin, onHid
 
 export function RemotesPage() {
   const [rms, sec, setSec] = useRefreshMs('remotes', 60)
+  const [dockMode, setDockMode] = useDockMode('remotes', 'modal')
   const accounts = useLoad(api.remoteAccounts, [], 0, 'remoteAccounts')
   const [account, setAccount] = usePersisted<string>('remotes.account', 'all', (v) => typeof v === 'string')
   const [scope, setScope] = usePersisted<CrScope>('remotes.scope', 'all', (v) => SCOPES.includes(v as CrScope))
@@ -289,7 +291,6 @@ export function RemotesPage() {
       </SideSlot>
 
       {adding && <RemoteAccountModal onClose={() => setAdding(false)} onAdded={(a) => { accounts.reload(); setAccount(a.id) }} />}
-      {picked && <RemoteDetailModal key={picked.key} cr={picked} onClose={() => setOpenKey(null)} />}
 
       <StatusSlot>
         <span className="sb-item"><span className={'dot ' + (crs.loading ? 'busy' : 'ok')} />{crs.loading ? 'Đang tải…' : `${list.length} MR / PR`}</span>
@@ -298,7 +299,8 @@ export function RemotesPage() {
         <RefreshInfo at={crs.at} ms={crs.ms} loading={crs.loading} sec={sec} onSec={setSec} />
       </StatusSlot>
 
-      <div className="page" style={{ padding: '24px 28px', gap: 16 }}>
+      <div className="relative flex min-h-0 flex-1">
+      <div className="page min-w-0" style={{ padding: '24px 28px', gap: 16 }}>
         <header className="page-h !items-start">
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <h1>Remotes</h1>
@@ -392,6 +394,12 @@ export function RemotesPage() {
             {shown.length > 0 && <div className="text-[12px] text-fg-mute">{shown.length} mục · {[...new Set(shown.map((c) => PROVIDER_LABEL[c.provider]))].join(', ')} · bấm một dòng để xem thread review</div>}
           </>
         )}
+      </div>
+      {picked && (
+        <DetailDock pageKey="remotes" mode={dockMode} open onClose={() => setOpenKey(null)} label={'Chi tiết ' + picked.title} minW={420} maxW={900} defW={560}>
+          <RemoteDetailModal key={picked.key} cr={picked} onClose={() => setOpenKey(null)} dock={{ mode: dockMode, onMode: setDockMode }} />
+        </DetailDock>
+      )}
       </div>
     </>
   )

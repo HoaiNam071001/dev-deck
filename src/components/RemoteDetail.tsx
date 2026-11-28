@@ -7,6 +7,7 @@ import { useBranchTokens } from '../lib/useBranchTokens'
 import { ShortNum } from './ShortNum'
 import type { ChangeRequest, ReviewThread } from '../types'
 import { CollapsibleMarkdown, Markdown } from './Markdown'
+import { DockButtons, type DockMode } from './DetailDock'
 import { Modal } from './Modal'
 import { ApprovalChip, CiChip, ciTone, copyCrLink, CR_WORD, crRef, PROVIDER_LABEL, ProviderTag, safeUrl, ThreadChip } from './RemoteBits'
 import { Chip, ErrorBanner, Icon, Segmented, Spinner } from './ui'
@@ -139,7 +140,7 @@ function LocalJobs({ cr }: { cr: ChangeRequest }) {
   )
 }
 
-export function RemoteDetailModal({ cr, onClose }: { cr: ChangeRequest; onClose: () => void }) {
+export function RemoteDetailModal({ cr, onClose, dock }: { cr: ChangeRequest; onClose: () => void; /** Có = hiện trong khung `DetailDock` (không bọc Modal) */ dock?: { mode: DockMode; onMode: (m: DockMode) => void } }) {
   const d = useLoad(() => api.changeRequest(cr.key), [cr.key], 30000, 'cr:' + cr.key)
   const [filter, setFilter] = useState<ThreadFilter>('open')
   const accounts = useLoad(api.remoteAccounts, [], 0, 'remoteAccounts')
@@ -159,15 +160,15 @@ export function RemoteDetailModal({ cr, onClose }: { cr: ChangeRequest; onClose:
   const shown = filter === 'open' ? open : filter === 'resolved' ? threads.filter((t) => t.resolved) : threads
   const url = safeUrl(cr.url)
 
-  return (
-    <Modal onClose={onClose} titleId="cr-title" size="wide" header={
+  const title = (
       <h2 id="cr-title" className="flex min-w-0 items-center gap-2">
         <ProviderTag provider={cr.provider} />
         <span className="truncate">{cr.title}</span>
         <span className="mono flex-none text-[12px] font-normal text-fg-mute">{crRef(cr)}</span>
         <JiraChips texts={[cr.title, cr.source]} />
       </h2>
-    }>
+  )
+  const body = (
       <div className="flex flex-col">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-border px-4 py-2.5 text-[12px] text-fg-mute">
           <span>{cr.project}</span>
@@ -246,6 +247,21 @@ export function RemoteDetailModal({ cr, onClose }: { cr: ChangeRequest; onClose:
           </aside>
         </div>
       </div>
+  )
+  if (dock) {
+    return (
+      <>
+        <div className="flex flex-none items-center gap-2 border-b border-border px-3.5 py-2.5 text-[14px] font-semibold">
+          <div className="min-w-0 flex-1">{title}</div>
+          <DockButtons mode={dock.mode} onMode={dock.onMode} onClose={onClose} />
+        </div>
+        <div className="min-h-0 flex-1 overflow-auto">{body}</div>
+      </>
+    )
+  }
+  return (
+    <Modal onClose={onClose} titleId="cr-title" size="wide" header={title}>
+      {body}
     </Modal>
   )
 }
