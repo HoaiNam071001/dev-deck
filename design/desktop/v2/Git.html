@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevDeck · Git (thiết kế v2)</title>
+<!-- File độc lập: mở thẳng bằng trình duyệt. Số liệu là dữ liệu mẫu. -->
+<link rel="stylesheet" href="shell.css">
+<style>
+.git{display:flex;min-height:0}
+.list{display:flex;flex-direction:column;min-height:0;min-width:0;flex:1}
+.lt{display:flex;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.lt .search{flex:1}
+.rows{flex:1;overflow:auto;padding:6px 8px 14px}
+.rp{display:grid;grid-template-columns:8px minmax(0,1fr) auto 26px;gap:10px;align-items:center;padding:9px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+.rp:hover{background:var(--surface)}
+.rp.on{background:var(--selected);border-color:var(--primary)}
+.rp .nm{font-weight:600;font-size:13px;display:flex;align-items:center;gap:8px;min-width:0}
+.rp .nm .pinm{color:var(--behind);font-size:11px}
+.rp .l2{display:flex;align-items:center;gap:8px;margin-top:4px;min-width:0;font-size:11.5px;color:var(--fg-mute)}
+.rp .l2 .msg{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.rp .cnt{display:flex;gap:8px;font-family:var(--font-mono);font-size:12px;align-items:center}
+.rp .err{color:var(--danger);font-size:12px}
+.rp .more{opacity:0}.rp:hover .more,.rp.on .more{opacity:1}
+.grp-l{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-mute);font-weight:600;padding:10px 10px 4px}
+.detail{width:440px;border-left:1px solid var(--line);background:var(--surface-2);display:flex;flex-direction:column;min-height:0}
+.dh{padding:12px 14px 10px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--line)}
+.dh .t{display:flex;align-items:center;gap:6px}
+.dh .t h2{margin:0;font-size:15.5px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dh .p{font-family:var(--font-mono);font-size:11px;color:var(--fg-mute);margin-top:-4px}
+.sync{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+.sync .br{max-width:190px}
+.sync .r{margin-left:auto;display:flex;gap:6px}
+.pane{flex:1;overflow:auto;min-height:0}
+.sec-h{display:flex;align-items:center;gap:8px;padding:10px 14px 6px;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--fg-mute)}
+.sec-h .btn{margin-left:auto;text-transform:none;letter-spacing:0}
+.fr{display:grid;grid-template-columns:18px minmax(0,1fr) auto 26px;gap:8px;align-items:center;padding:5px 14px;font-size:12.5px;cursor:pointer}
+.fr:hover{background:var(--raised)}
+.fr.open{background:var(--selected)}
+.fr .s{font-family:var(--font-mono);font-weight:700;font-size:11px;text-align:center}
+.fr .s.M{color:var(--behind)}.fr .s.A{color:var(--accent)}.fr .s.D{color:var(--danger)}.fr .s.U{color:var(--fg-mute)}
+.fr .f{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:rtl;text-align:left}
+.fr .f b{font-weight:500;color:var(--fg)}
+.fr .f span{color:var(--fg-mute)}
+.fr .pm{font-family:var(--font-mono);font-size:11px}
+.fr .act{opacity:0}.fr:hover .act{opacity:1}
+.diff{margin:2px 14px 8px;border:1px solid var(--border);border-radius:6px;font-family:var(--font-mono);font-size:11.5px;overflow:hidden;background:var(--bg-chrome)}
+.diff div{padding:1px 10px;white-space:pre}
+.diff .h{color:var(--purple);background:rgba(177,140,242,.07)}
+.diff .a{background:rgba(48,207,67,.09);color:#A6EBAE}
+.diff .d{background:rgba(247,140,140,.09);color:#F5B5B5}
+.commit{border-top:1px solid var(--line);padding:10px 14px;display:flex;flex-direction:column;gap:8px;background:var(--surface-2)}
+.commit textarea{width:100%}
+.commit .row{display:flex;align-items:center;gap:8px;font-size:12px}
+.commit .row label{display:flex;align-items:center;gap:6px;color:var(--fg-mute);white-space:nowrap}
+.detail .tabs{padding:0 6px}
+.detail .tab{padding:9px 7px;font-size:12px;gap:4px}
+.detail:not(.in-modal) .commit .hint{display:none}
+.commit .row input{accent-color:var(--primary);margin:0}
+.li{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line);font-size:12.5px}
+.li:hover{background:rgba(255,255,255,.02)}
+.li .grow{flex:1;min-width:0}
+.li .sub{font-size:11.5px;color:var(--fg-mute);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li .hash{font-family:var(--font-mono);font-size:11.5px;color:var(--ahead)}
+.gdot{width:9px;height:9px;border-radius:50%;border:2px solid var(--accent);flex:none}
+.cur{background:rgba(48,207,67,.06)}
+.newbr{display:flex;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.script{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;padding:9px 14px;border-bottom:1px solid var(--line);align-items:center}
+.script .nm{font-family:var(--font-mono);font-weight:600;font-size:12.5px}
+.script .cmd{font-family:var(--font-mono);font-size:11px;color:var(--fg-mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.script.run .nm:after{content:" ● đang chạy";color:var(--accent);font-family:var(--font-ui);font-weight:500;font-size:11px}
+</style>
+</head>
+<body>
+<p class="note"><span><b>Git</b> · danh sách repo + khung chi tiết cố định bên phải.</span><span><kbd>↑</kbd><kbd>↓</kbd> chọn repo · <kbd>⌘Enter</kbd> commit · <kbd>⌘P</kbd> push · bấm file để xem diff</span></p>
+
+<div class="win">
+  <div class="content">
+    <div class="git">
+      <aside class="side">
+        <div class="scroll">
+          <h4>Thư mục quét<button class="icon-btn" id="addRoot" title="Thêm thư mục"></button></h4>
+          <div id="roots"></div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding:10px 9px 0;font-size:12px;color:var(--fg-mute)">
+            <label style="display:flex;align-items:center;justify-content:space-between">Độ sâu quét<input class="in mono" type="number" value="4" min="1" max="8" style="width:52px;height:24px;padding:0 6px"></label>
+            <button class="btn primary" id="rescan" style="justify-content:center"></button>
+          </div>
+          <h4>Đã ghim</h4>
+          <div id="pins"></div>
+        </div>
+      </aside>
+
+      <section class="list" aria-label="Danh sách repo">
+        <div class="lt">
+          <div class="seg" id="filters"></div>
+          <div class="search"><span id="mag"></span><input class="in" id="q" placeholder="Lọc repo, nhánh…" style="height:28px"></div>
+          <button class="icon-btn bd" id="sortBtn" title="Sắp xếp"></button>
+          <button class="icon-btn bd" id="bulkBtn" title="Thao tác hàng loạt"></button>
+          <button class="icon-btn bd" id="newBtn" title="Tạo repo / Clone"></button>
+        </div>
+        <div class="rows" id="rows"></div>
+      </section>
+
+      <aside class="detail" id="detail"></aside>
+    </div>
+  </div>
+</div>
+
+<script src="shell.js"></script>
+<script>
+const { icon, esc, toast, $, menu } = DD
+DD.mount({
+  page: 'git',
+  status: '<span class="live">Quét lúc <span class="mono" style="color:var(--fg-soft)">14:02:11</span> · 1.4s</span><span id="sbN"></span><span class="r"><span>↑↓ chọn repo · ⌘Enter commit</span><span>Tự làm mới 30 giây</span></span>',
+  commands: [{ label: 'Fetch tất cả', run: () => fetchAll() }, { label: 'Pull tất cả…', run: () => toast('Pull tất cả', 'Chỉ pull repo sạch, đang lệch') }, { label: 'Quét lại', key: '⌘R', run: () => $('#rescan').click() }, { label: 'Push repo đang chọn', key: '⌘P', run: () => push() }],
+})
+$('#addRoot').innerHTML = icon('plus', 'sm'); $('#rescan').innerHTML = icon('refresh', 'sm') + 'Quét lại'
+$('#mag').outerHTML = icon('search', 'sm'); $('#sortBtn').innerHTML = icon('sort'); $('#bulkBtn').innerHTML = icon('dots'); $('#newBtn').innerHTML = icon('plus')
+
+const F = (s, p, a, d) => ({ s, p, a, d })
+const REPOS = [
+  { n: 'shop-web', root: '~/work/acme', b: 'fix/PG-482-lam-tron-ma-giam-gia', j: ['PG-482', 'prog'], up: 1, dn: 0, last: ['Sửa làm tròn khi áp nhiều mã', '2 giờ'], pinned: true,
+    staged: [F('M', 'src/checkout/discount.ts', 18, 6)], unstaged: [F('M', 'src/checkout/total.ts', 4, 2), F('A', 'src/checkout/__tests__/expired.test.ts', 42, 0), F('U', 'notes/todo.md', 3, 0)],
+    branches: [['fix/PG-482-lam-tron-ma-giam-gia', 1, 0, 'PG-482', true], ['main', 0, 2], ['feature/PG-430-webp', 0, 0, 'PG-430'], ['origin/release/2.3', 0, 0, '', false, true]], stash: [['WIP trên main: thử cache giá', '3 ngày']], scripts: [['dev', 'vite --port 5173', true], ['test', 'vitest run'], ['lint', 'eslint src'], ['build', 'tsc -b && vite build']] },
+  { n: 'admin-portal', root: '~/work/acme', b: 'feature/PG-490-loc-theo-kho', j: ['PG-490', 'prog'], up: 2, dn: 0, last: ['Thêm select kho vào bộ lọc', '35 phút'], pinned: true, staged: [], unstaged: [],
+    branches: [['feature/PG-490-loc-theo-kho', 2, 0, 'PG-490', true], ['main', 0, 0]], stash: [], scripts: [['dev', 'next dev'], ['test', 'jest']] },
+  { n: 'api-gateway', root: '~/work/acme', b: 'main', up: 0, dn: 3, last: ['Bump go 1.24', 'hôm qua'], pinned: true, staged: [], unstaged: [F('M', 'config/routes.yaml', 2, 1)],
+    branches: [['main', 0, 3, '', true]], stash: [], scripts: [] },
+  { n: 'dev-deck', root: '~/Documents/job', b: 'main', up: 0, dn: 0, last: ['Hoàn thiện: lệnh Thông báo AI ở palette', '1 giờ'], pinned: true, staged: [], unstaged: [],
+    branches: [['main', 0, 0, '', true]], stash: [], scripts: [['dev', 'vite'], ['test', 'vitest'], ['release', 'node scripts/release.js']] },
+  { n: 'billing-service', root: '~/work/acme', b: 'main', up: 0, dn: 0, last: ['Fix rounding in VAT', '4 ngày'], staged: [], unstaged: [], branches: [['main', 0, 0, '', true]], stash: [], scripts: [] },
+  { n: 'design-system', root: '~/work/acme', b: 'feat/tokens-v3', up: 0, dn: 1, last: ['Thêm token màu dark', '2 ngày'], staged: [], unstaged: [], branches: [['feat/tokens-v3', 0, 1, '', true], ['main', 0, 0]], stash: [], scripts: [['storybook', 'storybook dev']] },
+  { n: 'mobile-app', root: '~/work/acme', b: '(detached)', up: 0, dn: 0, last: ['v3.2.0', '2 tuần'], err: 'HEAD tách rời ở v3.2.0', staged: [], unstaged: [], branches: [['main', 0, 0]], stash: [], scripts: [] },
+  { n: 'oss-lib', root: '~/oss', b: 'main', up: 0, dn: 0, last: ['docs: readme', '1 tháng'], staged: [], unstaged: [], branches: [['main', 0, 0, '', true]], stash: [], scripts: [['test', 'node --test']] },
+  { n: 'notes', root: '~/Documents/job', b: 'main', up: 0, dn: 0, last: ['cập nhật', '5 ngày'], staged: [], unstaged: [], branches: [['main', 0, 0, '', true]], stash: [], scripts: [] },
+]
+const COMMITS = [['a1f3c92', 'Sửa làm tròn khi áp nhiều mã', 'Nguyễn Nam', '2 giờ', true], ['9be0412', 'Thêm test cho mã giảm giá theo %', 'Nguyễn Nam', '3 giờ'], ['77c1d0e', 'Merge branch main', 'Lê Hà', 'hôm qua'], ['3d9a6b1', 'PG-430: chuyển ảnh sang WebP', 'Lê Hà', '2 ngày'], ['e02f5aa', 'Tách module checkout', 'Phạm Quân', '3 ngày']]
+const S = { filter: 'all', q: '', root: '', sel: 'shop-web', tab: 'changes', open: 'src/checkout/discount.ts', sort: 0 }
+const SORTS = ['tên', 'commit mới nhất', 'nhiều thay đổi nhất']
+const ch = (r) => r.staged.length + r.unstaged.length
+const tone = (r) => r.err ? 'var(--danger)' : ch(r) ? 'var(--behind)' : r.up ? 'var(--ahead)' : r.dn ? 'var(--behind)' : 'var(--accent)'
+const T = { all: () => true, dirty: (r) => ch(r) > 0, sync: (r) => r.up || r.dn, clean: (r) => !ch(r) && !r.up && !r.dn && !r.err }
+const R = (n) => REPOS.find((r) => r.n === n)
+
+function shown() {
+  const q = S.q.toLowerCase()
+  const l = REPOS.filter((r) => (!S.root || r.root === S.root) && T[S.filter](r) && (!q || (r.n + r.b).toLowerCase().includes(q)))
+  const ord = [(a, b) => a.n.localeCompare(b.n), () => 0, (a, b) => ch(b) - ch(a)][S.sort]
+  return l.sort(ord).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
+}
+
+function renderSide() {
+  const roots = [...new Set(REPOS.map((r) => r.root))]
+  $('#roots').innerHTML = `<button class="ri ${!S.root ? 'on' : ''}" data-root=""><span class="ic">${icon('folder', 'sm')}</span><span class="lb">Tất cả</span><span class="n">${REPOS.length}</span></button>` +
+    roots.map((r) => `<button class="ri ${S.root === r ? 'on' : ''}" data-root="${r}" title="${r}"><span class="ic">${icon('folder', 'sm')}</span><span class="lb mono" style="font-size:12px">${r.split('/').pop()}</span><span class="x" title="Bỏ khỏi danh sách quét">×</span><span class="n">${REPOS.filter((x) => x.root === r).length}</span></button>`).join('')
+  $('#pins').innerHTML = REPOS.filter((r) => r.pinned).map((r) => `<button class="ri" data-sel="${r.n}"><span class="ic"><span class="sdot" style="background:${tone(r)}"></span></span><span class="lb">${r.n}</span></button>`).join('') || '<div class="hint" style="padding:0 9px">Ghim repo từ menu ⋯</div>'
+}
+function renderList() {
+  const base = REPOS.filter((r) => !S.root || r.root === S.root)
+  $('#filters').innerHTML = [['all', 'Tất cả'], ['dirty', 'Thay đổi'], ['sync', 'Lệch'], ['clean', 'Sạch']].map(([id, l]) => `<button data-f="${id}" class="${S.filter === id ? 'on' : ''}">${l}<span class="n">${base.filter(T[id]).length}</span></button>`).join('')
+  const l = shown()
+  const row = (r) => `<div class="rp ${S.sel === r.n ? 'on' : ''}" data-sel="${r.n}">
+    <span class="sdot" style="background:${tone(r)}"></span>
+    <div style="min-width:0"><div class="nm">${r.n}${r.pinned ? `<span class="pinm" title="Đã ghim">★</span>` : ''}</div>
+      <div class="l2"><span class="br">${icon('branch', 'sm')}${esc(r.b)}</span>${r.j ? `<span class="jk ${r.j[1]}">${r.j[0]}</span>` : ''}<span class="msg">${esc(r.last[0])}</span></div></div>
+    <div style="text-align:right">${r.err ? `<div class="err">⚠ ${esc(r.err)}</div>` : `<div class="cnt">${ch(r) ? `<span class="c-down" title="Tệp đã sửa">● ${ch(r)}</span>` : ''}${r.up ? `<span class="c-up" title="Cần push">↑${r.up}</span>` : ''}${r.dn ? `<span class="c-down" title="Cần pull">↓${r.dn}</span>` : ''}${!ch(r) && !r.up && !r.dn ? '<span class="c-ok">✓</span>' : ''}</div>`}<div class="mute" style="font-size:11px;margin-top:3px">${r.last[1]}</div></div>
+    <button class="icon-btn more" data-more="${r.n}" title="Thao tác">${icon('dots', 'sm')}</button></div>`
+  const pinned = l.filter((r) => r.pinned), rest = l.filter((r) => !r.pinned)
+  $('#rows').innerHTML = !l.length ? '<div class="empty"><b>Không có repo khớp</b>Thử bộ lọc khác hoặc thêm thư mục quét.</div>'
+    : (pinned.length && rest.length ? `<div class="grp-l">Đã ghim</div>${pinned.map(row).join('')}<div class="grp-l">Khác · sắp theo ${SORTS[S.sort]}</div>${rest.map(row).join('')}` : l.map(row).join(''))
+  $('#sbN').textContent = `${l.length} / ${REPOS.length} repo`
+}
+
+function fileRow(f, staged) {
+  const dir = f.p.includes('/') ? f.p.slice(0, f.p.lastIndexOf('/') + 1) : ''
+  const name = f.p.slice(dir.length)
+  return `<div class="fr ${S.open === f.p ? 'open' : ''}" data-file="${f.p}"><span class="s ${f.s}" title="${{ M: 'Đã sửa', A: 'Mới', D: 'Đã xoá', U: 'Chưa theo dõi' }[f.s]}">${f.s === 'U' ? '?' : f.s}</span>
+    <span class="f">&lrm;<span>${esc(dir)}</span><b>${esc(name)}</b></span><span class="pm"><span class="c-ok">+${f.a}</span> <span class="c-bad">−${f.d}</span></span>
+    <button class="icon-btn act" data-stage="${f.p}" data-on="${staged ? 0 : 1}" title="${staged ? 'Bỏ stage' : 'Stage'}" style="width:24px;height:24px">${staged ? '−' : '+'}</button></div>
+    ${S.open === f.p ? `<div class="diff"><div class="h">@@ -12,7 +12,9 @@ export function applyDiscounts(</div><div>   let total = subtotal</div><div class="d">-  total = total * (1 - pct) - fixed</div><div class="a">+  const afterPct = roundVnd(total * (1 - pct))</div><div class="a">+  total = Math.max(0, afterPct - fixed)</div><div>   return total</div></div>` : ''}`
+}
+
+function renderDetail() {
+  const r = R(S.sel)
+  if (!r) { $('#detail').innerHTML = '<div class="empty" style="margin:auto"><b>Chọn một repo</b>để xem thay đổi, nhánh, commit.</div>'; return }
+  const tabs = [['changes', 'Thay đổi', ch(r)], ['branches', 'Nhánh', r.branches.length], ['commits', 'Commit', ''], ['stash', 'Stash', r.stash.length], ['worktree', 'Worktree', 1], ['remotes', 'Remote', 1], ['scripts', 'Scripts', r.scripts.length]]
+  let pane = '', foot = ''
+  if (S.tab === 'changes') {
+    pane = !ch(r) ? '<div class="empty"><b>✓ Không có thay đổi</b>Cây làm việc sạch.</div>'
+      : `<div class="sec-h">Đã stage · ${r.staged.length}${r.staged.length ? '<button class="btn sm ghost" data-allstage="0">Bỏ stage hết</button>' : ''}</div>${r.staged.map((f) => fileRow(f, true)).join('') || '<div class="hint" style="padding:2px 14px 8px">Chưa stage tệp nào. Bấm + ở tệp bên dưới.</div>'}
+         <div class="sec-h">Chưa stage · ${r.unstaged.length}${r.unstaged.length ? '<button class="btn sm ghost" data-allstage="1">Stage hết</button>' : ''}</div>${r.unstaged.map((f) => fileRow(f, false)).join('')}`
+    foot = `<div class="commit"><textarea class="in" id="msg" rows="2" placeholder="${r.j ? r.j[0] + ': ' : ''}Mô tả thay đổi…"></textarea>
+      <div class="row"><label><input type="checkbox"> Amend</label><span class="hint" style="margin-left:auto">${r.staged.length} tệp sẽ commit</span>
+      <button class="btn" id="commitPush" style="margin-left:auto" ${r.staged.length ? '' : 'disabled'}>Commit & Push</button><button class="btn primary" id="commit" ${r.staged.length ? '' : 'disabled'}>Commit <kbd style="background:transparent;border-color:rgba(0,0,0,.25);color:var(--on-primary)">⌘↵</kbd></button></div></div>`
+  } else if (S.tab === 'branches') {
+    pane = `<div class="newbr"><input class="in mono" style="flex:1" placeholder="Tên nhánh mới"><input class="in mono" style="width:120px" placeholder="từ HEAD"><button class="btn">Tạo</button></div>
+      <div class="newbr" style="padding-top:0;border:0;margin-top:8px"><div class="search" style="flex:1">${icon('search', 'sm')}<input class="in mono" placeholder="Lọc nhánh…" style="height:28px"></div></div>` +
+      r.branches.map(([n, up, dn, j, cur, remote]) => `<div class="li ${cur ? 'cur' : ''}"><span style="color:${cur ? 'var(--accent)' : 'var(--fg-mute)'}">${icon('branch', 'sm')}</span>
+        <div class="grow"><div class="mono" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(n)}</div><div class="sub">${cur ? '<span class="c-ok">đang mở</span> · ' : ''}${remote ? 'chỉ có trên remote' : 'origin/' + esc(n.replace('origin/', ''))}${up ? ` · <span class="c-up">↑${up}</span>` : ''}${dn ? ` · <span class="c-down">↓${dn}</span>` : ''}</div></div>
+        ${j ? `<span class="jk">${j}</span>` : ''}${cur ? '' : `<button class="btn sm" data-co="${esc(n)}">Chuyển</button>`}<button class="icon-btn" style="width:24px;height:24px" data-bmenu="${esc(n)}">${icon('dots', 'sm')}</button></div>`).join('')
+  } else if (S.tab === 'commits') {
+    pane = COMMITS.map(([h, m, a, t, mine], i) => `<div class="li"><span class="gdot" style="${i ? 'border-color:var(--border-pop)' : ''}"></span><div class="grow"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m)}</div><div class="sub"><span class="hash">${h}</span> · ${a} · ${t}${i < r.up ? ' · <span class="c-up">chưa push</span>' : ''}</div></div><button class="icon-btn" style="width:24px;height:24px" title="Chép hash">${icon('copy', 'sm')}</button></div>`).join('')
+  } else if (S.tab === 'stash') {
+    pane = r.stash.length ? r.stash.map(([m, t], i) => `<div class="li"><span class="mono mute">#${i}</span><div class="grow"><div>${esc(m)}</div><div class="sub">${t} trước · 3 tệp</div></div><button class="btn sm">Áp dụng</button><button class="btn sm">Pop</button><button class="btn sm ghost danger">Xoá</button></div>`).join('') : '<div class="empty"><b>Không có stash</b>Khi chuyển nhánh lúc còn thay đổi, DevDeck sẽ cất vào đây.</div>'
+  } else if (S.tab === 'worktree') {
+    pane = `<div class="li cur"><span>${icon('folder', 'sm')}</span><div class="grow"><div class="mono" style="font-size:12px">${r.root}/${r.n}</div><div class="sub">chính · ${esc(r.b)}</div></div></div><div style="padding:12px 14px"><button class="btn sm">${icon('plus', 'sm')}Thêm worktree…</button></div>`
+  } else if (S.tab === 'remotes') {
+    pane = `<div class="li"><span>${icon('merge', 'sm')}</span><div class="grow"><div><b>origin</b></div><div class="sub mono">git@gitlab.acme.dev:shop/${r.n}.git</div></div><button class="btn sm">${icon('ext', 'sm')}Mở web</button></div>`
+  } else {
+    pane = r.scripts.length ? r.scripts.map(([n, c, run]) => `<div class="script ${run ? 'run' : ''}"><div style="min-width:0"><div class="nm">${n}</div><div class="cmd">${esc(c)}</div></div>${run ? `<button class="btn sm danger" data-run="${n}">${icon('stop', 'sm')}Dừng</button>` : `<button class="btn sm" data-run="${n}">${icon('play', 'sm')}Chạy</button>`}</div>`).join('') : '<div class="empty"><b>Không có package.json</b>Repo này không có npm script.</div>'
+  }
+  $('#detail').innerHTML = `<div class="dh">
+    <div class="t"><span class="sdot" style="background:${tone(r)}"></span><h2>${r.n}</h2>
+      <button class="icon-btn ${r.pinned ? 'on' : ''}" data-pin title="${r.pinned ? 'Bỏ ghim' : 'Ghim lên đầu'}">${r.pinned ? '★' : '☆'}</button>
+      <button class="icon-btn" title="Mở VS Code (⌘O)" data-open="VS Code">${icon('code')}</button><button class="icon-btn" title="Mở Terminal (⌘T)" data-open="Terminal">${icon('terminal')}</button>
+      <button class="icon-btn" title="Thêm" data-more="${r.n}">${icon('dots')}</button>${dockApi.buttons()}</div>
+    <div class="p">${r.root}/${r.n}</div>
+    <div class="sync"><span class="br">${icon('branch', 'sm')}${esc(r.b)}</span>${r.j ? `<a class="jk" href="Jira.html" style="text-decoration:none">${r.j[0]}</a>` : ''}
+      <span class="mono" style="font-size:12px">${r.up ? `<span class="c-up">↑${r.up}</span> ` : ''}${r.dn ? `<span class="c-down">↓${r.dn}</span>` : ''}${!r.up && !r.dn ? '<span class="mute">đã đồng bộ</span>' : ''}</span>
+      <div class="r"><button class="btn sm ghost" data-sync="Fetch" title="Fetch">${icon('refresh', 'sm')}</button><button class="btn sm ${r.dn ? 'primary' : ''}" data-sync="Pull">${icon('down', 'sm')}Pull</button><button class="btn sm ${r.up && !r.dn ? 'primary' : ''}" data-sync="Push">${icon('up', 'sm')}Push</button></div></div>
+  </div>
+  <div class="tabs">${tabs.map(([id, l, n]) => `<button class="tab ${S.tab === id ? 'on' : ''}" data-tab="${id}">${l}${n !== '' ? `<span class="n">${n}</span>` : ''}</button>`).join('')}</div>
+  <div class="pane">${pane}</div>${foot}`
+}
+const render = () => { renderSide(); renderList(); renderDetail() }
+const dockApi = DD.dock($('#detail'), { key: 'git.detail', onClose: () => { S.sel = null; render() } })
+dockApi.onToggle(() => render())
+DD.resizable($('#detail'), { key: 'git.detail', edge: 'left', min: 380, max: 720, def: 440 })
+
+function push() { const r = R(S.sel); if (!r.up) { toast('Không có gì để push', r.n); return } const n = r.up; r.up = 0; render(); toast('Đã push ' + n + ' commit', `${r.n} · ${r.b} → origin`) }
+function fetchAll() { toast(`Đang fetch ${REPOS.length} repo…`); setTimeout(() => toast(`Fetch xong ${REPOS.length}/${REPOS.length} repo`, '1 repo có commit mới: design-system'), 900) }
+function commit(andPush) {
+  const r = R(S.sel); const m = $('#msg').value.trim()
+  if (!m) { $('#msg').focus(); toast('Cần nội dung commit', '', { kind: 'warn' }); return }
+  const n = r.staged.length; r.staged = []; r.up++; r.last = [m, 'vừa xong']; S.open = ''
+  render(); toast(`Đã commit ${n} tệp`, m)
+  if (andPush) push()
+}
+
+document.addEventListener('click', (e) => {
+  let el
+  if ((el = e.target.closest('[data-more]'))) {
+    e.stopPropagation(); const r = R(el.dataset.more)
+    menu(el, [{ label: r.pinned ? 'Bỏ ghim' : 'Ghim lên đầu', run: () => { r.pinned = !r.pinned; render() } }, { label: 'Mở VS Code', key: '⌘O' }, { label: 'Mở Terminal', key: '⌘T' }, { label: 'Hiện trong Finder' }, { label: 'Chép đường dẫn', key: '⌘⇧C', run: () => toast('Đã chép đường dẫn', r.root + '/' + r.n) }, 'sep', { label: 'Xoá repo khỏi máy…', danger: true }])
+    return
+  }
+  if ((el = e.target.closest('[data-stage]'))) {
+    e.stopPropagation(); const r = R(S.sel); const on = el.dataset.on === '1'
+    const from = on ? r.unstaged : r.staged, to = on ? r.staged : r.unstaged
+    const i = from.findIndex((f) => f.p === el.dataset.stage); to.push(from.splice(i, 1)[0]); renderDetail(); renderList(); return
+  }
+  if ((el = e.target.closest('[data-allstage]'))) { const r = R(S.sel); if (el.dataset.allstage === '1') { r.staged.push(...r.unstaged); r.unstaged = [] } else { r.unstaged.push(...r.staged); r.staged = [] } renderDetail(); return }
+  if ((el = e.target.closest('[data-file]'))) { S.open = S.open === el.dataset.file ? '' : el.dataset.file; renderDetail(); return }
+  if ((el = e.target.closest('[data-sel]'))) { S.sel = el.dataset.sel; S.open = R(S.sel).staged[0]?.p || ''; render(); dockApi.open(); return }
+  if ((el = e.target.closest('[data-root]'))) { if (e.target.classList.contains('x')) { toast('Đã bỏ thư mục khỏi danh sách quét', el.dataset.root); return } S.root = el.dataset.root; render(); return }
+  if ((el = e.target.closest('[data-f]'))) { S.filter = el.dataset.f; renderList(); return }
+  if ((el = e.target.closest('[data-tab]'))) { S.tab = el.dataset.tab; renderDetail(); return }
+  if ((el = e.target.closest('[data-sync]'))) {
+    const r = R(S.sel), k = el.dataset.sync
+    if (k === 'Push') return push()
+    if (k === 'Pull') { if (ch(r)) { toast('Không pull được', 'Còn thay đổi chưa commit: commit hoặc stash trước', { kind: 'err' }); return } const n = r.dn; r.dn = 0; render(); toast(n ? `Đã pull ${n} commit` : 'Đã cập nhật', r.n); return }
+    toast('Fetch xong', r.n); return
+  }
+  if ((el = e.target.closest('[data-pin]'))) { const r = R(S.sel); r.pinned = !r.pinned; render(); return }
+  if ((el = e.target.closest('[data-open]'))) { toast('Đã mở ' + el.dataset.open, S.sel); return }
+  if ((el = e.target.closest('[data-co]'))) { const r = R(S.sel); r.branches.forEach((b) => (b[4] = b[0] === el.dataset.co)); r.b = el.dataset.co; r.j = null; render(); toast('Đã chuyển nhánh', el.dataset.co); return }
+  if ((el = e.target.closest('[data-bmenu]'))) { e.stopPropagation(); menu(el, [{ label: 'Đổi tên…' }, { label: 'Tạo MR / PR…' }, { label: 'Merge vào nhánh đang mở' }, 'sep', { label: 'Xoá nhánh…', danger: true }]); return }
+  if ((el = e.target.closest('[data-run]'))) { const r = R(S.sel); const s = r.scripts.find((x) => x[0] === el.dataset.run); s[2] = !s[2]; renderDetail(); toast(s[2] ? 'Đã chạy npm run ' + s[0] : 'Đã dừng ' + s[0], s[2] ? 'Theo dõi ở trang Job' : '', { actions: s[2] ? '<button class="btn sm" onclick="location.href=\'Jobs.html\'">Mở Job</button>' : '' }); return }
+  if (e.target.id === 'commit') return commit(false)
+  if (e.target.id === 'commitPush') return commit(true)
+  if (e.target.closest('#rescan')) { toast('Đang quét 3 thư mục…'); return }
+  if (e.target.closest('#addRoot')) { toast('Chọn thư mục', 'Mở hộp thoại chọn thư mục của hệ thống'); return }
+  if ((el = e.target.closest('#sortBtn'))) { S.sort = (S.sort + 1) % 3; renderList(); toast('Sắp xếp theo ' + SORTS[S.sort]); return }
+  if ((el = e.target.closest('#bulkBtn'))) { e.stopPropagation(); menu(el, [{ label: 'Chọn nhiều repo…' }, 'sep', { label: 'Fetch tất cả', run: fetchAll }, { label: 'Pull tất cả…' }, { label: 'Dọn nhánh đã merge…' }]); return }
+  if ((el = e.target.closest('#newBtn'))) { e.stopPropagation(); menu(el, [{ label: 'Tạo repo mới…' }, { label: 'Clone từ URL…' }]); return }
+})
+$('#q').oninput = (e) => { S.q = e.target.value; renderList() }
+document.addEventListener('keydown', (e) => {
+  const mod = e.metaKey || e.ctrlKey
+  if (mod && e.key === 'Enter' && $('#commit')) { e.preventDefault(); commit(false) }
+  if (mod && e.key.toLowerCase() === 'p' && S.sel) { e.preventDefault(); push() }
+  if (e.target.matches('input,textarea')) return
+  if (e.key === 'Escape' && dockApi.mode === 'panel' && S.sel) { S.sel = null; render() }
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault(); const l = shown(), i = l.findIndex((r) => r.n === S.sel)
+    const n = l[Math.max(0, Math.min(l.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))]; if (n) { S.sel = n.n; S.open = ''; render() }
+  }
+})
+render()
+</script>
+</body>
+</html>

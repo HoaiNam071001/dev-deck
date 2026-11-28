@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevDeck · Job (thiết kế v2)</title>
+<!-- File độc lập: mở thẳng bằng trình duyệt. Số liệu là dữ liệu mẫu; tiến độ test tự chạy để xem hiệu ứng. -->
+<link rel="stylesheet" href="shell.css">
+<style>
+.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+.jgrp{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.grp{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+.grp h3{margin:0;font-size:13px;font-weight:600}
+.grp .p{font-family:var(--font-mono);font-size:11.5px;color:var(--fg-mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.job{display:grid;grid-template-columns:10px minmax(0,1.1fr) minmax(200px,1fr) 86px auto;gap:16px;align-items:center;padding:10px 14px;cursor:pointer}
+.job+.job{border-top:1px solid var(--line)}
+.job:hover{background:#1E2738}
+.job.on{background:var(--selected);box-shadow:inset 3px 0 0 var(--primary)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(48,207,67,.16)}
+.dot.idle{background:var(--behind);box-shadow:0 0 0 3px rgba(242,166,90,.16)}
+.job .t{display:flex;align-items:center;gap:8px;min-width:0}
+.job .t b{font-size:13.5px;font-weight:600}
+.job .cmd{display:flex;align-items:center;gap:4px;margin-top:3px;font-family:var(--font-mono);font-size:11.5px;color:var(--fg-mute);min-width:0}
+.job .cmd span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prog .top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.prog .bar{height:6px}
+.ports{display:flex;gap:6px;flex-wrap:wrap}
+.ports a{font-family:var(--font-mono);font-size:12px;text-decoration:none;padding:2px 8px;border-radius:5px;background:rgba(90,169,245,.12)}
+.mem{text-align:right;line-height:1.25}
+.mem b{display:block;font-family:var(--font-mono);font-weight:500;font-size:13px}
+.mem small{font-size:11px;color:var(--fg-mute)}
+.detail{width:520px;border-left:1px solid var(--line);background:var(--surface-2);display:flex;flex-direction:column;min-height:0}
+.dh{padding:12px 16px;display:flex;flex-direction:column;gap:6px;border-bottom:1px solid var(--line)}
+.dh .t{display:flex;align-items:center;gap:8px}
+.dh h2{margin:0;font-size:15px;font-weight:600;flex:1;min-width:0}
+.dh .meta{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:12px;color:var(--fg-mute)}
+.dh .meta b{color:var(--fg-soft);font-weight:500}
+.pane{flex:1;overflow:auto;min-height:0}
+.files{display:flex;flex-direction:column}
+.fl{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 16px;font-size:12.5px;border-bottom:1px solid var(--line)}
+.fl .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-mono);font-size:12px}
+.fl.done{opacity:.65}
+.err{margin:0 16px 8px 40px;padding:8px 10px;border-radius:6px;background:rgba(247,140,140,.08);border:1px solid rgba(247,140,140,.25);font-family:var(--font-mono);font-size:11.5px;color:#F5B5B5;white-space:pre-wrap}
+.sumbar{display:flex;gap:14px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:12px;align-items:center}
+.dfoot{border-top:1px solid var(--line);padding:10px 16px;display:flex;gap:8px;align-items:center}
+</style>
+</head>
+<body>
+<p class="note"><span><b>Job</b> · test, build, dev server đang chạy trong thư mục theo dõi.</span><span>Bấm thẻ để xem tiến trình / test · nút ở góc khung chi tiết đổi qua lại panel ↔ cửa sổ nổi</span></p>
+
+<div class="win">
+  <div class="content">
+    <aside class="side">
+      <div class="scroll">
+        <h4>Thư mục theo dõi<button class="icon-btn" id="addF" title="Thêm thư mục"></button></h4>
+        <div id="folders"></div>
+        <div class="hint" style="padding:8px 9px">Đang dùng chung thư mục quét của trang Git.</div>
+        <h4>Loại</h4>
+        <div id="kinds"></div>
+      </div>
+      <div class="foot"><span class="hint">Tự quét mỗi 10 giây · 5 giây khi mở chi tiết</span></div>
+    </aside>
+
+    <div class="split fill">
+      <main class="pg fill">
+        <header class="pg-h">
+          <div><h1>Job</h1><div class="sub">Đang chạy trong các thư mục theo dõi, dù chạy tay hay do công cụ khác khởi động</div></div>
+          <div class="r">
+            <button class="btn" id="setup"></button>
+            <button class="btn" id="refresh"></button>
+          </div>
+        </header>
+        <div class="pg-body">
+          <div class="kpis" id="kpis"></div>
+          <div id="list" style="display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+      </main>
+      <aside class="detail" id="detail"></aside>
+    </div>
+  </div>
+</div>
+
+<script src="shell.js"></script>
+<script>
+const { icon, esc, toast, $ } = DD
+DD.mount({
+  page: 'jobs',
+  status: '<span class="live busy" id="sbL"></span><span id="sbM"></span><span class="r"><span>Quét 0.2s</span><span>Tự làm mới 10 giây</span></span>',
+  commands: [{ label: 'Dừng tất cả job…', run: () => toast('Cần xác nhận từng job', '', { kind: 'warn' }) }, { label: 'Cài tiến độ test…', run: () => $('#setup').click() }],
+})
+$('#addF').innerHTML = icon('plus', 'sm'); $('#setup').innerHTML = icon('download', 'sm') + 'Cài tiến độ test…'; $('#refresh').innerHTML = icon('refresh', 'sm') + 'Làm mới'
+
+const FILES = ['ComplianceDeductionsPage.test.tsx', 'discount.test.ts', 'total.test.ts', 'expired.test.ts', 'cart.test.ts', 'coupon.test.ts', 'shipping.test.ts', 'tax.test.ts', 'invoice.test.ts', 'refund.test.ts']
+const JOBS = [
+  { pid: 48210, repo: 'shop-web', root: '~/work/acme', br: 'fix/PG-482-lam-tron-ma-giam-gia', kind: 'test', cmd: 'npx vitest run ComplianceDeductionsPage.test.tsx +9 file', mem: 723, start: Date.now() - 43e3, done: 3, fail: 1, run: 2, total: 10 },
+  { pid: 39102, repo: 'shop-web', root: '~/work/acme', br: 'fix/PG-482-lam-tron-ma-giam-gia', kind: 'dev', cmd: 'vite --port 5173', mem: 188, start: Date.now() - 3.1 * 36e5, ports: [5173] },
+  { pid: 31877, repo: 'admin-portal', root: '~/work/acme', br: 'feature/PG-490-loc-theo-kho', kind: 'dev', cmd: 'next dev', mem: 212, start: Date.now() - 2.2 * 36e5, ports: [3000, 9229] },
+  { pid: 50211, repo: 'dev-deck', root: '~/Documents/job', br: 'main', kind: 'build', cmd: 'tsc -b && vite build', mem: 96, start: Date.now() - 9e3, idle: true, procs: [2, 1, 3] },
+]
+const KIND = { test: ['Test', 'ok'], dev: ['Dev server', 'up'], build: ['Build', 'purple'] }
+const S = { folder: '', kind: '', sel: null, tab: 'test', confirm: null }
+const ramC = (m) => m >= 1000 ? 'var(--danger)' : m >= 600 ? 'var(--behind)' : 'var(--fg)'
+const mb = (m) => m >= 1000 ? (m / 1024).toFixed(1) + ' GB' : m + ' MB'
+const dur = (ms) => { const s = Math.floor(ms / 1e3); return s < 60 ? s + ' giây' : s < 3600 ? Math.floor(s / 60) + ' phút ' + (s % 60) + 's' : Math.floor(s / 3600) + ' giờ ' + Math.floor(s % 3600 / 60) + ' phút' }
+const J = (pid) => JOBS.find((j) => j.pid === pid)
+const shown = () => JOBS.filter((j) => (!S.folder || j.root === S.folder) && (!S.kind || j.kind === S.kind))
+
+function progress(j) {
+  if (j.kind === 'test') {
+    const ok = j.done - j.fail, pct = Math.round((j.done / j.total) * 100)
+    return `<div class="prog" data-open-test="${j.pid}" title="Mở danh sách file test"><div class="top"><span><b>${j.done}/${j.total}</b> file · ${pct}%${j.fail ? ` · <span class="c-bad">${j.fail} lỗi</span>` : ''}</span><span class="mute">${j.done >= j.total ? 'xong' : j.run + ' đang chạy'}</span></div>
+      <div class="bar"><i style="width:${ok * 10}%;background:var(--accent)"></i><i style="width:${j.fail * 10}%;background:var(--danger)"></i><i style="width:${Math.min(j.run, j.total - j.done) * 10}%;background:var(--behind);opacity:.7"></i></div></div>`
+  }
+  if (j.ports) return `<div class="ports">${j.ports.map((p) => `<a href="#" onclick="event.stopPropagation();DD.toast('Mở trình duyệt','http://localhost:${p}');return false">localhost:${p} ↗</a>`).join('')}</div>`
+  return `<span class="mute" style="font-size:12px">Không có tiến độ · <span class="mono"><span class="c-ok">${j.procs[0]}</span> chạy · <span class="c-down">${j.procs[1]}</span> chờ · ${j.procs[2]} xong</span></span>`
+}
+
+function render() {
+  const l = shown()
+  const folders = [...new Set(JOBS.map((j) => j.root))]
+  $('#folders').innerHTML = `<button class="ri ${!S.folder ? 'on' : ''}" data-folder=""><span class="ic">${icon('folder', 'sm')}</span><span class="lb">Tất cả</span><span class="n">${JOBS.length}</span></button>` +
+    folders.map((f) => `<button class="ri ${S.folder === f ? 'on' : ''}" data-folder="${f}"><span class="ic">${icon('folder', 'sm')}</span><span class="lb mono" style="font-size:12px">${f.split('/').pop()}</span><span class="x">×</span><span class="n">${JOBS.filter((j) => j.root === f).length}</span></button>`).join('')
+  $('#kinds').innerHTML = [['', 'Mọi loại'], ['test', 'Test'], ['dev', 'Dev server'], ['build', 'Build']].map(([k, l2]) => `<button class="ri ${S.kind === k ? 'on' : ''}" data-kind="${k}"><span class="lb">${l2}</span><span class="n">${JOBS.filter((j) => !k || j.kind === k).length}</span></button>`).join('')
+  const mem = l.reduce((a, j) => a + j.mem, 0), t = JOBS[0]
+  $('#kpis').innerHTML = `<div class="kpi"><div class="l">Đang chạy</div><div class="v">${l.length}</div><div class="s">${l.filter((j) => j.kind === 'dev').length} dev server · ${l.filter((j) => j.kind === 'test').length} test</div></div>
+    <div class="kpi"><div class="l">RAM</div><div class="v" style="color:${ramC(mem)}">${mb(mem)}</div><div class="s">nhiều nhất: shop-web test ${mb(t.mem)}</div></div>
+    <div class="kpi"><div class="l">Test</div><div class="v">${t.done}/${t.total}</div><div class="s"><span class="c-bad">${t.fail} file lỗi</span> · ${dur(Date.now() - t.start)}</div></div>
+    <div class="kpi"><div class="l">Cổng đang mở</div><div class="v" style="font-size:17px;margin-top:6px">:5173 :3000</div><div class="s">bấm vào thẻ để mở trình duyệt</div></div>`
+  const repos = [...new Set(l.map((j) => j.repo))]
+  $('#list').innerHTML = repos.map((r) => { const js = l.filter((j) => j.repo === r); return `<section class="jgrp"><div class="grp"><h3>${r}</h3><span class="br">${icon('branch', 'sm')}${esc(js[0].br)}</span><span class="p">${js[0].root}/${r}</span><span class="chip" style="margin-left:auto">${js.length} job</span></div>` +
+    js.map((j) => `<div class="job ${S.sel === j.pid ? 'on' : ''}" data-sel="${j.pid}"><span class="dot ${j.idle ? 'idle' : ''}" title="${j.idle ? 'Đang chờ' : 'Đang chạy'}"></span>
+      <div style="min-width:0"><div class="t"><b>${KIND[j.kind][0]}</b><span class="chip ${KIND[j.kind][1]}">PID ${j.pid}</span></div><div class="cmd"><span title="${esc(j.cmd)}">${esc(j.cmd)}</span><button class="icon-btn" style="width:20px;height:20px" data-copy title="Chép lệnh">${icon('copy', 'sm')}</button></div></div>
+      <div>${progress(j)}</div>
+      <div class="mem"><b style="color:${ramC(j.mem)}">${mb(j.mem)}</b><small>${dur(Date.now() - j.start)}</small></div>
+      <div style="display:flex;gap:6px">${S.confirm === j.pid ? `<button class="btn" data-cancel>Huỷ</button><button class="btn danger-solid" data-stop="${j.pid}">Xác nhận dừng</button>` : `<button class="btn danger" data-stop="${j.pid}" title="Dừng job cùng toàn bộ tiến trình con">${icon('x', 'sm')}Dừng</button>`}</div></div>`).join('') + '</section>' }).join('')
+    || '<div class="empty"><b>Không có job nào đang chạy</b>Chạy test / build / dev server trong thư mục theo dõi, chúng sẽ hiện ở đây.</div>'
+  $('#sbL').textContent = `${l.length} job đang chạy`; $('#sbM').textContent = mb(mem) + ' RAM'
+  renderDetail()
+}
+
+function renderDetail() {
+  const j = J(S.sel)
+  if (!j) { $('#detail').innerHTML = `<div class="dh"><div class="t"><h2 class="mute" style="font-weight:500">Chi tiết job</h2>${dockApi.buttons()}</div></div><div class="empty" style="margin:auto"><b>Chọn một job</b>để xem tiến trình con và từng file test.</div>`; return }
+  const tabs = [['test', 'Test', j.kind === 'test' ? j.total : ''], ['procs', 'Tiến trình', 4]].filter(([id]) => id !== 'test' || j.kind === 'test')
+  if (j.kind !== 'test') S.tab = 'procs'
+  let pane = ''
+  if (S.tab === 'test') {
+    pane = `<div class="sumbar"><span class="c-ok">✓ ${j.done - j.fail} qua</span><span class="c-bad">✕ ${j.fail} lỗi</span><span class="c-down">● ${Math.min(j.run, j.total - j.done)} đang chạy</span><span class="mute">${Math.max(0, j.total - j.done - j.run)} chờ</span><div style="margin-left:auto" class="seg"><button class="on">Tất cả</button><button>Lỗi</button></div></div><div class="files">` +
+      FILES.slice(0, j.total).map((f, i) => {
+        const st = i < j.done ? (i === 1 ? 'fail' : 'ok') : i < j.done + j.run ? 'run' : 'wait'
+        const ic = { ok: '<span class="c-ok">✓</span>', fail: '<span class="c-bad">✕</span>', run: '<span class="c-down">●</span>', wait: '<span class="mute">○</span>' }[st]
+        return `<div class="fl ${st === 'ok' ? 'done' : ''}">${ic}<span class="n">src/checkout/__tests__/${f}</span><span class="mute mono" style="font-size:11px">${st === 'ok' || st === 'fail' ? (0.4 + i * .3).toFixed(1) + 's' : st === 'run' ? 'đang chạy' : ''}</span></div>` +
+          (st === 'fail' ? `<div class="err">AssertionError: expected 179999 to be 180000\n  at discount.test.ts:42:18</div>` : '')
+      }).join('') + '</div>'
+  } else {
+    pane = `<table class="tbl"><thead><tr><th>PID</th><th>Tiến trình</th><th class="num">CPU</th><th class="num">RAM</th><th>Trạng thái</th></tr></thead><tbody>
+      ${[[j.pid, 'node', 12, Math.round(j.mem * .2), 'ok'], [j.pid + 7, 'vitest worker #1', 88, Math.round(j.mem * .4), 'ok'], [j.pid + 9, 'vitest worker #2', 64, Math.round(j.mem * .35), 'ok'], [j.pid + 12, 'esbuild', 0, Math.round(j.mem * .05), 'idle']]
+        .map(([p, n, c, m, s]) => `<tr><td class="mono mute">${p}</td><td class="mono">${n}</td><td class="num">${c}%</td><td class="num">${m} MB</td><td>${s === 'ok' ? '<span class="chip ok"><span class="d"></span>chạy</span>' : '<span class="chip down"><span class="d"></span>chờ</span>'}</td></tr>`).join('')}</tbody></table>`
+  }
+  $('#detail').innerHTML = `<div class="dh"><div class="t"><span class="dot ${j.idle ? 'idle' : ''}"></span><h2>${j.repo} · ${KIND[j.kind][0]}</h2>${dockApi.buttons()}</div>
+    <div class="mono mute" style="font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(j.cmd)}">${esc(j.cmd)}</div>
+    <div class="meta"><span>PID <b class="mono">${j.pid}</b></span><span>RAM <b style="color:${ramC(j.mem)}">${mb(j.mem)}</b></span><span>Chạy <b>${dur(Date.now() - j.start)}</b></span><span class="br">${esc(j.br)}</span></div></div>
+    <div class="tabs">${tabs.map(([id, l, n]) => `<button class="tab ${S.tab === id ? 'on' : ''}" data-tab="${id}">${l}${n ? `<span class="n">${n}</span>` : ''}</button>`).join('')}</div>
+    <div class="pane">${pane}</div>
+    <div class="dfoot"><button class="btn sm" data-copy>${icon('copy', 'sm')}Chép lệnh</button><button class="btn sm" onclick="location.href='Git.html'">${icon('git', 'sm')}Mở repo</button><button class="btn sm danger" style="margin-left:auto" data-stop="${j.pid}">${icon('x', 'sm')}Dừng job</button></div>`
+}
+
+const dockApi = DD.dock($('#detail'), { key: 'jobs.detail', def: 'modal', onClose: () => { S.sel = null; render() } })
+dockApi.onToggle(render)
+DD.resizable($('#detail'), { key: 'jobs.detail', edge: 'left', min: 400, max: 760, def: 520 })
+
+document.addEventListener('click', (e) => {
+  let el
+  if ((el = e.target.closest('[data-copy]'))) { e.stopPropagation(); toast('Đã chép lệnh'); return }
+  if ((el = e.target.closest('[data-cancel]'))) { e.stopPropagation(); S.confirm = null; render(); return }
+  if ((el = e.target.closest('[data-stop]'))) {
+    e.stopPropagation(); const pid = +el.dataset.stop
+    if (S.confirm !== pid) { S.confirm = pid; render(); return }
+    const j = J(pid); JOBS.splice(JOBS.indexOf(j), 1); S.confirm = null; if (S.sel === pid) { S.sel = null; dockApi.close() } render()
+    toast('Đã dừng job', `${j.repo} (PID ${pid}) · giải phóng ≈ ${mb(j.mem)}`); return
+  }
+  if ((el = e.target.closest('[data-open-test]'))) { e.stopPropagation(); S.sel = +el.dataset.openTest; S.tab = 'test'; render(); dockApi.open(); return }
+  if ((el = e.target.closest('[data-sel]'))) { S.sel = +el.dataset.sel; S.tab = J(S.sel).kind === 'test' ? 'test' : 'procs'; render(); dockApi.open(); return }
+  if ((el = e.target.closest('[data-tab]'))) { S.tab = el.dataset.tab; renderDetail(); return }
+  if ((el = e.target.closest('[data-folder]'))) { if (e.target.classList.contains('x')) { toast('Đã bỏ thư mục', el.dataset.folder); return } S.folder = el.dataset.folder; render(); return }
+  if ((el = e.target.closest('[data-kind]'))) { S.kind = el.dataset.kind; render(); return }
+  if (e.target.closest('#setup')) toast('Cài reporter tiến độ test', 'Chọn project vitest để xem tiến độ từng file')
+  if (e.target.closest('#refresh')) toast('Đã quét lại', `${JOBS.length} job`)
+})
+
+// Giả lập tiến độ test
+setInterval(() => {
+  const t = JOBS.find((j) => j.kind === 'test'); if (!t || t.done >= t.total) return
+  t.done++; t.mem += 14
+  if (t.done >= t.total) { t.run = 0; toast('Test xong: shop-web', `${t.total - t.fail}/${t.total} file qua · ${t.fail} lỗi`, { kind: t.fail ? 'err' : '', actions: `<button class="btn sm" data-sel="${t.pid}">Xem kết quả</button>` }) }
+  render()
+}, 4000)
+render()
+</script>
+</body>
+</html>

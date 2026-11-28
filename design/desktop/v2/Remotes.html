@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevDeck · Remotes (thiết kế v2)</title>
+<!-- File độc lập: mở thẳng bằng trình duyệt. Số liệu là dữ liệu mẫu. -->
+<link rel="stylesheet" href="shell.css">
+<style>
+.kpis{grid-template-columns:repeat(5,minmax(0,1fr))}
+.kpi{cursor:pointer}.kpi:hover{border-color:var(--border-pop)}
+.kpi.on{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary) inset}
+.grp{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.grp-h{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--line);font-size:13px}
+.grp-h b{font-weight:600}
+.grp-h .r{margin-left:auto;display:flex;gap:2px;align-items:center}
+.cr{display:grid;grid-template-columns:minmax(0,1fr) auto 70px;gap:12px;align-items:center;padding:10px 14px;border-top:1px solid var(--line);cursor:pointer}
+.cr:first-of-type{border-top:0}
+.cr:hover{background:#1E2738}
+.cr.on{background:var(--selected);box-shadow:inset 2px 0 0 var(--primary)}
+.cr .t{display:flex;align-items:center;gap:8px;min-width:0}
+.cr .t span.tt{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cr .m{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:11.5px;color:var(--fg-mute);min-width:0;white-space:nowrap}
+.cr .chips{display:flex;gap:4px}
+.cr .when{text-align:right;font-size:11.5px;color:var(--fg-mute)}
+.acc{display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:6px;font-size:12.5px;cursor:pointer}
+.acc:hover{background:var(--raised)}
+.acc.on{background:var(--selected);box-shadow:inset 2px 0 0 var(--primary)}
+.acc .lb{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ri .dots{display:flex;gap:3px}
+.ri .star{border:0;background:none;color:var(--fg-mute);cursor:pointer;padding:0 2px;font-size:12px}
+.ri .star.on{color:var(--behind)}
+.detail{width:560px;border-left:1px solid var(--line);background:var(--surface-2);display:flex;flex-direction:column;min-height:0}
+.dh{padding:12px 16px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--line)}
+.dh .t{display:flex;align-items:flex-start;gap:6px}
+.dh h2{margin:0;font-size:15px;font-weight:600;flex:1;min-width:0;line-height:1.35}
+.dh .meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--fg-mute)}
+.statgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.sg{border:1px solid var(--border);border-radius:8px;padding:7px 10px;background:var(--surface);font-size:11.5px;color:var(--fg-mute)}
+.sg b{display:block;margin-top:2px;font-size:12.5px;font-weight:600}
+.pane{flex:1;overflow:auto;min-height:0;padding:12px 16px;display:flex;flex-direction:column;gap:10px}
+.th{border:1px solid var(--border);border-radius:8px;background:var(--surface);overflow:hidden}
+.th.res{opacity:.6}
+.th-h{display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--line);font-size:11.5px;color:var(--fg-mute);font-family:var(--font-mono)}
+.th-h .r{margin-left:auto;font-family:var(--font-ui)}
+.cm{display:grid;grid-template-columns:22px 1fr;gap:8px;padding:8px 12px;font-size:12.5px}
+.cm+.cm{border-top:1px dashed var(--line)}
+.cm .w{font-size:12px}.cm .w b{font-weight:600}.cm .w span{color:var(--fg-mute);margin-left:6px;font-size:11px}
+.cm .x{color:var(--fg-soft);margin-top:2px}
+.reply{display:flex;gap:6px;padding:8px 12px;border-top:1px solid var(--line);background:var(--surface-2)}
+.reply input{flex:1}
+.stages{display:flex;align-items:center;gap:4px}
+.stg{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:11px;font-size:11.5px;border:1px solid var(--border)}
+.stg.ok{color:var(--accent);border-color:rgba(48,207,67,.35)}.stg.bad{color:var(--danger);border-color:rgba(247,140,140,.4)}.stg.run{color:var(--behind);border-color:rgba(242,166,90,.4)}.stg.wait{color:var(--fg-mute)}
+.stages .ln{width:10px;height:1px;background:var(--border-pop)}
+.dfoot{border-top:1px solid var(--line);padding:10px 16px;display:flex;gap:8px;align-items:center}
+.q{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:11px 14px;border-top:1px solid var(--line);cursor:pointer}
+.q:first-child{border-top:0}
+.q:hover{background:#1E2738}
+.q .wait{font-family:var(--font-mono);font-size:13px;font-weight:600;text-align:center}
+.q .wait small{display:block;font-size:10px;font-family:var(--font-ui);color:var(--fg-mute);font-weight:400}
+</style>
+</head>
+<body>
+<p class="note"><span><b>Remotes</b> · MR / PR GitLab và GitHub, hàng đợi review, nhánh, pipeline.</span><span>Bấm ô chỉ số để lọc nhanh · chi tiết đổi panel ↔ cửa sổ nổi</span></p>
+
+<div class="win">
+  <div class="content">
+    <aside class="side">
+      <div class="scroll">
+        <h4>Account<button class="icon-btn" id="addAcc" title="Thêm account GitLab / GitHub"></button></h4>
+        <div id="accs"></div>
+        <h4>Project</h4>
+        <div id="projs"></div>
+      </div>
+      <div class="foot"><button class="ri" id="hidden" style="height:28px"><span class="lb mute">Project đã ẩn</span><span class="n">2</span></button></div>
+    </aside>
+
+    <div class="split fill">
+      <main class="pg fill">
+        <header class="pg-h">
+          <div><h1>Remotes</h1><div class="sub" id="sub">Mặc định chỉ đọc · bật ghi riêng từng account để resolve, trả lời, chạy lại pipeline</div></div>
+          <div class="r"><button class="icon-btn bd" id="refresh" title="Tải lại"></button></div>
+        </header>
+        <div class="pg-body">
+          <div class="seg" id="tabs" style="align-self:flex-start"></div>
+          <div id="view" style="display:flex;flex-direction:column;gap:12px"></div>
+        </div>
+      </main>
+      <aside class="detail" id="detail"></aside>
+    </div>
+  </div>
+</div>
+
+<script src="shell.js"></script>
+<script>
+const { icon, esc, toast, $, av } = DD
+DD.mount({
+  page: 'remotes',
+  status: '<span class="live">2 account</span><span>6 project · 14 MR / PR mở</span><span class="r"><span>Tự làm mới 60 giây</span><span>Thông báo MR mới / CI lỗi: bật</span></span>',
+  commands: [{ label: 'Hàng đợi review', run: () => { S.tab = 'queue'; render() } }, { label: 'Pipeline lỗi', run: () => { S.tab = 'pipes'; render() } }],
+})
+$('#addAcc').innerHTML = icon('plus', 'sm'); $('#refresh').innerHTML = icon('refresh')
+
+const ACCS = [{ id: 'gl', name: 'GitLab Acme', kind: 'GitLab', write: true }, { id: 'gh', name: 'GitHub', kind: 'GitHub', write: false }]
+const PROJS = [{ k: 'shop/shop-web', acc: 'gl', ci: 1, th: 3, pin: true }, { k: 'shop/admin-portal', acc: 'gl', ci: 0, th: 1, pin: true }, { k: 'platform/api-gateway', acc: 'gl', ci: 1, th: 0 }, { k: 'platform/billing', acc: 'gl', ci: 0, th: 0 }, { k: 'acme/design-system', acc: 'gh', ci: 0, th: 1 }, { k: 'nam/oss-lib', acc: 'gh', ci: 0, th: 0 }]
+const CRS = [
+  { id: '!318', p: 'shop/shop-web', t: 'PG-482: Sửa làm tròn khi áp nhiều mã giảm giá', src: 'fix/PG-482-lam-tron-ma-giam-gia', dst: 'main', a: 'Nguyễn Nam', mine: true, ci: 'bad', ap: [1, 2], th: [2, 3], cf: false, upd: '12 phút', j: 'PG-482' },
+  { id: '!322', p: 'shop/shop-web', t: 'Thêm cache tồn kho theo kho', src: 'feature/stock-cache', dst: 'main', a: 'Trần Bình', review: true, ci: 'ok', ap: [0, 2], th: [0, 0], cf: false, upd: '26 giờ', wait: 26 },
+  { id: '!315', p: 'shop/admin-portal', t: 'PG-490: Thêm bộ lọc theo kho', src: 'feature/PG-490-loc-theo-kho', dst: 'main', a: 'Nguyễn Nam', mine: true, ci: 'ok', ap: [2, 2], th: [0, 1], cf: false, upd: '35 phút', j: 'PG-490' },
+  { id: '!120', p: 'platform/api-gateway', t: 'Rate limit theo API key', src: 'feat/rate-limit', dst: 'develop', a: 'Phạm Quân', review: true, ci: 'bad', ap: [0, 1], th: [1, 1], cf: true, upd: '5 giờ', wait: 5 },
+  { id: '!121', p: 'platform/api-gateway', t: 'Bump go 1.24', src: 'chore/go-1.24', dst: 'develop', a: 'Lê Hà', review: true, ci: 'run', ap: [0, 1], th: [0, 0], cf: false, upd: '1 giờ', wait: 1 },
+  { id: '#42', p: 'acme/design-system', t: 'Token màu dark v3', src: 'feat/tokens-v3', dst: 'main', a: 'Võ Minh Thư', review: true, ci: 'ok', ap: [1, 2], th: [1, 2], cf: false, upd: '3 giờ', wait: 3 },
+  { id: '#88', p: 'nam/oss-lib', t: 'docs: cập nhật README', src: 'docs/readme', dst: 'main', a: 'Nguyễn Nam', mine: true, ci: 'run', ap: [0, 1], th: [0, 0], cf: false, upd: '2 ngày', draft: true },
+]
+const S = { tab: 'mr', acc: 'all', proj: '', scope: 'all', state: 'opened', group: 'project', q: '', quick: '', sel: null, dtab: 'threads', thf: 'open' }
+const C = (id) => CRS.find((c) => c.id === id)
+const ciChip = (c) => ({ ok: '<span class="chip ok" title="CI qua">✓ CI</span>', bad: '<span class="chip bad" title="CI lỗi">✕ CI</span>', run: '<span class="chip down" title="CI đang chạy">● CI</span>' }[c.ci])
+const apChip = (c) => `<span class="chip ${c.ap[0] >= c.ap[1] ? 'ok' : ''}" title="Approve">👍 ${c.ap[0]}/${c.ap[1]}</span>`
+const thChip = (c) => c.th[1] ? `<span class="chip ${c.th[0] ? 'down' : 'ok'}" title="Thread chưa resolve / tổng">💬 ${c.th[0]}/${c.th[1]}</span>` : ''
+const accOf = (c) => PROJS.find((p) => p.k === c.p).acc
+
+function filtered() {
+  const q = S.q.toLowerCase()
+  return CRS.filter((c) => (S.acc === 'all' || accOf(c) === S.acc) && (!S.proj || c.p === S.proj)
+    && (S.scope === 'all' || (S.scope === 'mine' && c.mine) || (S.scope === 'review' && c.review))
+    && (!S.quick || (S.quick === 'review' && c.review) || (S.quick === 'threads' && c.th[0]) || (S.quick === 'ci' && c.ci === 'bad') || (S.quick === 'cf' && c.cf))
+    && (!q || `${c.t} ${c.src} ${c.id} ${c.a} ${c.p}`.toLowerCase().includes(q)))
+}
+
+function renderSide() {
+  $('#accs').innerHTML = `<div class="acc ${S.acc === 'all' ? 'on' : ''}" data-acc="all"><span class="lb">Mọi account</span><span class="n mute mono" style="font-size:11.5px">${CRS.length}</span></div>` +
+    ACCS.map((a) => `<div class="acc ${S.acc === a.id ? 'on' : ''}" data-acc="${a.id}" title="${a.write ? 'Đang cho phép ghi' : 'Chỉ đọc'}"><span class="lb">${a.name}</span>${a.write ? '<span class="c-down" style="font-size:11px">✎ ghi</span>' : '<span class="mute" style="font-size:11px">chỉ đọc</span>'}<button class="switch" data-write="${a.id}" role="switch" aria-checked="${a.write}" title="${a.write ? 'Về chỉ đọc' : 'Cho phép ghi'}"></button></div>`).join('')
+  $('#projs').innerHTML = PROJS.filter((p) => S.acc === 'all' || p.acc === S.acc).sort((a, b) => (b.pin ? 1 : 0) - (a.pin ? 1 : 0)).map((p) => `<button class="ri ${S.proj === p.k ? 'on' : ''}" data-proj="${p.k}" title="${p.k}"><span class="lb">${p.k.split('/')[1]}</span><span class="dots">${p.ci ? '<span class="sdot" style="background:var(--danger)" title="CI lỗi"></span>' : ''}${p.th ? '<span class="sdot" style="background:var(--behind)" title="Thread chưa resolve"></span>' : ''}</span><span role="button" class="star ${p.pin ? 'on' : ''}" data-star="${p.k}" title="${p.pin ? 'Bỏ ghim' : 'Ghim'}">${p.pin ? "★" : "☆"}</span><span class="n">${CRS.filter((c) => c.p === p.k).length}</span></button>`).join('')
+}
+
+function crRow(c) {
+  return `<div class="cr ${S.sel === c.id ? 'on' : ''}" data-sel="${c.id}"><div style="min-width:0">
+    <div class="t">${c.draft ? '<span class="chip">Draft</span>' : ''}<span class="tt">${esc(c.t)}</span>${c.j ? `<a class="jk" href="Jira.html" style="text-decoration:none" onclick="event.stopPropagation()">${c.j}</a>` : ''}</div>
+    <div class="m"><span class="mono">${c.id}</span>·${av(c.a, 16)}<span>${c.a}</span>·<span class="br" style="height:18px">${esc(c.src)}</span>→<span class="br" style="height:18px">${c.dst}</span></div></div>
+    <div class="chips">${ciChip(c)}${apChip(c)}${thChip(c)}${c.cf ? '<span class="chip bad">Conflict</span>' : ''}</div><div class="when">${c.upd}</div></div>`
+}
+
+function renderView() {
+  $('#tabs').innerHTML = [['mr', 'MR / PR', CRS.length], ['queue', 'Hàng đợi review', CRS.filter((c) => c.review).length], ['branches', 'Branches'], ['pipes', 'Pipelines']].map(([id, l, n]) => `<button data-tab="${id}" class="${S.tab === id ? 'on' : ''}">${l}${n ? `<span class="n">${n}</span>` : ''}</button>`).join('')
+  if (S.tab === 'mr') {
+    const base = CRS.filter((c) => (S.acc === 'all' || accOf(c) === S.acc) && (!S.proj || c.p === S.proj))
+    const k = (id, l, v, c) => `<div class="kpi ${S.quick === id ? 'on' : ''}" data-quick="${id}"><div class="l">${l}</div><div class="v" style="${v && c ? 'color:' + c : ''}">${v}</div></div>`
+    const l = filtered()
+    const keyOf = { project: (c) => c.p, target: (c) => '→ ' + c.dst, author: (c) => c.a, none: () => 'Tất cả' }[S.group]
+    const groups = [...new Set(l.map(keyOf))]
+    $('#view').innerHTML = `<div class="kpis">${k('', 'Đang mở', base.length)}${k('review', 'Cần tôi review', base.filter((c) => c.review).length, 'var(--ahead)')}${k('threads', 'Thread chưa resolve', base.reduce((a, c) => a + c.th[0], 0), 'var(--behind)')}${k('ci', 'CI lỗi', base.filter((c) => c.ci === 'bad').length, 'var(--danger)')}${k('cf', 'Có conflict', base.filter((c) => c.cf).length, 'var(--danger)')}</div>
+      <div class="toolbar"><select class="in" id="scope"><option value="all">Phạm vi: Tất cả</option><option value="mine">Của tôi</option><option value="review">Cần tôi review</option></select>
+        <div class="seg">${[['opened', 'Open'], ['merged', 'Merged'], ['closed', 'Closed']].map(([i, t]) => `<button data-state="${i}" class="${S.state === i ? 'on' : ''}">${t}</button>`).join('')}</div>
+        <select class="in" id="group"><option value="project">Nhóm: Project</option><option value="target">Nhánh đích</option><option value="author">Tác giả</option><option value="none">Không nhóm</option></select>
+        <div class="search" style="flex:1;min-width:200px">${icon('search', 'sm')}<input class="in" id="q" placeholder="Tìm tiêu đề, nhánh, số, tác giả…" value="${esc(S.q)}"></div></div>
+      ${S.proj || S.quick ? `<div class="toolbar">${S.proj ? `<button class="fchip on" data-proj="">${S.proj} ✕</button>` : ''}${S.quick ? `<button class="fchip on" data-quick="">Lọc nhanh: ${{ review: 'Cần tôi review', threads: 'Còn thread', ci: 'CI lỗi', cf: 'Conflict' }[S.quick]} ✕</button>` : ''}</div>` : ''}
+      ${S.state !== 'opened' ? '<div class="empty"><b>Đang tải MR đã đóng…</b>(thiết kế: danh sách giống Open, kèm ngày merge / đóng)</div>'
+        : groups.map((g) => { const rows = l.filter((c) => keyOf(c) === g); return `<section class="grp"><div class="grp-h"><b>${esc(g)}</b><span class="chip">${rows.length}</span><div class="r"><button class="icon-btn" style="width:24px;height:24px" title="Mở trên web">${icon('ext', 'sm')}</button></div></div>${rows.map(crRow).join('')}</section>` }).join('') || '<div class="empty"><b>Không có MR / PR khớp</b>Bỏ bớt bộ lọc để xem thêm.</div>'}`
+    $('#scope').value = S.scope; $('#group').value = S.group
+    $('#q').oninput = (e) => { S.q = e.target.value; const pos = e.target.selectionStart; renderView(); const q = $('#q'); q.focus(); q.setSelectionRange(pos, pos) }
+    $('#scope').onchange = (e) => { S.scope = e.target.value; renderView() }
+    $('#group').onchange = (e) => { S.group = e.target.value; renderView() }
+  } else if (S.tab === 'queue') {
+    const l = CRS.filter((c) => c.review).sort((a, b) => b.wait - a.wait)
+    $('#view').innerHTML = `<div class="banner info">${icon('clock', 'sm')}<span>Sắp theo thời gian chờ. Trễ hơn 24 giờ được đánh dấu đỏ.</span></div><section class="grp">${l.map((c) => `<div class="q" data-sel="${c.id}"><div class="wait ${c.wait >= 24 ? 'c-bad' : c.wait >= 4 ? 'c-down' : ''}">${c.wait}h<small>chờ</small></div>
+      <div style="min-width:0"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.t)}</div><div class="mute" style="font-size:11.5px;margin-top:3px;display:flex;gap:6px;align-items:center">${av(c.a, 16)}${c.a} · ${c.p} · <span class="mono">${c.id}</span></div></div>
+      <div class="chips" style="display:flex;gap:4px">${c.wait >= 24 ? '<span class="chip bad">Trễ</span>' : ''}${ciChip(c)}${thChip(c)}</div><button class="btn sm primary">Review</button></div>`).join('')}</section>`
+  } else if (S.tab === 'branches') {
+    $('#view').innerHTML = `<section class="panel"><table class="tbl"><thead><tr><th>Nhánh</th><th>Project</th><th>Commit cuối</th><th class="num">So với main</th><th>MR</th><th></th></tr></thead><tbody>
+      ${[['fix/PG-482-lam-tron-ma-giam-gia', 'shop-web', 'Nguyễn Nam · 2 giờ', '+3 / −0', '!318'], ['feature/stock-cache', 'shop-web', 'Trần Bình · 1 ngày', '+7 / −2', '!322'], ['feature/old-checkout', 'shop-web', 'Lê Hà · 94 ngày', '+1 / −210', ''], ['feat/rate-limit', 'api-gateway', 'Phạm Quân · 5 giờ', '+4 / −1', '!120']]
+        .map(([b, p, c, d, m]) => `<tr><td><span class="br">${esc(b)}</span></td><td>${p}</td><td class="mute">${c}</td><td class="num"><span class="c-up">${d.split(' / ')[0]}</span> / <span class="c-down">${d.split(' / ')[1]}</span></td><td>${m ? `<span class="mono" style="color:var(--ahead)">${m}</span>` : c.includes('94') ? '<span class="chip down">Cũ, chưa có MR</span>' : '—'}</td><td><button class="icon-btn" style="width:24px;height:24px">${icon('dots', 'sm')}</button></td></tr>`).join('')}</tbody></table></section>`
+  } else {
+    const st = (s) => s.map(([n, v]) => `<span class="stg ${v}">${{ ok: '✓', bad: '✕', run: '●', wait: '○' }[v]} ${n}</span>`).join('<span class="ln"></span>')
+    $('#view').innerHTML = `<section class="panel"><table class="tbl"><thead><tr><th>Project · ref</th><th>Các bước</th><th class="num">Thời gian</th><th>Lúc</th><th></th></tr></thead><tbody>
+      ${[['shop-web', 'fix/PG-482…', [['build', 'ok'], ['test', 'bad'], ['deploy', 'wait']], '4m12s', '12 phút', true], ['api-gateway', 'chore/go-1.24', [['build', 'ok'], ['test', 'run'], ['deploy', 'wait']], '2m03s', 'đang chạy'], ['admin-portal', 'feature/PG-490…', [['build', 'ok'], ['test', 'ok'], ['deploy', 'ok']], '6m40s', '35 phút'], ['api-gateway', 'feat/rate-limit', [['build', 'bad'], ['test', 'wait']], '0m48s', '5 giờ', true]]
+        .map(([p, r, s, d, w, fail]) => `<tr><td><b style="font-weight:600">${p}</b> <span class="br">${r}</span></td><td><div class="stages">${st(s)}</div></td><td class="num">${d}</td><td class="mute">${w}</td><td>${fail ? `<button class="btn sm" data-retry="${p}">${icon('refresh', 'sm')}Chạy lại</button>` : ''}</td></tr>`).join('')}</tbody></table></section>`
+  }
+}
+
+function renderDetail() {
+  const c = C(S.sel)
+  if (!c) { $('#detail').innerHTML = `<div class="dh"><div class="t"><h2 class="mute" style="font-weight:500">Chi tiết MR / PR</h2>${dockApi.buttons()}</div></div><div class="empty" style="margin:auto"><b>Chọn một MR / PR</b>để xem thread, pipeline và trả lời.</div>`; return }
+  const acc = ACCS.find((a) => a.id === accOf(c))
+  const TH = [
+    { f: 'src/checkout/discount.ts:42', res: false, cms: [['Lê Hà', 'Chỗ này nên làm tròn sau khi trừ mã cố định, không phải trước.', '2 giờ'], ['Nguyễn Nam', 'Đúng rồi, em sửa ở commit a1f3c92.', '1 giờ']] },
+    { f: 'src/checkout/total.ts:18', res: false, cms: [['Lê Hà', 'Thiếu test cho mã hết hạn giữa chừng.', '40 phút']] },
+    { f: 'README.md:5', res: true, cms: [['Trần Bình', 'Typo “giảm gía”.', 'hôm qua']] },
+  ].slice(0, Math.max(1, c.th[1]))
+  const ths = TH.filter((t) => S.thf === 'all' || (S.thf === 'open' ? !t.res : t.res))
+  let pane = ''
+  if (S.dtab === 'threads') {
+    pane = `<div class="seg" style="align-self:flex-start">${[['open', 'Chưa resolve', TH.filter((t) => !t.res).length], ['resolved', 'Đã resolve', TH.filter((t) => t.res).length], ['all', 'Tất cả', TH.length]].map(([i, l, n]) => `<button data-thf="${i}" class="${S.thf === i ? 'on' : ''}">${l}<span class="n">${n}</span></button>`).join('')}</div>` +
+      (ths.map((t, i) => `<div class="th ${t.res ? 'res' : ''}"><div class="th-h">${t.f}<span class="r">${t.res ? '<span class="chip ok">Đã resolve</span>' : acc.write ? `<button class="btn sm" data-resolve="${i}">${icon('check', 'sm')}Resolve</button>` : ''}</span></div>
+        ${t.cms.map(([w, x, at]) => `<div class="cm">${av(w, 22)}<div><div class="w"><b>${w}</b><span>${at}</span></div><div class="x">${esc(x)}</div></div></div>`).join('')}
+        ${!t.res ? (acc.write ? '<div class="reply"><input class="in" placeholder="Trả lời (gửi lên remote ngay)…"><button class="btn sm">Gửi</button></div>' : '<div class="reply hint">Account chỉ đọc · bật ghi ở panel trái để trả lời</div>') : ''}</div>`).join('') || '<div class="empty"><b>Không có thread</b></div>')
+  } else if (S.dtab === 'pipe') {
+    pane = `<div class="stages">${[['build', 'ok'], ['test', c.ci === 'bad' ? 'bad' : c.ci === 'run' ? 'run' : 'ok'], ['deploy', 'wait']].map(([n, v]) => `<span class="stg ${v}">${{ ok: '✓', bad: '✕', run: '●', wait: '○' }[v]} ${n}</span>`).join('<span class="ln"></span>')}</div>
+      ${c.ci === 'bad' ? `<div class="banner" style="border-color:rgba(247,140,140,.35);background:rgba(247,140,140,.07);flex-direction:column;align-items:stretch"><b>test:unit lỗi</b><pre class="mono" style="margin:0;font-size:11.5px;white-space:pre-wrap;color:#F5B5B5">FAIL src/checkout/__tests__/discount.test.ts\n  ✕ áp 2 mã: % rồi số tiền (12 ms)\n    expected 179999 to be 180000</pre></div>` : ''}
+      ${acc.write ? `<button class="btn" style="align-self:flex-start" data-retry="${c.p}">${icon('refresh', 'sm')}Chạy lại pipeline</button>` : ''}`
+  } else {
+    pane = `<dl style="display:grid;grid-template-columns:110px 1fr;gap:8px;margin:0;font-size:12.5px"><dt class="mute">Project</dt><dd style="margin:0">${c.p}</dd><dt class="mute">Nhánh</dt><dd style="margin:0"><span class="br">${esc(c.src)}</span> → <span class="br">${c.dst}</span></dd><dt class="mute">Tác giả</dt><dd style="margin:0;display:flex;gap:6px;align-items:center">${av(c.a, 18)}${c.a}</dd><dt class="mute">Merge</dt><dd style="margin:0" class="mono">${c.cf ? 'cannot_be_merged' : 'can_be_merged'}</dd><dt class="mute">Jira</dt><dd style="margin:0">${c.j ? `<a class="jk" href="Jira.html" style="text-decoration:none">${c.j}</a> In Review` : '—'}</dd></dl>`
+  }
+  $('#detail').innerHTML = `<div class="dh"><div class="t"><h2>${esc(c.t)}</h2><button class="icon-btn" title="Mở trên web">${icon('ext')}</button><button class="icon-btn" title="Chép link">${icon('copy')}</button>${dockApi.buttons()}</div>
+    <div class="meta"><span class="mono">${c.id}</span>·<span>${c.p}</span>·${av(c.a, 16)}<span>${c.a}</span>·<span>${c.upd} trước</span>${c.j ? `<a class="jk" href="Jira.html" style="text-decoration:none">${c.j}</a>` : ''}</div>
+    <div class="statgrid"><div class="sg">CI<b class="${c.ci === 'bad' ? 'c-bad' : c.ci === 'ok' ? 'c-ok' : 'c-down'}">${{ ok: '✓ Qua', bad: '✕ Lỗi', run: '● Đang chạy' }[c.ci]}</b></div><div class="sg">Approve<b class="${c.ap[0] >= c.ap[1] ? 'c-ok' : ''}">${c.ap[0]}/${c.ap[1]}</b></div><div class="sg">Thread<b class="${c.th[0] ? 'c-down' : 'c-ok'}">${c.th[0]} chưa resolve</b></div><div class="sg">Conflict<b class="${c.cf ? 'c-bad' : 'c-ok'}">${c.cf ? 'Có' : 'Không'}</b></div></div></div>
+    <div class="tabs">${[['threads', 'Thread', c.th[0]], ['pipe', 'Pipeline'], ['info', 'Thông tin']].map(([id, l, n]) => `<button class="tab ${S.dtab === id ? 'on' : ''}" data-dtab="${id}">${l}${n ? `<em>${n}</em>` : ''}</button>`).join('')}</div>
+    <div class="pane">${pane}</div>
+    <div class="dfoot"><button class="btn sm" onclick="location.href='Git.html'">${icon('branch', 'sm')}Checkout nhánh</button>${c.review ? `<button class="btn sm primary" style="margin-left:auto" ${acc.write ? '' : 'disabled title="Account chỉ đọc"'}>${icon('check', 'sm')}Approve</button>` : `<span class="hint" style="margin-left:auto">${acc.write ? 'Account cho phép ghi' : 'Account chỉ đọc'}</span>`}</div>`
+}
+const render = () => { renderSide(); renderView(); renderDetail() }
+const dockApi = DD.dock($('#detail'), { key: 'remotes.detail', def: 'modal', onClose: () => { S.sel = null; render() } })
+dockApi.onToggle(render)
+DD.resizable($('#detail'), { key: 'remotes.detail', edge: 'left', min: 420, max: 800, def: 560 })
+
+document.addEventListener('click', (e) => {
+  let el
+  if ((el = e.target.closest('[data-write]'))) { e.stopPropagation(); const a = ACCS.find((x) => x.id === el.dataset.write); a.write = !a.write; render(); toast(a.write ? 'Đã bật thao tác ghi' : 'Đã về chỉ đọc', a.name); return }
+  if ((el = e.target.closest('[data-star]'))) { e.stopPropagation(); const p = PROJS.find((x) => x.k === el.dataset.star); p.pin = !p.pin; renderSide(); return }
+  if ((el = e.target.closest('[data-acc]'))) { S.acc = el.dataset.acc; S.proj = ''; render(); return }
+  if ((el = e.target.closest('[data-proj]'))) { S.proj = S.proj === el.dataset.proj ? '' : el.dataset.proj; S.tab = 'mr'; render(); return }
+  if ((el = e.target.closest('[data-tab]'))) { S.tab = el.dataset.tab; renderView(); return }
+  if ((el = e.target.closest('[data-quick]'))) { S.quick = S.quick === el.dataset.quick ? '' : el.dataset.quick; renderView(); return }
+  if ((el = e.target.closest('[data-state]'))) { S.state = el.dataset.state; renderView(); return }
+  if ((el = e.target.closest('[data-retry]'))) { e.stopPropagation(); toast('Đã chạy lại pipeline', el.dataset.retry); return }
+  if ((el = e.target.closest('[data-resolve]'))) { toast('Đã resolve thread'); const c = C(S.sel); c.th[0] = Math.max(0, c.th[0] - 1); render(); return }
+  if ((el = e.target.closest('[data-thf]'))) { S.thf = el.dataset.thf; renderDetail(); return }
+  if ((el = e.target.closest('[data-dtab]'))) { S.dtab = el.dataset.dtab; renderDetail(); return }
+  if ((el = e.target.closest('[data-sel]'))) { S.sel = el.dataset.sel; S.dtab = C(S.sel).ci === 'bad' && !C(S.sel).th[0] ? 'pipe' : 'threads'; render(); dockApi.open(); return }
+  if (e.target.closest('#refresh')) toast('Đã tải lại', '14 MR / PR')
+  if (e.target.closest('#addAcc')) toast('Thêm account', 'GitLab / GitHub: URL + token')
+})
+render()
+</script>
+</body>
+</html>

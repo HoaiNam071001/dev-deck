@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevDeck · AI (thiết kế v2)</title>
+<!-- File độc lập: mở thẳng bằng trình duyệt. Số liệu là dữ liệu mẫu. -->
+<link rel="stylesheet" href="shell.css">
+<style>
+.limits{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.lim{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 14px;display:flex;flex-direction:column;gap:7px}
+.lim .top{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--fg-soft)}
+.lim .top .pct{margin-left:auto;font-family:var(--font-mono);font-weight:600;font-size:15px}
+.lim .bar{height:7px}
+.lim .s{font-size:11.5px;color:var(--fg-mute)}
+.kpis{grid-template-columns:repeat(5,minmax(0,1fr))}
+.chart-wrap{position:relative;padding:8px 14px 12px}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--fg-soft);flex-wrap:wrap}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:9px;height:9px;border-radius:2px;display:inline-block}
+svg.chart{width:100%;height:240px;display:block}
+svg.chart text{fill:var(--fg-mute);font:10.5px var(--font-mono)}
+svg.chart .grid{stroke:var(--line)}
+svg.chart rect.b{cursor:pointer}
+svg.chart g.col:hover rect.hit{fill:rgba(255,255,255,.04)}
+.tip{position:absolute;pointer-events:none;background:var(--selected);border:1px solid var(--border-pop);border-radius:8px;padding:8px 10px;font-size:12px;min-width:170px;box-shadow:0 10px 30px rgba(0,0,0,.4);display:none;z-index:5}
+.tip b{display:block;margin-bottom:4px}
+.tip div{display:flex;justify-content:space-between;gap:16px}
+.tip i{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:6px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.share{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.share .bar{width:70px;height:5px}
+.pdot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:8px;vertical-align:1px}
+.src{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--fg-soft)}
+.src .mono{margin-left:auto;color:var(--fg-mute);font-size:11px}
+.src.off{opacity:.5}
+.nrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.nrow:first-child{border-top:0}
+.nrow input{accent-color:var(--primary);margin:0}
+</style>
+</head>
+<body>
+<p class="note"><span><b>AI</b> · token Claude Code, Codex, Gemini, Antigravity đọc từ log trên máy.</span><span>Rê chuột lên cột để xem số · bấm dự án ở panel trái để lọc</span></p>
+
+<div class="win">
+  <div class="content">
+    <aside class="side">
+      <div class="scroll">
+        <h4>Dự án</h4>
+        <div id="projects"></div>
+        <div id="branchBox"></div>
+      </div>
+      <div class="foot" id="sources"></div>
+    </aside>
+
+    <main class="pg">
+      <header class="pg-h">
+        <div><h1>Token AI</h1><div class="sub" id="sub"></div></div>
+        <div class="r">
+          <select class="in" id="prov" aria-label="Nhà cung cấp"><option value="">Mọi nhà cung cấp</option><option value="claude">Claude Code</option><option value="codex">Codex</option><option value="gemini">Gemini CLI</option><option value="agy">Antigravity</option></select>
+          <button class="icon-btn bd" id="notifyBtn" title="Thông báo khi AI chạy xong"></button>
+          <button class="icon-btn bd" id="csv" title="Xuất CSV"></button>
+          <button class="icon-btn bd" id="reload" title="Tải lại"></button>
+        </div>
+      </header>
+      <div class="pg-body">
+        <div class="toolbar">
+          <div class="seg" id="range"></div>
+          <div class="seg" id="tabs" style="margin-left:auto"><button data-t="chart" class="on">Tổng quan</button><button data-t="detail">Chi tiết</button></div>
+        </div>
+        <section class="limits" id="limits" aria-label="Hạn mức"></section>
+        <div id="view" style="display:flex;flex-direction:column;gap:14px"></div>
+      </div>
+    </main>
+  </div>
+
+  <div class="back" id="nModal" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="mh">Thông báo khi AI chạy xong<button class="icon-btn x" data-close></button></div>
+      <div class="mb">
+        <div class="banner info">Khi Claude Code / Codex trả lời xong trong thư mục được bật, DevDeck hiện thông báo hệ thống kèm tên dự án và nhánh.</div>
+        <div class="search"><input class="in" placeholder="Lọc thư mục…" id="nQ"></div>
+        <div id="nList"></div>
+      </div>
+      <div class="mf"><span class="hint" style="margin-right:auto;align-self:center">Hook cài vào ~/.claude/settings.json, gỡ được bất cứ lúc nào</span><button class="btn primary" data-close>Xong</button></div>
+    </div>
+  </div>
+</div>
+
+<script src="shell.js"></script>
+<script>
+const { icon, esc, toast, $, short } = DD
+DD.mount({
+  page: 'ai',
+  status: '<span class="live">Log</span><span>48.312 tin · 6 dự án</span><span class="r"><span>Tự tải lại mỗi 30 giây</span><span>đọc 0.4s</span></span>',
+  commands: [{ label: 'Xuất CSV', run: () => $('#csv').click() }, { label: 'Thông báo khi AI xong…', run: () => $('#notifyBtn').click() }],
+})
+$('#notifyBtn').innerHTML = icon('bell'); $('#csv').innerHTML = icon('download'); $('#reload').innerHTML = icon('refresh')
+
+const PROV = { claude: ['Claude Code', '#F2A65A'], codex: ['Codex', '#5AA9F5'], gemini: ['Gemini CLI', '#B18CF2'], agy: ['Antigravity', '#7DD3C0'] }
+const PROJ = [['shop-web', .34, ['fix/PG-482-lam-tron-ma-giam-gia', 'main', 'feature/PG-430-webp']], ['dev-deck', .27, ['main', 'feat/jira-v2']], ['admin-portal', .18, ['feature/PG-490-loc-theo-kho', 'main']], ['api-gateway', .11, ['main']], ['notes', .06, ['']], ['oss-lib', .04, ['main']]]
+const RANGES = [['h1', '1h', 12, 5, 0.04], ['h6', '6h', 24, 15, .22], ['h24', '24h', 24, 60, .8], ['1', 'Hôm nay', 15, 60, 1], ['7', '7 ngày', 7, 1440, 5.6], ['30', '30 ngày', 30, 1440, 22], ['0', 'Tất cả', 26, 10080, 70]]
+const S = { range: '1', tab: 'chart', proj: '', branch: '', prov: '', stack: 'type' }
+let seed = 7; const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280)
+
+function data() {
+  const [, , n, g, mult] = RANGES.find((r) => r[0] === S.range)
+  seed = 11 + n
+  const share = S.proj ? PROJ.find((p) => p[0] === S.proj)[1] * (S.branch ? .6 : 1) : 1
+  const ps = S.prov ? { claude: .62, codex: .24, gemini: .1, agy: .04 }[S.prov] : 1
+  const scale = 4.2e6 * mult * share * ps / n
+  const now = new Date()
+  return Array.from({ length: n }, (_, i) => {
+    const w = (0.3 + rnd() * 1.4) * (g === 60 && (i < 2 || i === 4) ? .25 : 1)
+    const tot = scale * w
+    const t = new Date(now - (n - 1 - i) * g * 6e4)
+    const lab = g >= 1440 ? `${t.getDate()}/${t.getMonth() + 1}` : `${String(t.getHours()).padStart(2, '0')}:${g === 60 ? '00' : String(t.getMinutes() - t.getMinutes() % g).padStart(2, '0')}`
+    const row = { lab, input: tot * .06, output: tot * .04, cw: tot * .12, cr: tot * .78, claude: tot * .62, codex: tot * .24, gemini: tot * .1, agy: tot * .04, msgs: Math.round(tot / 9000) }
+    PROJ.forEach(([p, ps], j) => (row[p] = (S.proj ? scale * w : 4.2e6 * mult * ps / n) * (0.35 + rnd() * 1.3) * (j === 1 && i > n / 2 ? 1.8 : 1)))
+    return row
+  })
+}
+const REPO_C = ['#8B93FF', '#F2A65A', '#5AA9F5', '#7DD3C0', '#F78C8C']
+const KEYS = { repo: PROJ.slice(0, 5).map(([p], i) => [p, p, REPO_C[i]]), type: [['input', 'Input', 'var(--series-input)'], ['output', 'Output', 'var(--series-output)'], ['cw', 'Cache ghi', 'var(--series-cache-write)'], ['cr', 'Cache đọc', 'var(--series-cache-read)']], provider: Object.entries(PROV).map(([k, [l, c]]) => [k, l, c]) }
+const sum = (rows, k) => rows.reduce((a, r) => a + r[k], 0)
+
+function renderSide() {
+  const d = data(); const total = sum(d, 'cr') + sum(d, 'cw') + sum(d, 'input') + sum(d, 'output')
+  const base = S.proj ? total / PROJ.find((p) => p[0] === S.proj)[1] : total
+  $('#projects').innerHTML = `<button class="ri ${!S.proj ? 'on' : ''}" data-p=""><span class="lb">Mọi dự án</span><span class="n">${short(base)}</span></button>` +
+    PROJ.map(([p, s]) => `<button class="ri ${S.proj === p ? 'on' : ''}" data-p="${p}"><span class="lb">${p}</span><span class="n">${short(base * s)}</span></button>`).join('')
+  const br = S.proj ? PROJ.find((p) => p[0] === S.proj)[2] : []
+  $('#branchBox').innerHTML = br.length > 1 ? `<h4>Nhánh</h4><button class="ri ${!S.branch ? 'on' : ''}" data-b=""><span class="lb">Mọi nhánh</span></button>` + br.map((b, i) => `<button class="ri ${S.branch === b ? 'on' : ''}" data-b="${b}" title="${b}"><span class="lb mono" style="font-size:12px">${b || 'không rõ nhánh'}</span><span class="n">${Math.round(70 / (i + 1))}%</span></button>`).join('') : ''
+  $('#sources').innerHTML = '<span class="mute" style="font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase">Nguồn log</span>' +
+    Object.entries(PROV).map(([k, [l, c]], i) => `<span class="src ${i === 3 ? 'off' : ''}" title="${i === 3 ? 'Chưa thấy log' : '~/.' + k + '/…'}"><i class="pdot" style="background:${c};margin:0"></i>${l}<span class="mono">${i === 3 ? 'chưa có' : ['31.2K', '12.4K', '4.7K'][i]}</span></span>`).join('')
+}
+
+function renderLimits() {
+  const L = [['Claude · 5 giờ', 78, 'reset 16:30 (sau 1h48)', 'claude'], ['Claude · tuần', 41, 'reset Thứ 2, 08:00', 'claude'], ['Codex · 5 giờ', 22, 'reset 19:10', 'codex'], ['Gemini · ngày', 9, 'reset 07:00', 'gemini']]
+  const tier = (p) => p >= 85 ? ['Sắp hết', 'var(--danger)', 'bad'] : p >= 60 ? ['Cao', 'var(--behind)', 'down'] : ['Ổn', 'var(--accent)', 'ok']
+  $('#limits').innerHTML = L.map(([l, p, s, k]) => { const [tl, c, cls] = tier(p); return `<div class="lim"><div class="top"><i class="pdot" style="background:${PROV[k][1]};margin:0"></i>${l}<span class="chip ${cls}" style="height:18px">${tl}</span><span class="pct" style="color:${c}">${p}%</span></div><div class="bar"><i style="width:${p}%;background:${c}"></i></div><div class="s"><b style="color:${c};font-weight:500">Còn ${100 - p}%</b> · ${s}</div></div>` }).join('')
+}
+
+function chartSvg(d) {
+  if (S.stack === 'repo') return lineSvg(d)
+  const keys = KEYS[S.stack]
+  const W = 900, H = 240, L = 46, B = 22, T = 8
+  const max = Math.max(...d.map((r) => keys.reduce((a, [k]) => a + r[k], 0))) * 1.1
+  const bw = (W - L) / d.length
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">`
+  for (let i = 0; i <= 4; i++) { const y = T + (H - B - T) * i / 4; s += `<line class="grid" x1="${L}" x2="${W}" y1="${y}" y2="${y}"/><text x="${L - 8}" y="${y + 3}" text-anchor="end">${short(max * (1 - i / 4))}</text>` }
+  d.forEach((r, i) => {
+    let y = H - B; const x = L + i * bw + bw * .18, w = bw * .64
+    s += `<g class="col" data-i="${i}"><rect class="hit" x="${L + i * bw}" y="${T}" width="${bw}" height="${H - B - T}" fill="transparent"/>`
+    keys.forEach(([k, , c], j) => { const h = (r[k] / max) * (H - B - T); y -= h; s += `<rect class="b" x="${x}" y="${y}" width="${w}" height="${Math.max(0, h - (j < keys.length - 1 ? 0 : 0))}" fill="${c}" ${j === keys.length - 1 ? 'rx="2"' : ''}/>` })
+    if (d.length <= 15 || i % Math.ceil(d.length / 12) === 0) s += `<text x="${L + i * bw + bw / 2}" y="${H - 6}" text-anchor="middle">${r.lab}</text>`
+    s += '</g>'
+  })
+  return s + '</svg>'
+}
+
+/** Biểu đồ đường: mỗi repo một đường, để so xu hướng giữa các repo. */
+function lineSvg(d) {
+  const keys = KEYS.repo.filter(([k]) => !S.proj || k === S.proj)
+  const W = 900, H = 240, L = 46, B = 22, T = 8
+  const max = Math.max(...d.flatMap((r) => keys.map(([k]) => r[k]))) * 1.1
+  const bw = (W - L) / d.length, X = (i) => L + i * bw + bw / 2, Y = (v) => H - B - (v / max) * (H - B - T)
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">`
+  for (let i = 0; i <= 4; i++) { const y = T + (H - B - T) * i / 4; s += `<line class="grid" x1="${L}" x2="${W}" y1="${y}" y2="${y}"/><text x="${L - 8}" y="${y + 3}" text-anchor="end">${short(max * (1 - i / 4))}</text>` }
+  keys.forEach(([k, , c]) => {
+    const pts = d.map((r, i) => `${X(i)},${Y(r[k])}`).join(' ')
+    s += `<polyline points="${pts}" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`
+    s += d.map((r, i) => `<circle cx="${X(i)}" cy="${Y(r[k])}" r="2.6" fill="${c}"/>`).join('')
+  })
+  d.forEach((r, i) => {
+    s += `<g class="col" data-i="${i}"><rect class="hit" x="${L + i * bw}" y="${T}" width="${bw}" height="${H - B - T}" fill="transparent"/>`
+    if (d.length <= 15 || i % Math.ceil(d.length / 12) === 0) s += `<text x="${X(i)}" y="${H - 6}" text-anchor="middle">${r.lab}</text>`
+    s += '</g>'
+  })
+  return s + '</svg>'
+}
+const shareCell = (v, max) => { const r = v / max; const c = r >= .85 ? 'var(--danger)' : r >= .5 ? 'var(--behind)' : r >= .15 ? 'var(--accent)' : 'var(--fg-mute)'; return `<td class="num"><span class="share"><span class="bar"><i style="width:${r * 100}%;background:${c}"></i></span><span style="color:${c};min-width:48px">${short(v)}</span></span></td>` }
+function table(title, label, rows, extra) {
+  const max = Math.max(...rows.map((r) => r[1]))
+  return `<section class="panel"><div class="panel-h"><h3>${title}</h3><span class="mute" style="font-size:12px">${rows.length}</span></div><table class="tbl"><thead><tr><th>${label}</th>${extra ? `<th>${extra}</th>` : ''}<th class="num">Tin</th><th class="num">In / Out</th><th class="num">Tổng</th></tr></thead><tbody>${rows.map(([n, v, dot, ex]) => `<tr><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis">${dot ? `<i class="pdot" style="background:${dot}"></i>` : ''}${esc(n)}</td>${extra ? `<td class="mute">${ex}</td>` : ''}<td class="num mute">${Math.round(v / 9000).toLocaleString('vi')}</td><td class="num">${short(v * .06)} / ${short(v * .04)}</td>${shareCell(v, max)}</tr>`).join('')}</tbody></table></section>`
+}
+
+function renderView() {
+  const d = data()
+  const tot = { input: sum(d, 'input'), output: sum(d, 'output'), cw: sum(d, 'cw'), cr: sum(d, 'cr'), msgs: sum(d, 'msgs') }
+  const all = tot.input + tot.output + tot.cw + tot.cr
+  const rname = RANGES.find((r) => r[0] === S.range)[1]
+  $('#sub').textContent = `${rname} · ${S.proj || 'mọi dự án'}${S.branch ? ' · ' + S.branch : ''}${S.prov ? ' · ' + PROV[S.prov][0] : ''}`
+  if (S.tab === 'chart') {
+    const hit = tot.cr / (tot.cr + tot.cw + tot.input)
+    $('#view').innerHTML = `<div class="kpis">
+      <div class="kpi"><div class="l">Tổng token</div><div class="v">${short(all)}</div><div class="s">${S.range === '1' ? '<span class="c-down">▲ 18%</span> so với cùng giờ hôm qua' : Math.round(all).toLocaleString('vi') + ' token'}</div></div>
+      <div class="kpi"><div class="l">Input + Output</div><div class="v">${short(tot.input + tot.output)}</div><div class="s"><span style="color:var(--series-input)">in</span> ${short(tot.input)} · <span style="color:var(--series-output)">out</span> ${short(tot.output)}</div></div>
+      <div class="kpi"><div class="l">Cache</div><div class="v">${short(tot.cr + tot.cw)}</div><div class="s">đọc ${short(tot.cr)} · ghi ${short(tot.cw)}</div></div>
+      <div class="kpi"><div class="l">Tỉ lệ cache đọc</div><div class="v c-ok">${(hit * 100).toFixed(1)}%</div><div class="bar" style="margin-top:7px;height:5px"><i style="width:${hit * 100}%;background:var(--accent)"></i></div></div>
+      <div class="kpi"><div class="l">Tin nhắn</div><div class="v">${tot.msgs.toLocaleString('vi')}</div><div class="s">phản hồi của model</div></div></div>
+    <section class="panel"><div class="panel-h"><h3>Token theo ${S.range === '7' || S.range === '30' ? 'ngày' : S.range === '0' ? 'tuần' : S.range === 'h1' ? '5 phút' : S.range === 'h6' ? '15 phút' : 'giờ'}</h3>
+      <div class="legend" style="margin-left:14px">${KEYS[S.stack].map(([, l, c]) => `<span><i style="background:${c}"></i>${l}</span>`).join('')}</div>
+      <div class="r"><div class="seg" id="stack"><button data-s="type" class="${S.stack === 'type' ? 'on' : ''}">Loại token</button><button data-s="provider" class="${S.stack === 'provider' ? 'on' : ''}">Nhà cung cấp</button><button data-s="repo" class="${S.stack === 'repo' ? 'on' : ''}" title="Biểu đồ đường, mỗi repo một đường">Theo repo</button></div></div></div>
+      <div class="chart-wrap" id="cw">${chartSvg(d)}<div class="tip" id="tip"></div></div></section>`
+    const cw = $('#cw'), tip = $('#tip')
+    cw.onmousemove = (e) => {
+      const g = e.target.closest('g.col'); if (!g) { tip.style.display = 'none'; return }
+      const r = d[+g.dataset.i]; const keys = KEYS[S.stack]
+      tip.innerHTML = `<b>${r.lab}</b>${keys.slice().reverse().map(([k, l, c]) => `<div><span><i style="background:${c}"></i>${l}</span><span class="mono">${short(r[k])}</span></div>`).join('')}<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px"><span>Tổng</span><span class="mono">${short(keys.reduce((a, [k]) => a + r[k], 0))}</span></div>`
+      const box = cw.getBoundingClientRect(); let x = e.clientX - box.left + 14; if (x > box.width - 190) x -= 210
+      tip.style.left = x + 'px'; tip.style.top = (e.clientY - box.top - 20) + 'px'; tip.style.display = 'block'
+    }
+    cw.onmouseleave = () => (tip.style.display = 'none')
+  } else {
+    const p = (S.prov ? [[S.prov, 1]] : [['claude', .62], ['codex', .24], ['gemini', .1], ['agy', .04]])
+    $('#view').innerHTML = `<div class="two">
+      ${table('Theo nhà cung cấp', 'Nhà cung cấp', p.map(([k, s]) => [PROV[k][0], all * s, PROV[k][1]]))}
+      ${table('Theo model', 'Model', [['claude-opus-5-5', all * .41, PROV.claude[1]], ['claude-sonnet-5-5', all * .21, PROV.claude[1]], ['gpt-5.3-codex', all * .24, PROV.codex[1]], ['gemini-3-pro', all * .1, PROV.gemini[1]]])}</div>
+      <div class="two">
+      ${table('Theo dự án', 'Dự án', (S.proj ? PROJ.filter((x) => x[0] === S.proj) : PROJ).map(([n, s]) => [n, all * (S.proj ? 1 : s)]))}
+      ${table('Theo nhánh', 'Repo · nhánh', [['shop-web · fix/PG-482-lam-tron…', all * .22, '', '4 · 12 phút'], ['dev-deck · main', all * .19, '', '6 · 1 giờ'], ['admin-portal · feature/PG-490…', all * .14, '', '2 · 3 giờ'], ['ngoài repo · không rõ nhánh', all * .05, '', '3 · hôm qua']], 'Phiên · lần cuối')}</div>
+      ${table('Phiên ngốn nhiều nhất', 'Phiên', [['shop-web · fix/PG-482-lam-tron-ma-giam-gia', all * .12, PROV.claude[1], '10:02'], ['dev-deck · main', all * .09, PROV.claude[1], '08:41'], ['api-gateway · main', all * .05, PROV.codex[1], 'hôm qua']], 'Bắt đầu')}
+      <p class="hint">Số liệu theo nhánh chỉ gồm Claude Code và Codex (Gemini, Antigravity không ghi nhánh).</p>`
+  }
+}
+const render = () => { renderSide(); renderLimits(); renderView(); $('#range').innerHTML = RANGES.map(([id, l]) => `<button data-r="${id}" class="${S.range === id ? 'on' : ''}">${l}</button>`).join('') }
+
+document.addEventListener('click', (e) => {
+  let el
+  if ((el = e.target.closest('[data-p]'))) { S.proj = el.dataset.p; S.branch = ''; render() }
+  else if ((el = e.target.closest('[data-b]'))) { S.branch = el.dataset.b; render() }
+  else if ((el = e.target.closest('[data-r]'))) { S.range = el.dataset.r; render() }
+  else if ((el = e.target.closest('[data-t]'))) { S.tab = el.dataset.t; document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b === el)); renderView() }
+  else if ((el = e.target.closest('[data-s]'))) { S.stack = el.dataset.s; renderView() }
+  else if (e.target.closest('[data-close]') || e.target.id === 'nModal') $('#nModal').classList.remove('open')
+})
+$('#prov').onchange = (e) => { S.prov = e.target.value; render() }
+$('#csv').onclick = () => toast('Đã xuất CSV', `ai-token-${new Date().toISOString().slice(0, 10)}.csv`)
+$('#reload').onclick = () => toast('Đã đọc lại log', '48.312 tin · 0.4s')
+
+const NF = [['shop-web', '~/work/acme/shop-web', true, 'Đã cài'], ['dev-deck', '~/Documents/job/tet/dev-deck', true, 'Đã cài'], ['admin-portal', '~/work/acme/admin-portal', false, 'Chưa bật'], ['api-gateway', '~/work/acme/api-gateway', true, 'theo thư mục cha']]
+const drawN = (q = '') => ($('#nList').innerHTML = NF.filter((x) => (x[0] + x[1]).includes(q)).map(([n, p, on, st], i) => `<label class="nrow"><input type="checkbox" data-n="${i}" ${on ? 'checked' : ''}><div style="flex:1;min-width:0"><div style="font-weight:500">${n}</div><div class="mono mute" style="font-size:11px">${p}</div></div><span class="chip ${on ? 'ok' : ''}">${on ? st : 'Tắt'}</span></label>`).join(''))
+$('#notifyBtn').onclick = () => { drawN(); $('#nModal').classList.add('open') }
+$('#nQ').oninput = (e) => drawN(e.target.value)
+$('#nList').onchange = (e) => { const i = +e.target.dataset.n; NF[i][2] = e.target.checked; NF[i][3] = 'Đã cài'; drawN($('#nQ').value) }
+$('[data-close].x') && ($('.mh .x').innerHTML = icon('x'))
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('#nModal').classList.remove('open') })
+render()
+</script>
+</body>
+</html>

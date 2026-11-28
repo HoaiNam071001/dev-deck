@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevDeck · Tổng quan (thiết kế v2)</title>
+<!-- File độc lập: mở thẳng bằng trình duyệt. Số liệu là dữ liệu mẫu. -->
+<link rel="stylesheet" href="shell.css">
+<style>
+.hello h1{font-size:21px}
+/* Hàng chỉ số 5 trang */
+.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.st{display:flex;flex-direction:column;gap:6px;padding:11px 13px;border-radius:10px;border:1px solid var(--border);background:var(--surface);text-decoration:none;color:var(--fg);min-width:0;position:relative}
+.st:hover{border-color:var(--border-pop);background:#1E2738}
+.st .top{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--fg-mute)}
+.st .ico{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.st .ico svg.i{width:14px;height:14px}
+.st .top kbd{margin-left:auto;opacity:.7}
+.st .big{font-size:22px;font-weight:600;font-family:var(--font-mono);line-height:1.1;letter-spacing:-.02em;display:flex;align-items:baseline;gap:6px}
+.st .big small{font-size:12px;font-family:var(--font-ui);font-weight:500;color:var(--fg-soft);letter-spacing:0}
+.st .sub{font-size:11.5px;color:var(--fg-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st.hot:after{content:"";position:absolute;top:10px;right:10px;width:7px;height:7px;border-radius:50%;background:var(--behind);box-shadow:0 0 0 3px rgba(242,166,90,.18)}
+.st.hot kbd{display:none}
+/* Lưới chính */
+.grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:14px;align-items:start}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel-h .src{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px}
+.panel-h .src svg.i{width:13px;height:13px}
+.panel-h a.more{font-size:12px;color:var(--fg-mute);text-decoration:none}
+.panel-h a.more:hover{color:var(--fg)}
+/* Cần xử lý */
+.todo{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 14px;border-top:1px solid var(--line)}
+.todo:first-child{border-top:0}
+.todo:hover{background:rgba(255,255,255,.02)}
+.todo .ico{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+.todo .ico svg.i{width:14px;height:14px}
+.todo .t{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.todo .t b{font-weight:600}
+.todo .s{font-size:11.5px;color:var(--fg-mute);margin-top:2px;display:flex;gap:6px;align-items:center;min-width:0;white-space:nowrap;overflow:hidden}
+.todo .acts{display:flex;gap:4px;align-items:center}
+.todo.done{opacity:.45}
+.todo.done .acts{display:none}
+.ftabs{display:flex;gap:4px;padding:8px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+/* Dòng gọn trong thẻ */
+.row{display:grid;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid var(--line);font-size:12.5px;min-width:0}
+.row:first-child{border-top:0}
+.row:hover{background:rgba(255,255,255,.02)}
+.row .nm{font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .nm:hover{color:var(--ahead)}
+.row .sub{font-size:11.5px;color:var(--fg-mute);display:flex;gap:6px;align-items:center;min-width:0;margin-top:2px;white-space:nowrap;overflow:hidden}
+.ell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.repo{grid-template-columns:8px minmax(0,1fr) auto auto}
+.repo .acts{display:flex;gap:0;opacity:.5}.repo:hover .acts{opacity:1}
+.job{grid-template-columns:8px minmax(0,1fr) 130px 64px}
+.job .bar{height:5px;margin-top:4px}
+.mr{grid-template-columns:minmax(0,1fr) auto}
+.tk{grid-template-columns:62px minmax(0,1fr) auto}
+/* AI */
+.ai{display:grid;grid-template-columns:minmax(0,1fr) 170px;gap:14px;padding:12px 14px}
+.ai .big{font-size:24px;font-weight:600;font-family:var(--font-mono);letter-spacing:-.02em}
+.spark{display:flex;align-items:flex-end;gap:3px;height:46px;margin-top:8px}
+.spark i{flex:1;border-radius:2px 2px 0 0;background:var(--series-cache-read);min-height:2px}
+.spark i.now{background:var(--ahead)}
+.lim{display:flex;flex-direction:column;gap:3px;font-size:11.5px;margin-bottom:9px}
+.lim:last-child{margin-bottom:0}
+.lim .t{display:flex;justify-content:space-between;color:var(--fg-soft)}
+.lim .bar{height:5px}
+/* Gần đây */
+.act{display:grid;grid-template-columns:44px 64px minmax(0,1fr);gap:10px;align-items:center;padding:7px 14px;border-top:1px solid var(--line);font-size:12.5px}
+.act:first-child{border-top:0}
+.act .t{font-family:var(--font-mono);font-size:11.5px;color:var(--fg-mute)}
+/* Thiết lập */
+details.setup{border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+details.setup summary{list-style:none;cursor:pointer;padding:11px 14px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600}
+details.setup summary::-webkit-details-marker{display:none}
+details.setup summary .mute{font-weight:400;font-size:12px}
+details.setup summary .chev{margin-left:auto;color:var(--fg-mute);transition:transform .15s}
+details.setup[open] summary .chev{transform:rotate(90deg)}
+.setup-b{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line)}
+.setup-b>div{padding:10px 14px}
+.setup-b>div+div{border-left:1px solid var(--line)}
+.folder{display:flex;align-items:center;gap:10px;height:30px;font-size:12.5px;cursor:pointer}
+.folder input{accent-color:var(--primary);margin:0}
+.folder .p{flex:1;min-width:0;font-family:var(--font-mono);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.folder.off .p{color:var(--fg-mute)}
+.keys{display:grid;grid-template-columns:1fr 1fr;gap:2px 18px}
+.keys div{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--fg-soft);height:26px}
+.sw{display:flex;align-items:center;gap:10px;font-size:12.5px;height:30px}
+.sw .switch{margin-left:auto}
+</style>
+</head>
+<body>
+<p class="note"><span><b>Tổng quan</b> · gom tình hình cả 5 trang: số liệu lấy từ lần quét / tải gần nhất, trang này không quét lại.</span><span>Bấm ô hoặc thẻ để sang trang · <kbd>⌘K</kbd> bảng lệnh</span></p>
+
+<div class="win">
+  <div class="content">
+    <aside class="side">
+      <div class="scroll">
+        <h4>Repo đã ghim</h4>
+        <div id="sidePinned"></div>
+        <h4>Ticket đã ghim</h4>
+        <div id="sideTickets"></div>
+        <h4>Project Remotes</h4>
+        <div id="sideProjects"></div>
+      </div>
+      <div class="foot">
+        <div style="display:flex;align-items:center;gap:8px"><span class="sdot" style="background:var(--accent)"></span>Rảnh · không có tác vụ nền</div>
+        <span class="hint">Quét git chỉ chạy khi mở trang Git</span>
+      </div>
+    </aside>
+
+    <main class="pg">
+      <header class="pg-h hello">
+        <div>
+          <h1 id="greet">Chào buổi chiều, Nam</h1>
+          <div class="sub" id="today"></div>
+        </div>
+        <div class="r">
+          <span class="hint" id="upd">Cập nhật 14:22</span>
+          <button class="icon-btn bd" id="reload" title="Tải lại số liệu (không quét repo)"></button>
+          <button class="btn" onclick="document.getElementById('cmdk').click()">Bảng lệnh <kbd>⌘K</kbd></button>
+        </div>
+      </header>
+
+      <div class="pg-body">
+        <section class="stats" id="stats" aria-label="Chỉ số các trang"></section>
+
+        <div class="grid">
+          <div class="col">
+            <section class="panel" aria-label="Cần xử lý">
+              <div class="panel-h"><h3>Cần xử lý</h3><span class="chip down" id="todoN"></span><span class="mute" style="font-size:12px">gom từ mọi trang</span>
+                <div class="r"><button class="btn sm ghost" id="todoAll">Xong hết</button></div></div>
+              <div class="ftabs" id="todoF"></div>
+              <div id="todos"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-h"><span class="src" style="background:rgba(48,207,67,.13);color:var(--accent)" data-ic="git"></span><h3>Repo đã ghim</h3><span class="mute" style="font-size:12px">quét lúc 14:02</span><div class="r"><a class="more" href="Git.html">Mở Git →</a></div></div>
+              <div id="repos"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-h"><span class="src" style="background:rgba(90,169,245,.14);color:var(--ahead)" data-ic="merge"></span><h3>MR / PR của tôi</h3><span class="mute" style="font-size:12px">3 đang mở</span><div class="r"><a class="more" href="Remotes.html">Mở Remotes →</a></div></div>
+              <div id="mrs"></div>
+            </section>
+          </div>
+
+          <div class="col">
+            <section class="panel">
+              <div class="panel-h"><span class="src" style="background:rgba(177,140,242,.15);color:var(--purple)" data-ic="ai"></span><h3>AI hôm nay</h3><div class="r"><a class="more" href="AI.html">Mở AI →</a></div></div>
+              <div class="ai">
+                <div>
+                  <div class="mute" style="font-size:11.5px">Tổng token</div>
+                  <div class="big">4.2M <span class="c-down" style="font-size:12px;font-family:var(--font-ui);font-weight:500">▲ 18%</span></div>
+                  <div class="mute" style="font-size:11.5px">cache đọc 81% · 466 tin · nhiều nhất <b class="soft" style="font-weight:500">shop-web</b></div>
+                  <div class="spark" id="spark" title="Token theo giờ hôm nay"></div>
+                </div>
+                <div id="limits"></div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-h"><span class="src" style="background:rgba(242,166,90,.14);color:var(--behind)" data-ic="terminal"></span><h3>Job đang chạy</h3><span class="mute" style="font-size:12px">935 MB RAM</span><div class="r"><a class="more" href="Jobs.html">Mở Job →</a></div></div>
+              <div id="jobs"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-h"><span class="src" style="background:rgba(125,211,192,.14);color:var(--teal)" data-ic="ticket"></span><h3>Ticket của tôi</h3><span class="chip down">3 có thay đổi</span><div class="r"><a class="more" href="Jira.html">Mở Jira →</a></div></div>
+              <div id="tickets"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-h"><h3>Thao tác gần đây</h3><div class="r"><button class="btn sm ghost" id="actAll">Nhật ký</button></div></div>
+              <div id="acts"></div>
+            </section>
+          </div>
+        </div>
+
+        <details class="setup">
+          <summary>Thiết lập nhanh <span class="mute">3 thư mục làm việc · phím tắt · thông báo</span><span class="chev">›</span></summary>
+          <div class="setup-b">
+            <div>
+              <div style="display:flex;align-items:center;margin-bottom:4px"><span class="mute" style="font-size:11.5px">Thư mục làm việc (Git và Job quét ở đây)</span><button class="btn sm ghost" id="addFolder" style="margin-left:auto">+ Thêm</button></div>
+              <div id="folders"></div>
+              <div style="border-top:1px solid var(--line);margin-top:8px;padding-top:6px">
+                <div class="sw">Thông báo khi Push / Pull lỗi<button class="switch" data-sw role="switch" aria-checked="true"></button></div>
+                <div class="sw">Thông báo khi AI chạy xong<button class="switch" data-sw role="switch" aria-checked="true"></button></div>
+                <div class="sw">Thông báo khi ticket Jira đổi<button class="switch" data-sw role="switch" aria-checked="true"></button></div>
+              </div>
+            </div>
+            <div><div class="mute" style="font-size:11.5px;margin-bottom:4px">Phím tắt</div><div class="keys" id="keys"></div></div>
+          </div>
+        </details>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="shell.js"></script>
+<script>
+const { icon, esc, toast, $ } = DD
+DD.mount({
+  page: 'home',
+  status: '<span class="live">Rảnh</span><span>3 thư mục làm việc · 18 repo lần quét trước</span><span class="r"><span>4 MR chờ review · 3 ticket đổi · 2 job</span></span>',
+  commands: [{ label: 'Quét lại repo', key: '⌘R', run: () => toast('Đang quét 3 thư mục…') }, { label: 'Thêm thư mục làm việc', run: () => $('#addFolder').click() }],
+})
+document.querySelectorAll('[data-ic]').forEach((el) => (el.innerHTML = icon(el.dataset.ic)))
+$('#reload').innerHTML = icon('refresh')
+const h = new Date().getHours()
+$('#greet').textContent = (h < 11 ? 'Chào buổi sáng' : h < 14 ? 'Chào buổi trưa' : h < 18 ? 'Chào buổi chiều' : 'Chào buổi tối') + ', Nam'
+$('#today').textContent = new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }) + ' · 7 việc cần xử lý'
+
+/* Hàng chỉ số */
+const STATS = [
+  { href: 'Git.html', ic: 'git', bg: 'rgba(48,207,67,.13)', c: 'var(--accent)', l: 'Git', k: '⌘3', big: '3', u: 'chưa commit', sub: '<span class="c-up">↑2 cần push</span> · <span class="c-down">↓1 cần pull</span> · 18 repo' },
+  { href: 'AI.html', ic: 'ai', bg: 'rgba(177,140,242,.15)', c: 'var(--purple)', l: 'AI hôm nay', k: '⌘2', big: '4.2M', u: 'token', sub: 'Claude 5 giờ <b class="c-down">78%</b> · reset 16:30' },
+  { href: 'Jobs.html', ic: 'terminal', bg: 'rgba(242,166,90,.14)', c: 'var(--behind)', l: 'Job', k: '⌘4', big: '2', u: 'đang chạy', sub: 'test 3/10 file · dev :5173 · 935 MB' },
+  { href: 'Remotes.html', ic: 'merge', bg: 'rgba(90,169,245,.14)', c: 'var(--ahead)', l: 'Remotes', k: '⌘5', big: '4', u: 'chờ review', sub: '<span class="c-bad">2 CI lỗi</span> · 5 thread chưa resolve', hot: true },
+  { href: 'Jira.html', ic: 'ticket', bg: 'rgba(125,211,192,.14)', c: 'var(--teal)', l: 'Jira', k: '⌘6', big: '3', u: 'ticket đổi', sub: 'PG-482 → In Review · 2 comment', hot: true },
+]
+$('#stats').innerHTML = STATS.map((s) => `<a class="st ${s.hot ? 'hot' : ''}" href="${s.href}"><div class="top"><span class="ico" style="background:${s.bg};color:${s.c}">${icon(s.ic)}</span>${s.l}<kbd>${s.k}</kbd></div><div class="big">${s.big}<small>${s.u}</small></div><div class="sub">${s.sub}</div></a>`).join('')
+
+/* Cần xử lý: gom từ mọi trang */
+const SRC = { git: ['git', 'rgba(48,207,67,.13)', 'var(--accent)', 'Git'], ai: ['ai', 'rgba(177,140,242,.15)', 'var(--purple)', 'AI'], jobs: ['terminal', 'rgba(242,166,90,.14)', 'var(--behind)', 'Job'], remotes: ['merge', 'rgba(90,169,245,.14)', 'var(--ahead)', 'Remotes'], jira: ['ticket', 'rgba(125,211,192,.14)', 'var(--teal)', 'Jira'] }
+const TODOS = [
+  { src: 'remotes', t: '<b>!318</b> Sửa làm tròn khi áp nhiều mã giảm giá', s: '<span class="chip bad">CI lỗi</span> test:unit · shop-web · của bạn', act: 'Xem pipeline', href: 'Remotes.html' },
+  { src: 'remotes', t: '<b>!322</b> Thêm cache tồn kho theo kho', s: 'Trần Bình nhờ bạn review · <span class="c-bad">chờ 26 giờ</span>', act: 'Review', href: 'Remotes.html' },
+  { src: 'jira', t: '<b>PG-482</b> Lê Hà comment: “còn case mã hết hạn chưa có test”', s: '<span class="chip up">In Review</span> · 4 phút trước', act: 'Xem', href: 'Jira.html' },
+  { src: 'git', t: '<b>shop-web</b> có 4 tệp chưa commit, 1 commit chưa push', s: '<span class="br" style="height:18px">fix/PG-482-lam-tron-ma-giam-gia</span>', act: 'Mở', href: 'Git.html' },
+  { src: 'git', t: '<b>api-gateway</b> chậm 3 commit so với origin/main', s: 'có 1 tệp đã sửa, cần commit / stash trước khi pull', act: 'Mở', href: 'Git.html' },
+  { src: 'ai', t: 'Hạn mức <b>Claude 5 giờ</b> đã dùng 78%', s: 'reset 16:30 · còn 1 giờ 48 phút', act: 'Chi tiết', href: 'AI.html' },
+  { src: 'jobs', t: 'Test <b>shop-web</b> có 1 file lỗi', s: 'discount.test.ts · đang chạy 3/10 file', act: 'Xem', href: 'Jobs.html' },
+]
+let tf = ''
+function drawTodos() {
+  const left = TODOS.filter((x) => !x.done)
+  $('#todoN').textContent = left.length
+  const by = Object.keys(SRC).filter((k) => TODOS.some((x) => x.src === k))
+  $('#todoF').innerHTML = [['', 'Tất cả', left.length], ...by.map((k) => [k, SRC[k][3], left.filter((x) => x.src === k).length])].map(([k, l, n]) => `<button class="fchip ${tf === k ? 'on' : ''}" data-tf="${k}" style="height:22px;padding:0 8px">${l} <span class="mute">${n}</span></button>`).join('')
+  const l = TODOS.map((x, i) => ({ ...x, i })).filter((x) => !tf || x.src === tf)
+  $('#todos').innerHTML = l.map((x) => { const [ic, bg, c, name] = SRC[x.src]; return `<div class="todo ${x.done ? 'done' : ''}"><span class="ico" style="background:${bg};color:${c}" title="${name}">${icon(ic)}</span>
+    <div style="min-width:0"><div class="t">${x.t}</div><div class="s">${x.s}</div></div>
+    <div class="acts"><a class="btn sm" href="${x.href}" style="text-decoration:none">${x.act}</a><button class="icon-btn" style="width:24px;height:24px" data-done="${x.i}" title="Đánh dấu xong">${icon('check', 'sm')}</button></div></div>` }).join('') || '<div class="empty" style="padding:24px"><b>✓ Không còn việc nào</b></div>'
+}
+drawTodos()
+$('#todoF').onclick = (e) => { const b = e.target.closest('[data-tf]'); if (b) { tf = b.dataset.tf; drawTodos() } }
+$('#todos').onclick = (e) => { const b = e.target.closest('[data-done]'); if (b) { TODOS[+b.dataset.done].done = true; drawTodos(); toast('Đã xong một việc', '', { actions: `<button class="btn sm" onclick="TODOS[${b.dataset.done}].done=false;drawTodos()">Hoàn tác</button>` }) } }
+$('#todoAll').onclick = () => { TODOS.forEach((x) => (x.done = true)); drawTodos() }
+
+/* Repo */
+const REPOS = [
+  { n: 'shop-web', b: 'fix/PG-482-lam-tron-ma-giam-gia', ch: 4, up: 1, dn: 0, j: 'PG-482', last: '2 giờ' },
+  { n: 'admin-portal', b: 'feature/PG-490-loc-theo-kho', ch: 0, up: 2, dn: 0, j: 'PG-490', last: '35 phút' },
+  { n: 'api-gateway', b: 'main', ch: 1, up: 0, dn: 3, last: 'hôm qua' },
+  { n: 'dev-deck', b: 'main', ch: 0, up: 0, dn: 0, last: '1 giờ' },
+]
+const tone = (r) => r.ch ? 'var(--behind)' : r.up ? 'var(--ahead)' : r.dn ? 'var(--behind)' : 'var(--accent)'
+const state = (r) => [r.ch ? `<span class="c-down">●${r.ch}</span>` : '', r.up ? `<span class="c-up">↑${r.up}</span>` : '', r.dn ? `<span class="c-down">↓${r.dn}</span>` : '', !r.ch && !r.up && !r.dn ? '<span class="c-ok">✓ sạch</span>' : ''].filter(Boolean).join(' ')
+$('#repos').innerHTML = REPOS.map((r) => `<div class="row repo"><span class="sdot" style="background:${tone(r)}"></span>
+  <div style="min-width:0"><div class="nm" onclick="location.href='Git.html'">${r.n}</div><div class="sub"><span class="br" style="height:18px">${esc(r.b)}</span>${r.j ? `<span class="jk">${r.j}</span>` : ''}<span>· ${r.last}</span></div></div>
+  <span class="mono" style="font-size:12px">${state(r)}</span>
+  <span class="acts"><button class="icon-btn" title="VS Code" data-t="VS Code">${icon('code', 'sm')}</button><button class="icon-btn" title="Terminal" data-t="Terminal">${icon('terminal', 'sm')}</button></span></div>`).join('')
+$('#sidePinned').innerHTML = REPOS.map((r) => `<button class="ri" onclick="location.href='Git.html'"><span class="ic"><span class="sdot" style="background:${tone(r)}"></span></span><span class="lb">${r.n}</span>${r.ch ? `<span class="n">${r.ch}</span>` : ''}</button>`).join('')
+document.querySelectorAll('[data-t]').forEach((b) => (b.onclick = () => toast('Đã mở ' + b.dataset.t, b.closest('.row').querySelector('.nm').textContent)))
+
+/* MR */
+const MRS = [
+  ['!318', 'Sửa làm tròn khi áp nhiều mã giảm giá', 'shop-web', 'PG-482', [['bad', 'CI lỗi'], ['', '1/2 approve'], ['down', '2 thread']]],
+  ['!315', 'Thêm bộ lọc theo kho', 'admin-portal', 'PG-490', [['ok', 'CI qua'], ['ok', '2/2 approve']]],
+  ['#88', 'docs: cập nhật README', 'oss-lib', '', [['', 'CI đang chạy'], ['', 'Draft']]],
+]
+$('#mrs').innerHTML = MRS.map(([id, t, p, j, chips]) => `<div class="row mr"><div style="min-width:0"><div class="ell"><span class="mono mute" style="font-size:12px">${id}</span> <span class="nm" onclick="location.href='Remotes.html'">${esc(t)}</span></div><div class="sub">${p}${j ? ` · <span class="jk">${j}</span>` : ''}</div></div><div style="display:flex;gap:4px">${chips.map(([c, l]) => `<span class="chip ${c}">${l}</span>`).join('')}</div></div>`).join('')
+
+/* AI */
+const sp = [2, 1, 0, 0, 0, 0, 0, 1, 6, 9, 12, 8, 4, 10, 14]
+$('#spark').innerHTML = sp.map((v, i) => `<i class="${i === sp.length - 1 ? 'now' : ''}" style="height:${(v / 14) * 100}%"></i>`).join('')
+const lc = (p) => p >= 85 ? 'var(--danger)' : p >= 60 ? 'var(--behind)' : 'var(--accent)'
+$('#limits').innerHTML = [['Claude · 5 giờ', 78, '16:30'], ['Claude · tuần', 41, 'T2'], ['Codex · 5 giờ', 22, '19:10']].map(([l, p, r]) => `<div class="lim"><div class="t"><span>${l}</span><span class="mono" style="color:${lc(p)}">${p}%</span></div><div class="bar"><i style="width:${p}%;background:${lc(p)}"></i></div><span class="mute">reset ${r}</span></div>`).join('')
+
+/* Job */
+const JOBS = [
+  ['shop-web', 'vitest run · 10 file', 30, 20, '723 MB', '43 giây', 1],
+  ['admin-portal', 'next dev · :3000', null, null, '212 MB', '2 giờ 14', 0],
+]
+$('#jobs').innerHTML = JOBS.map(([n, c, ok, run, m, t, fail]) => `<div class="row job"><span class="sdot" style="background:var(--accent);box-shadow:0 0 0 3px rgba(48,207,67,.16)"></span>
+  <div style="min-width:0"><div class="nm" onclick="location.href='Jobs.html'">${n}</div><div class="sub mono" style="font-size:11px">${c}</div></div>
+  <div>${ok !== null ? `<div style="font-size:11.5px;display:flex;justify-content:space-between"><span><b>3/10</b> file</span>${fail ? '<span class="c-bad">1 lỗi</span>' : ''}</div><div class="bar"><i style="width:${ok - 10}%;background:var(--accent)"></i><i style="width:10%;background:var(--danger)"></i><i style="width:${run}%;background:var(--behind)"></i></div>` : '<a href="#" style="font-size:12px" class="mono" onclick="return false">localhost:3000 ↗</a>'}</div>
+  <div style="text-align:right;line-height:1.25"><div class="mono" style="font-size:12px;color:${m.startsWith('7') ? 'var(--behind)' : 'var(--fg)'}">${m}</div><div class="mute" style="font-size:11px">${t}</div></div></div>`).join('')
+
+/* Ticket */
+const TK = [['PG-482', 'Thanh toán: lỗi làm tròn khi áp mã giảm giá', 'up', 'In Review', 'In Progress → In Review · 2 comment'], ['PG-490', 'Trang đơn hàng: thêm bộ lọc theo kho', 'up', 'In Progress', 'Ưu tiên Low → Medium'], ['OPS-77', 'Cảnh báo dung lượng ổ log máy build 3', '', 'To Do', 'Giao cho Trần Bình'], ['PG-455', 'Email xác nhận đơn hiển thị sai múi giờ', '', 'To Do', '']]
+$('#tickets').innerHTML = TK.map(([k, t, c, st, ev]) => `<div class="row tk"><span class="mono" style="font-size:12px;color:var(--fg-soft)">${ev ? '<span class="sdot" style="background:var(--behind);margin-right:5px"></span>' : '<span class="sdot" style="margin-right:5px"></span>'}${k}</span>
+  <div style="min-width:0"><div class="nm ell" style="font-weight:${ev ? 600 : 400}" onclick="location.href='Jira.html'">${esc(t)}</div>${ev ? `<div class="sub c-down">${esc(ev)}</div>` : ''}</div><span class="chip ${c}">${st}</span></div>`).join('')
+$('#sideTickets').innerHTML = TK.slice(0, 3).map(([k, , , , ev]) => `<button class="ri" onclick="location.href='Jira.html'"><span class="ic"><span class="sdot" style="background:${ev ? 'var(--behind)' : 'var(--border-pop)'}"></span></span><span class="lb mono" style="font-size:12px">${k}</span></button>`).join('')
+$('#sideProjects').innerHTML = [['shop/shop-web', 2, 'var(--danger)'], ['shop/admin-portal', 1, ''], ['oss/oss-lib', 1, '']].map(([p, n, c]) => `<button class="ri" onclick="location.href='Remotes.html'"><span class="ic"><span class="sdot" style="background:${c || 'var(--border-pop)'}"></span></span><span class="lb">${p.split('/')[1]}</span><span class="n">${n}</span></button>`).join('')
+
+/* Gần đây */
+const VERB = { Push: 'ok', Pull: 'down', Commit: 'up', Nhánh: 'purple', Fetch: '', Quét: '', Lỗi: 'bad', Jira: 'up', Review: 'purple' }
+$('#acts').innerHTML = [['14:21', 'Push', 'shop-web', 'fix/PG-482 → origin'], ['14:10', 'Jira', 'PG-482', 'chuyển In Progress → In Review'], ['14:05', 'Commit', 'shop-web', '“Sửa làm tròn khi áp nhiều mã”'], ['11:48', 'Lỗi', 'api-gateway', 'Pull: có thay đổi chưa commit'], ['10:40', 'Review', '!311', 'đã approve · admin-portal']]
+  .map(([t, v, r, d]) => `<div class="act"><span class="t">${t}</span><span><span class="chip ${VERB[v]}">${v}</span></span><span class="ell">${esc(r)} <span class="mute">${esc(d)}</span></span></div>`).join('')
+$('#actAll').onclick = () => toast('Mở nhật ký thao tác', 'data/audit.log')
+
+/* Thiết lập */
+let FOLDERS = [['~/work/acme', true, '12 repo'], ['~/Documents/job', true, '5 repo'], ['~/oss', true, '1 repo'], ['~/Downloads/tmp', false, 'gần đây']]
+const drawF = () => ($('#folders').innerHTML = FOLDERS.map(([p, on, n], i) => `<label class="folder ${on ? '' : 'off'}"><input type="checkbox" data-f="${i}" ${on ? 'checked' : ''}><span class="p">${p}</span><span class="mute" style="font-size:11.5px">${n}</span></label>`).join(''))
+drawF()
+$('#folders').onchange = (e) => { const i = +e.target.dataset.f; FOLDERS[i][1] = e.target.checked; drawF(); toast(e.target.checked ? 'Sẽ quét thư mục này' : 'Bỏ quét thư mục này', FOLDERS[i][0]) }
+$('#addFolder').onclick = () => { FOLDERS.push(['~/work/side-project', true, 'chưa quét']); drawF(); toast('Đã thêm thư mục', '~/work/side-project') }
+$('#keys').innerHTML = [['Bảng lệnh', '⌘K'], ['Trang 1 – 6', '⌘1…6'], ['Quét lại repo', '⌘R'], ['Commit', '⌘Enter'], ['Push', '⌘P'], ['VS Code', '⌘O'], ['Terminal', '⌘T'], ['Chép đường dẫn', '⌘⇧C']].map(([l, k]) => `<div>${l}<kbd>${k}</kbd></div>`).join('')
+document.querySelectorAll('[data-sw]').forEach((s) => (s.onclick = () => s.setAttribute('aria-checked', s.getAttribute('aria-checked') !== 'true')))
+$('#reload').onclick = () => { $('#upd').textContent = 'Cập nhật vừa xong'; toast('Đã tải lại số liệu', 'Không quét repo') }
+</script>
+</body>
+</html>
