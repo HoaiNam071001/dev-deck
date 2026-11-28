@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { api, useLoad } from '../api'
+import { JiraTags } from '../components/JiraChip'
 import { JiraModal } from '../components/JiraModal'
 import { RemoteAccountModal } from '../components/RemoteAccountModal'
 import { RemoteBranches } from '../components/RemoteBranches'
@@ -34,6 +35,7 @@ function CrRow({ c, hideProject, onOpen }: { c: ChangeRequest; hideProject: bool
         <div className="flex items-center gap-2">
           {c.draft && <Chip tone="muted">Draft</Chip>}
           <span className="truncate text-[13.5px] font-semibold" title={c.title}>{c.title}</span>
+          <JiraTags texts={[c.title, c.source]} />
         </div>
         <div className="mt-1 flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[12px] text-fg-mute">
           <span className="mono">{crRef(c)}</span>·

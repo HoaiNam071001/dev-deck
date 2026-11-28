@@ -1,22 +1,53 @@
-import { useState } from 'react'
-import { api, useLoad } from '../api'
+import { useEffect, useState } from 'react'
+import { api } from '../api'
 import type { JiraIssue } from '../types'
 import { Modal } from './Modal'
 import { Chip, type Tone } from './ui'
 
 const TONE: Record<JiraIssue['category'], Tone> = { todo: 'muted', doing: 'info', done: 'ok' }
 
-/** Ticket Jira nhận từ các đoạn chữ (tên nhánh, tiêu đề / mô tả MR). Không có account Jira thì trả rỗng, không báo lỗi. */
+const KEY_RE = /\b[A-Z][A-Z0-9]+-\d+\b/g
+const TTL = 60000
+const known = new Map<string, { at: number; issue: JiraIssue | null }>()
+let queue = new Map<string, ((i: JiraIssue | null) => void)[]>()
+let timer: ReturnType<typeof setTimeout> | null = null
+
+/** Gom mọi yêu cầu ticket trong 30ms thành một lần gọi (server chỉ trả mã thuộc project có thật). */
+function fetchIssue(key: string): Promise<JiraIssue | null> {
+  const c = known.get(key)
+  if (c && Date.now() - c.at < TTL) return Promise.resolve(c.issue)
+  return new Promise((res) => {
+    queue.set(key, [...(queue.get(key) ?? []), res])
+    timer ??= setTimeout(() => {
+      const batch = queue; queue = new Map(); timer = null
+      const keys = [...batch.keys()]
+      void Promise.all(Array.from({ length: Math.ceil(keys.length / 50) }, (_, n) => api.jiraIssues(keys.slice(n * 50, n * 50 + 50)).catch(() => [] as JiraIssue[])))
+        .then((parts) => {
+          const got = new Map(parts.flat().map((i) => [i.key, i]))
+          for (const [k, waiters] of batch) { const issue = got.get(k) ?? null; known.set(k, { at: Date.now(), issue }); waiters.forEach((w) => w(issue)) }
+        })
+    }, 30)
+  })
+}
+
+/** Ticket Jira nhận từ các đoạn chữ (tên nhánh, tiêu đề MR). Không có account Jira hoặc mã không thuộc project nào thì trả rỗng. */
 export function useJiraIssues(texts: (string | null | undefined)[]): JiraIssue[] {
-  const joined = texts.filter(Boolean).join('\n')
-  const accounts = useLoad(api.jiraAccounts, [], 0, 'jiraAccounts').data
-  const has = (accounts?.length ?? 0) > 0
-  const issues = useLoad(async () => {
-    if (!has || !joined) return []
-    const keys = (await api.jiraExtract([joined]))[0] ?? []
-    return keys.length ? api.jiraIssues(keys.slice(0, 10)) : []
-  }, [has, joined], 0)
-  return issues.data ?? []
+  const keys = [...new Set(texts.flatMap((t) => (t ? t.match(KEY_RE) ?? [] : [])))].slice(0, 10)
+  const id = keys.join(',')
+  const [issues, setIssues] = useState<JiraIssue[]>([])
+  useEffect(() => {
+    let live = true
+    if (!id) { setIssues([]); return }
+    void Promise.all(id.split(',').map(fetchIssue)).then((r) => { if (live) setIssues(r.filter((x): x is JiraIssue => !!x)) })
+    return () => { live = false }
+  }, [id])
+  return issues
+}
+
+/** Chip chỉ để xem (không bấm được), dùng trong hàng danh sách vốn đã là nút. */
+export function JiraTags({ texts }: { texts: (string | null | undefined)[] }) {
+  const issues = useJiraIssues(texts)
+  return <>{issues.map((i) => <Chip key={i.key} tone={TONE[i.category]} title={`${i.summary} · ${i.status}`}><span className="font-mono">{i.key}</span> · {i.status}</Chip>)}</>
 }
 
 export function JiraChip({ issue }: { issue: JiraIssue }) {

@@ -1,4 +1,4 @@
-import { JiraChips } from './JiraChip'
+import { JiraChips, JiraTags } from './JiraChip'
 import { useEffect, useState } from 'react'
 import { api, useLoad } from '../api'
 import { runAction } from '../lib/actions'
@@ -155,7 +155,7 @@ export function RepoDetail({ repo, tab, setTab, onClose, mode, onMode, onFocusCo
               <div key={(x.remote ? 'r:' : 'l:') + x.name} className="flex items-center gap-2 border-t border-line px-4 py-[7px] hover:bg-selected">
                 <span className={'size-1.5 flex-none rounded-full ' + (x.current ? 'bg-accent' : 'bg-transparent')} />
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className={'truncate font-mono text-[12px] ' + (x.current ? 'text-fg' : x.remote ? 'text-fg-mute' : 'text-fg-soft')}>{x.name}</span>
+                  <span className="flex min-w-0 items-center gap-1.5"><span className={'truncate font-mono text-[12px] ' + (x.current ? 'text-fg' : x.remote ? 'text-fg-mute' : 'text-fg-soft')}>{x.name}</span>{!x.remote && <JiraTags texts={[x.name]} />}</span>
                   <span className="truncate text-sm text-fg-mute" title={x.subject}>
                     {x.current ? 'đang mở' : x.remote ? 'remote' : x.upstream && !x.gone ? x.upstream : x.gone ? 'upstream đã mất' : 'chưa có upstream'} · {relTime(x.date)}
                   </span>
