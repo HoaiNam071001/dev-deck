@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { api, useLoad } from '../api'
 import { FolderPicker } from '../components/FolderPicker'
 import { SideSlot, StatusSlot } from '../components/Shell'
-import { Chip, ErrorBanner, Icon, Kbd, NavLabel, Spinner, type Tone } from '../components/ui'
+import { Chip, ErrorBanner, Icon, Kbd, Kpi, KpiStrip, NavLabel, Spinner, type Tone } from '../components/ui'
+import { buildInbox } from '../lib/inbox'
+import { usePersisted } from '../lib/persist'
 import { relTime } from '../lib/format'
 import { bridge, MOD, notifyEnabled } from '../lib/platform'
 import { baseName } from '../lib/repo'
@@ -44,6 +46,13 @@ export function HomePage() {
   const ov = useLoad(api.overview, [], 30000, 'overview')
   const pinned = useStore((s) => s.pinned)
   const rq = useStore((s) => s.reviewQueue)
+  const repos = useStore((s) => s.repos)
+  const attention = useStore((s) => s.attention)
+  const remoteUnread = useStore((s) => s.remoteUnread)
+  const jiraUnread = useStore((s) => s.jiraUnread)
+  const [done, setDone] = usePersisted<string[]>('home.inboxDone', [], Array.isArray)
+  const inbox = buildInbox({ repos, reviewQueue: rq, remoteUnread, jiraUnread }).filter((i) => !done.includes(i.id))
+  const dirty = repos.filter((r) => r.staged + r.modified + r.untracked + r.conflicts > 0).length
   const [picking, setPicking] = useState(false)
   const b = bridge()
   const cfg = ov.data?.config
@@ -113,6 +122,26 @@ export function HomePage() {
             <span className="ml-auto text-fg-mute">Mở hàng đợi →</span>
           </Link>
         )}
+
+        <KpiStrip label="Tổng hợp">
+          <Link to="/git" className="!text-fg"><Kpi label="Git" value={repos.length ? attention : '—'} sub={repos.length ? `${dirty} repo có thay đổi · ${repos.filter((r) => r.ahead > 0).length} chờ push` : 'Mở Git để quét'} /></Link>
+          <Link to="/remotes" className="!text-fg"><Kpi label="Remotes" value={rq.waiting} sub={rq.late ? `${rq.late} trễ hơn 24 giờ` : 'chờ bạn review'} valueColor={rq.late ? 'var(--danger)' : undefined} /></Link>
+          <Link to="/jira" className="!text-fg"><Kpi label="Jira" value={jiraUnread} sub="ticket có thay đổi mới" /></Link>
+          <Link to="/ai" className="!text-fg"><Kpi label="AI" value="→" sub="Xem token và hạn mức" /></Link>
+          <Link to="/jobs" className="!text-fg"><Kpi label="Job" value="→" sub="Dev server, test đang chạy" /></Link>
+        </KpiStrip>
+
+        <Panel title={`Cần xử lý${inbox.length ? ` · ${inbox.length}` : ''}`} action={done.length ? <button className="link-btn pr-0" onClick={() => setDone([])}>Hiện lại {done.length} mục đã ẩn</button> : undefined}>
+          {inbox.slice(0, 8).map((i) => (
+            <div key={i.id} className="flex items-center gap-2.5 border-t border-line px-3.5 py-2 text-[12px]">
+              <Chip tone={i.source === 'git' ? 'muted' : i.source === 'remotes' ? 'ahead' : 'purple'}>{i.source === 'git' ? 'Git' : i.source === 'remotes' ? 'Remotes' : 'Jira'}</Chip>
+              <span className="flex min-w-0 flex-1 flex-col"><span className="truncate">{i.title}</span><span className="truncate text-fg-mute">{i.sub}</span></span>
+              <button className="btn sm" onClick={() => (i.repo ? openRepo(i.repo) : navigate(i.to))}>Mở</button>
+              <button className="btn sm" title="Ẩn trên máy này đến khi mục thay đổi" onClick={() => setDone([...done, i.id])}>Xong</button>
+            </div>
+          ))}
+          {!inbox.length && <p className="empty border-t border-line">{repos.length ? 'Không có việc nào cần xử lý.' : 'Chưa quét Git nên chưa biết repo nào cần xử lý. Mở Git để quét.'}</p>}
+        </Panel>
 
         <section aria-label="Mở nhanh" className="grid grid-cols-2 gap-3">
           <QuickCard to="/git" icon="git" tint="bg-accent/12 text-accent" title="Git" keyHint={MOD + '3'} desc="Quản lý repo, nhánh, commit, push / pull"
