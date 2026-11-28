@@ -7,6 +7,7 @@ import { useRemoteWatch } from './lib/remoteWatch'
 import { useRoute } from './lib/router'
 import { GitPage } from './pages/GitPage'
 import { HomePage } from './pages/HomePage'
+import { JiraPage } from './pages/JiraPage'
 import { JobsPage } from './pages/JobsPage'
 import { RemotesPage } from './pages/RemotesPage'
 import { TokenPage } from './pages/TokenPage'
@@ -17,5 +18,5 @@ export function App() {
   useJiraWatch()
   useAiDoneWatch()
   useScriptDoneWatch()
-  return <Shell><ErrorBoundary resetKey={route}>{route === '/git' ? <GitPage /> : route === '/jobs' ? <JobsPage /> : route === '/remotes' ? <RemotesPage /> : route === '/ai' ? <TokenPage /> : <HomePage />}</ErrorBoundary></Shell>
+  return <Shell><ErrorBoundary resetKey={route}>{route === '/git' ? <GitPage /> : route === '/jobs' ? <JobsPage /> : route === '/remotes' ? <RemotesPage /> : route === '/jira' ? <JiraPage /> : route === '/ai' ? <TokenPage /> : <HomePage />}</ErrorBoundary></Shell>
 }

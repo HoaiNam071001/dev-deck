@@ -79,6 +79,7 @@ const NAV: { to: Route; label: string; icon: string; n: string }[] = [
   { to: '/git', label: 'Git', icon: 'git', n: '3' },
   { to: '/jobs', label: 'Job', icon: 'terminal', n: '4' },
   { to: '/remotes', label: 'Remotes', icon: 'merge', n: '5' },
+  { to: '/jira', label: 'Jira', icon: 'ticket', n: '6' },
 ]
 
 function TitleBar() {
@@ -151,7 +152,7 @@ function Sidebar({ slotRef }: { slotRef: (el: HTMLElement | null) => void }) {
             <Icon name={n.icon} size={19} />
             {n.to === '/git' && attention > 0 && <span className="rail-badge" title="Repo có thay đổi hoặc lệch remote">{attention}</span>}
             {n.to === '/remotes' && route !== '/remotes' && remoteUnread > 0 && <span className="rail-badge" title="Thread review mới chưa xem">{remoteUnread > 99 ? '99+' : remoteUnread}</span>}
-            {n.to === '/remotes' && route !== '/remotes' && remoteUnread === 0 && waiting === 0 && jiraUnread > 0 && <span className="rail-badge" title="Ticket Jira có thay đổi chưa xem">{jiraUnread > 99 ? '99+' : jiraUnread}</span>}
+            {n.to === '/jira' && route !== '/jira' && jiraUnread > 0 && <span className="rail-badge" title="Ticket Jira có thay đổi chưa xem">{jiraUnread > 99 ? '99+' : jiraUnread}</span>}
             {n.to === '/remotes' && route !== '/remotes' && remoteUnread === 0 && waiting > 0 && <span className="rail-badge" title="MR / PR đang chờ bạn review">{waiting > 99 ? '99+' : waiting}</span>}
           </Link>
         ))}
@@ -188,6 +189,7 @@ export function Shell({ children }: { children: ReactNode }) {
       else if (k === '3') go('/git')
       else if (k === '4') go('/jobs')
       else if (k === '5') go('/remotes')
+      else if (k === '6') go('/jira')
       else if (k === 'k') { e.preventDefault(); setState({ palette: !getState().palette }) }
       else if (k === 'r') { e.preventDefault(); setState({ pending: 'rescan' }); navigate('/git') }
     }
@@ -196,7 +198,7 @@ export function Shell({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    document.title = { '/': 'Tổng quan', '/ai': 'AI', '/git': 'Git', '/jobs': 'Job', '/remotes': 'Remotes' }[route] + ' · DevDeck'
+    document.title = { '/': 'Tổng quan', '/ai': 'AI', '/git': 'Git', '/jobs': 'Job', '/remotes': 'Remotes', '/jira': 'Jira' }[route] + ' · DevDeck'
   }, [route])
 
   return (

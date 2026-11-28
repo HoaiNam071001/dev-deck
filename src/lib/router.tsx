@@ -1,7 +1,7 @@
 import { useEffect, useState, type AnchorHTMLAttributes, type MouseEvent } from 'react'
 
-export type Route = '/' | '/ai' | '/git' | '/jobs' | '/remotes'
-const ROUTES: Route[] = ['/', '/ai', '/git', '/jobs', '/remotes']
+export type Route = '/' | '/ai' | '/git' | '/jobs' | '/remotes' | '/jira'
+const ROUTES: Route[] = ['/', '/ai', '/git', '/jobs', '/remotes', '/jira']
 const LEGACY: Record<string, Route> = { '#/git': '/git', '#/tokens': '/ai', '#/claude': '/ai', '#/ai': '/ai' }
 
 export const currentRoute = (): Route => current()

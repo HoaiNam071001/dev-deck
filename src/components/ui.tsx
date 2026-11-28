@@ -19,6 +19,7 @@ const PATHS: Record<string, ReactNode> = {
   copy: <><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h8" /></>,
   panel: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M14 4v16" /></>,
   modal: <><rect x="3" y="4" width="18" height="16" rx="2" /><rect x="7" y="8" width="10" height="8" rx="1" /></>,
+  ticket: <><path d="M3 8a2 2 0 0 0 0 8v2a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-2a2 2 0 0 1 0-8V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1z" /><path d="M14 5v14" strokeDasharray="2 2" /></>,
   merge: <><circle cx="6" cy="5" r="2" /><circle cx="6" cy="19" r="2" /><circle cx="18" cy="15" r="2" /><path d="M6 7v10M18 13V9a3 3 0 0 0-3-3h-4M13 3l-2 3 2 3" /></>,
   trash: <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />,
   bell: <path d="M6 17V11a6 6 0 0 1 12 0v6l2 2H4zM10 21h4" />,

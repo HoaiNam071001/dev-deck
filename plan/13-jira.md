@@ -16,12 +16,12 @@ Lưu account giống Remotes (`server/remotes/store.js`): token mã hóa bằng 
 
 ## Giai đoạn 13a — Chỉ đọc
 
-- [x] Thêm account Jira (base URL + email + API token / PAT), kiểm bằng `/myself` — xong (nút Jira ở trang Remotes mở `JiraModal`)
+- [x] Thêm account Jira (base URL + email + API token / PAT), kiểm bằng `/myself` — xong (trang riêng Jira ở sidebar, `Ctrl/Cmd+6`, `src/pages/JiraPage.tsx`; tách khỏi Remotes theo yêu cầu 2026-11-28)
 - [~] Nhận mã ticket từ tên nhánh, tiêu đề và mô tả MR / PR: regex `[A-Z][A-Z0-9]+-\d+`, chỉ giữ project key có thật (lấy danh sách key từ `/project` một lần, cache) — server xong (`/api/jira/extract`), đã gắn chip
 - [x] Lấy nhiều ticket trong một lần gọi: JQL `key in (...)`, chỉ lấy `summary, status, assignee, priority, issuetype, sprint` (`/api/jira/issues`)
 - [x] Chip ticket — đầu chi tiết repo, tab Nhánh, danh sách MR, chi tiết MR (gom một lần gọi, cache 60 giây); chưa ở danh sách repo (màu theo nhóm trạng thái: To Do / In Progress / Done) ở: danh sách repo (nhánh hiện tại), tab Nhánh, danh sách MR, chi tiết MR
 - [x] Panel chi tiết: tiêu đề, trạng thái, người nhận, ưu tiên, sprint, link mở Jira (chỉ `http(s)`), mô tả hiển thị chữ thuần
-- [~] "Việc của tôi" (đã có trong `JiraModal`; chưa nối nhánh local / MR với từng ticket): JQL `assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC` — mục mới ở Tổng quan hoặc sidebar Remotes, kèm nhánh local / MR đã nối với từng ticket
+- [~] "Việc của tôi" (đã có ở trang Jira; "Làm tiếp" nối nhánh / MR trong panel ticket): JQL `assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC` — trang Jira riêng, kèm nhánh local / MR đã nối với từng ticket
 - [x] Test `server/jira/test.js`: regex, ADF, chuẩn hóa, giấu token, fetch giả Cloud (v3 Basic) + Data Center (v2 Bearer)
 
 ## Giai đoạn 13b — Từ ticket sang nhánh

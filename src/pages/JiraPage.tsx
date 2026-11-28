@@ -1,12 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { api, useLoad } from '../api'
 import { setState, toast } from '../lib/store'
-import { Modal } from './Modal'
-import { JiraChip } from './JiraChip'
-import { ErrorBanner, Spinner } from './ui'
+import { JiraChip } from '../components/JiraChip'
+import { ErrorBanner, Spinner } from '../components/ui'
 
-/** Account Jira (thêm / xóa) và "Việc của tôi". Chỉ đọc. */
-export function JiraModal({ onClose }: { onClose: () => void }) {
+/** Trang Jira: ticket của tôi và đã ghim kèm thay đổi, account Jira. Chỉ đọc. */
+export function JiraPage() {
   const accounts = useLoad(api.jiraAccounts, [], 0, 'jiraAccounts')
   const hasAcc = (accounts.data?.length ?? 0) > 0
   const news = useLoad(async () => (hasAcc ? api.jiraNew() : { items: [], errors: [] }), [hasAcc], 0)
@@ -40,8 +39,14 @@ export function JiraModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Modal onClose={onClose} titleId="jira-acct-title" size="wide" header={<h2 id="jira-acct-title">Jira</h2>}>
-      <div className="flex flex-col gap-4 p-4">
+    <div className="page" style={{ padding: '24px 28px', gap: 16 }}>
+      <header className="page-h !items-start">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <h1>Jira</h1>
+          <span className="text-[12px] text-fg-mute">Ticket giao cho bạn và ticket đã ghim, kèm thay đổi chưa xem. Chỉ đọc, không ghi gì lên Jira</span>
+        </div>
+      </header>
+      <div className="flex max-w-[860px] flex-col gap-4">
         {accounts.error && <ErrorBanner onRetry={accounts.reload}>{accounts.error}</ErrorBanner>}
         {(accounts.data ?? []).map((a) => (
           <div key={a.id} className="flex items-center gap-2 text-[12.5px]">
@@ -97,6 +102,6 @@ export function JiraModal({ onClose }: { onClose: () => void }) {
           </div>
         </form>
       </div>
-    </Modal>
+    </div>
   )
 }

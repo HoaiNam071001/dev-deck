@@ -34,7 +34,7 @@ async function poll() {
   const title = f.fresh.length === 1 ? `Jira ${first.key}` : `${f.fresh.length} cập nhật ticket Jira`
   const body = f.fresh.length === 1 ? first.text : f.fresh.slice(0, 3).map((e) => `${e.key}: ${e.text}`).join('\n')
   systemNotify(title, body)
-  toast({ kind: 'ok', title, detail: body, onOpen: () => { setState({ jiraOpen: true }); navigate('/remotes') } })
+  toast({ kind: 'ok', title, detail: body, onOpen: () => navigate('/jira') })
 }
 
 /** Poll nền ticket Jira của tôi và đã ghim, báo khi có thay đổi (mount một lần ở App). */
